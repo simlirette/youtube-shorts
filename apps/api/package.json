@@ -1,0 +1,24 @@
+{
+  "name": "@shorts/api",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "./src/index.ts",
+  "scripts": {
+    "build": "tsc -b",
+    "start": "node --no-warnings --loader tsx ./src/index.ts"
+  },
+  "dependencies": {
+    "@shorts/agents": "workspace:*",
+    "@shorts/core": "workspace:*",
+    "@shorts/providers": "workspace:*",
+    "@shorts/rendering": "workspace:*",
+    "@shorts/schemas": "workspace:*",
+    "cors": "^2.8.5",
+    "express": "^4.21.2"
+  },
+  "devDependencies": {
+    "@types/cors": "^2.8.17",
+    "@types/express": "^5.0.0"
+  }
+}

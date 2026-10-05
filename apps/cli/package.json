@@ -1,0 +1,22 @@
+{
+  "name": "@shorts/cli",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "./src/index.ts",
+  "bin": {
+    "shorts": "./src/index.ts"
+  },
+  "scripts": {
+    "build": "tsc -b",
+    "start": "node --no-warnings --loader tsx ./src/index.ts"
+  },
+  "dependencies": {
+    "@shorts/agents": "workspace:*",
+    "@shorts/core": "workspace:*",
+    "@shorts/providers": "workspace:*",
+    "@shorts/rendering": "workspace:*",
+    "@shorts/schemas": "workspace:*",
+    "commander": "^13.0.0"
+  }
+}
