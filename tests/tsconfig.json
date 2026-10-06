@@ -1,0 +1,16 @@
+{
+  "extends": "../tsconfig.base.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "rootDir": ".."
+  },
+  "include": ["./**/*.ts"],
+  "references": [
+    { "path": "../packages/schemas" },
+    { "path": "../packages/core" },
+    { "path": "../packages/providers" },
+    { "path": "../packages/agents" },
+    { "path": "../packages/rendering" },
+    { "path": "../packages/pipeline" }
+  ]
+}

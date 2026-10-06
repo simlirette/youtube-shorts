@@ -8,10 +8,6 @@
   "exports": {
     ".": "./src/index.ts"
   },
-  "scripts": {
-    "build": "tsc -b",
-    "lint": "echo linting core..."
-  },
   "dependencies": {
     "@shorts/schemas": "workspace:*",
     "dotenv": "^16.4.7",

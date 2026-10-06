@@ -5,21 +5,28 @@
   "description": "Automated faceless YouTube Shorts media-production engine",
   "type": "module",
   "scripts": {
-    "build": "pnpm -r run build",
+    "build": "tsc -b",
+    "typecheck": "tsc -b",
     "test": "vitest run",
     "test:watch": "vitest",
-    "lint": "pnpm -r run lint",
-    "typecheck": "tsc --build --noEmit",
+    "test:live": "vitest run --config vitest.live.config.ts",
     "cli": "tsx apps/cli/src/index.ts",
-    "pipeline:mock": "tsx apps/cli/src/index.ts pipeline --mock",
+    "pipeline:mock": "tsx apps/cli/src/index.ts run --mode mock",
+    "pipeline:live": "tsx apps/cli/src/index.ts run --mode live",
     "api": "tsx apps/api/src/index.ts",
-    "dev": "pnpm api"
+    "clean": "tsc -b --clean"
   },
   "devDependencies": {
     "@types/node": "^22.10.2",
     "tsx": "^4.19.2",
     "typescript": "^5.7.2",
-    "vitest": "^2.1.8"
+    "vitest": "^2.1.8",
+    "@shorts/schemas": "workspace:*",
+    "@shorts/core": "workspace:*",
+    "@shorts/providers": "workspace:*",
+    "@shorts/agents": "workspace:*",
+    "@shorts/rendering": "workspace:*",
+    "@shorts/pipeline": "workspace:*"
   },
   "pnpm": {
     "onlyBuiltDependencies": [

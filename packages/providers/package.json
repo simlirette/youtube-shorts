@@ -8,13 +8,10 @@
   "exports": {
     ".": "./src/index.ts"
   },
-  "scripts": {
-    "build": "tsc -b",
-    "lint": "echo linting providers..."
-  },
   "dependencies": {
     "@shorts/core": "workspace:*",
     "@shorts/schemas": "workspace:*",
+    "cheerio": "^1.2.0",
     "zod": "^3.24.1"
   }
 }

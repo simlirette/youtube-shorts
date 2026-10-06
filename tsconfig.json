@@ -1,25 +1,14 @@
 {
-  "compilerOptions": {
-    "target": "ES2022",
-    "module": "NodeNext",
-    "moduleResolution": "NodeNext",
-    "lib": ["ES2022"],
-    "strict": true,
-    "esModuleInterop": true,
-    "skipLibCheck": true,
-    "forceConsistentCasingInFileNames": true,
-    "resolveJsonModule": true,
-    "declaration": true,
-    "declarationMap": true,
-    "sourceMap": true,
-    "baseUrl": ".",
-    "paths": {
-      "@shorts/schemas": ["./packages/schemas/src/index.ts"],
-      "@shorts/core": ["./packages/core/src/index.ts"],
-      "@shorts/providers": ["./packages/providers/src/index.ts"],
-      "@shorts/agents": ["./packages/agents/src/index.ts"],
-      "@shorts/rendering": ["./packages/rendering/src/index.ts"]
-    }
-  },
-  "exclude": ["node_modules", "dist", "output", "temp"]
+  "files": [],
+  "references": [
+    { "path": "./packages/schemas" },
+    { "path": "./packages/core" },
+    { "path": "./packages/providers" },
+    { "path": "./packages/agents" },
+    { "path": "./packages/rendering" },
+    { "path": "./packages/pipeline" },
+    { "path": "./apps/cli" },
+    { "path": "./apps/api" },
+    { "path": "./tests" }
+  ]
 }

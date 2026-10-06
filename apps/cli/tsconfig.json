@@ -1,8 +1,11 @@
 {
-  "extends": "../../tsconfig.json",
+  "extends": "../../tsconfig.base.json",
   "compilerOptions": {
+    "composite": true,
     "outDir": "./dist",
-    "rootDir": "./src"
+    "rootDir": "./src",
+    "tsBuildInfoFile": "./dist/.tsbuildinfo"
   },
-  "include": ["src/**/*"]
+  "include": ["src/**/*"],
+  "references": [{ "path": "../../packages/schemas" },{ "path": "../../packages/core" },{ "path": "../../packages/providers" },{ "path": "../../packages/agents" },{ "path": "../../packages/rendering" },{ "path": "../../packages/pipeline" }]
 }

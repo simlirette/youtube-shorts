@@ -8,10 +8,6 @@
   "exports": {
     ".": "./src/index.ts"
   },
-  "scripts": {
-    "build": "tsc -b",
-    "lint": "echo linting schemas..."
-  },
   "dependencies": {
     "zod": "^3.24.1"
   }

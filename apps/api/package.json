@@ -5,7 +5,6 @@
   "type": "module",
   "main": "./src/index.ts",
   "scripts": {
-    "build": "tsc -b",
     "start": "node --no-warnings --loader tsx ./src/index.ts"
   },
   "dependencies": {
@@ -15,7 +14,8 @@
     "@shorts/rendering": "workspace:*",
     "@shorts/schemas": "workspace:*",
     "cors": "^2.8.5",
-    "express": "^4.21.2"
+    "express": "^4.21.2",
+    "@shorts/pipeline": "workspace:*"
   },
   "devDependencies": {
     "@types/cors": "^2.8.17",

@@ -18,6 +18,9 @@ build/
 output/
 temp/
 tmp/
+*.sqlite
+*.sqlite-*
+database/*.sqlite
 *.mp4
 *.mp3
 *.wav
@@ -48,3 +51,6 @@ Thumbs.db
 .idea/
 *.sublime-project
 *.sublime-workspace
+
+# AI assistant artifacts
+context-snapshot.json

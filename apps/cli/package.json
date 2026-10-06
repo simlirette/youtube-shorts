@@ -8,7 +8,6 @@
     "shorts": "./src/index.ts"
   },
   "scripts": {
-    "build": "tsc -b",
     "start": "node --no-warnings --loader tsx ./src/index.ts"
   },
   "dependencies": {
@@ -17,6 +16,7 @@
     "@shorts/providers": "workspace:*",
     "@shorts/rendering": "workspace:*",
     "@shorts/schemas": "workspace:*",
-    "commander": "^13.0.0"
+    "commander": "^13.0.0",
+    "@shorts/pipeline": "workspace:*"
   }
 }
