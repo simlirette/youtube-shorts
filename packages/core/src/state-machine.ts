@@ -1,75 +1,86 @@
-import { WorkflowState } from '@shorts/schemas';
-import { logger } from './logger.js';
+import type { JobState } from '@shorts/schemas';
+import { InternalError } from './errors.js';
 
-export interface StateTransitionResult {
-  success: boolean;
-  previousState: WorkflowState;
-  newState: WorkflowState;
-  error?: string;
-}
+/** Ordered production stages. Earlier index = earlier stage. Used for resume-from validation. */
+export const STAGE_ORDER: JobState[] = [
+  'CREATED',
+  'SELECTING_TOPIC',
+  'AWAITING_IDEA_APPROVAL',
+  'RESEARCHING',
+  'SCRIPTING',
+  'AWAITING_SCRIPT_APPROVAL',
+  'SYNTHESIZING_VOICE',
+  'BUILDING_TIMELINE',
+  'SOURCING_MEDIA',
+  'RENDERING',
+  'QA',
+  'AWAITING_FINAL_APPROVAL',
+  'READY_TO_PUBLISH',
+  'PUBLISHING',
+  'PUBLISHED',
+];
 
-// Deterministic state transition graph
-const VALID_TRANSITIONS: Record<WorkflowState, WorkflowState[]> = {
-  DISCOVERED: ['SCORED', 'REJECTED'],
-  SCORED: ['RESEARCHING', 'REJECTED'],
-  RESEARCHING: ['RESEARCHED', 'REJECTED'],
-  RESEARCHED: ['STORY_READY', 'REJECTED'],
-  STORY_READY: ['SCRIPTING', 'REJECTED'],
-  SCRIPTING: ['SCRIPT_REVIEW', 'REJECTED'],
-  SCRIPT_REVIEW: ['SCRIPT_APPROVED', 'SCRIPTING', 'REJECTED'], // Loopback for script revisions
-  SCRIPT_APPROVED: ['ASSET_PREPARATION', 'REJECTED'],
-  ASSET_PREPARATION: ['RENDERING', 'REJECTED'],
-  RENDERING: ['RENDERED', 'REJECTED'],
-  RENDERED: ['QA', 'REJECTED'],
-  QA: ['QA_PASSED', 'QA_FAILED'],
-  QA_FAILED: ['ASSET_PREPARATION', 'SCRIPTING', 'REJECTED'], // Re-route to fix visual or script
-  QA_PASSED: ['APPROVED', 'REJECTED'],
-  APPROVED: ['UPLOADING', 'REJECTED'],
-  UPLOADING: ['PUBLISHED', 'APPROVED'], // Loopback on upload retry
-  PUBLISHED: ['ANALYZING'],
-  ANALYZING: [],
+/** Stages that perform work (as opposed to waiting for a human or being terminal). */
+export const WORK_STAGES: JobState[] = [
+  'SELECTING_TOPIC',
+  'RESEARCHING',
+  'SCRIPTING',
+  'SYNTHESIZING_VOICE',
+  'BUILDING_TIMELINE',
+  'SOURCING_MEDIA',
+  'RENDERING',
+  'QA',
+  'PUBLISHING',
+];
+
+export const AWAITING_STATES: JobState[] = ['AWAITING_IDEA_APPROVAL', 'AWAITING_SCRIPT_APPROVAL', 'AWAITING_FINAL_APPROVAL'];
+export const TERMINAL_STATES: JobState[] = ['PUBLISHED', 'REJECTED'];
+
+const FORWARD: Record<JobState, JobState[]> = {
+  CREATED: ['SELECTING_TOPIC'],
+  SELECTING_TOPIC: ['AWAITING_IDEA_APPROVAL', 'RESEARCHING'],
+  AWAITING_IDEA_APPROVAL: ['RESEARCHING', 'REJECTED'],
+  RESEARCHING: ['SCRIPTING'],
+  SCRIPTING: ['AWAITING_SCRIPT_APPROVAL', 'SYNTHESIZING_VOICE'],
+  AWAITING_SCRIPT_APPROVAL: ['SYNTHESIZING_VOICE', 'SCRIPTING', 'REJECTED'],
+  SYNTHESIZING_VOICE: ['BUILDING_TIMELINE'],
+  BUILDING_TIMELINE: ['SOURCING_MEDIA'],
+  SOURCING_MEDIA: ['RENDERING'],
+  RENDERING: ['QA'],
+  QA: ['AWAITING_FINAL_APPROVAL', 'READY_TO_PUBLISH'],
+  AWAITING_FINAL_APPROVAL: ['READY_TO_PUBLISH', 'REJECTED'],
+  READY_TO_PUBLISH: ['PUBLISHING', 'REJECTED'],
+  PUBLISHING: ['PUBLISHED'],
+  PUBLISHED: [],
   REJECTED: [],
+  FAILED: [],
 };
 
-export class ContentStateMachine {
-  /**
-   * Evaluates whether a transition from currentState to targetState is valid.
-   */
-  static canTransition(current: WorkflowState, next: WorkflowState): boolean {
-    const allowed = VALID_TRANSITIONS[current] || [];
-    return allowed.includes(next);
+export class JobStateMachine {
+  static canTransition(from: JobState, to: JobState): boolean {
+    if (to === 'FAILED') return !TERMINAL_STATES.includes(from) && from !== 'FAILED';
+    return FORWARD[from].includes(to);
+  }
+
+  /** Throws on an illegal transition — callers cannot ignore the result. */
+  static assertTransition(from: JobState, to: JobState): void {
+    if (!this.canTransition(from, to)) {
+      throw new InternalError(`Illegal job state transition ${from} -> ${to}. Allowed: [${FORWARD[from].join(', ')}${from !== 'FAILED' && !TERMINAL_STATES.includes(from) ? ', FAILED' : ''}]`);
+    }
+  }
+
+  static stageIndex(state: JobState): number {
+    return STAGE_ORDER.indexOf(state);
   }
 
   /**
-   * Executes a validated transition.
+   * A FAILED job may resume into the stage that failed or any earlier work stage.
+   * PUBLISHING is excluded: a crash during upload needs manual reconciliation to avoid duplicates.
    */
-  static transition(
-    current: WorkflowState,
-    next: WorkflowState,
-    context?: { topicId?: string; scriptId?: string; reason?: string }
-  ): StateTransitionResult {
-    if (!this.canTransition(current, next)) {
-      const err = `Invalid workflow transition from ${current} to ${next}. Allowed: [${(VALID_TRANSITIONS[current] || []).join(', ')}]`;
-      logger.error(err, undefined, { stage: 'STATE_MACHINE', ...context });
-      return {
-        success: false,
-        previousState: current,
-        newState: current,
-        error: err,
-      };
-    }
-
-    logger.info(`State transitioned: ${current} ──> ${next}`, {
-      stage: 'STATE_MACHINE',
-      previousState: current,
-      newState: next,
-      ...context,
-    });
-
-    return {
-      success: true,
-      previousState: current,
-      newState: next,
-    };
+  static canResume(failedStage: JobState | undefined, target: JobState): boolean {
+    if (!failedStage) return false;
+    if (!WORK_STAGES.includes(target) || target === 'PUBLISHING') return false;
+    if (failedStage === 'PUBLISHING') return false;
+    return this.stageIndex(target) <= this.stageIndex(failedStage) && this.stageIndex(target) >= 0;
   }
 }

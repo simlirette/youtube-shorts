@@ -1,7 +1,7 @@
 import { z } from 'zod';
 
 // =============================================================================
-// CONTENT PILLARS & WORKFLOW ENUMS
+// SHARED ENUMS
 // =============================================================================
 
 export const ContentPillarSchema = z.enum([
@@ -12,40 +12,44 @@ export const ContentPillarSchema = z.enum([
   'STRANGE_REAL_WORLD',
 ]);
 export type ContentPillar = z.infer<typeof ContentPillarSchema>;
+export const CONTENT_PILLARS = ContentPillarSchema.options;
 
-export const WorkflowStateSchema = z.enum([
-  'DISCOVERED',
-  'SCORED',
+/** Lifecycle of a topic in the catalog (independent of any single production job). */
+export const TopicStatusSchema = z.enum(['DISCOVERED', 'SCORED', 'REJECTED', 'IN_PRODUCTION', 'USED']);
+export type TopicStatus = z.infer<typeof TopicStatusSchema>;
+
+/** Lifecycle of one production job (one Short). Enforced by JobStateMachine in @shorts/core. */
+export const JobStateSchema = z.enum([
+  'CREATED',
+  'SELECTING_TOPIC',
+  'AWAITING_IDEA_APPROVAL',
   'RESEARCHING',
-  'RESEARCHED',
-  'STORY_READY',
   'SCRIPTING',
-  'SCRIPT_REVIEW',
-  'SCRIPT_APPROVED',
-  'ASSET_PREPARATION',
+  'AWAITING_SCRIPT_APPROVAL',
+  'SYNTHESIZING_VOICE',
+  'BUILDING_TIMELINE',
+  'SOURCING_MEDIA',
   'RENDERING',
-  'RENDERED',
   'QA',
-  'QA_PASSED',
-  'QA_FAILED',
-  'APPROVED',
-  'UPLOADING',
+  'AWAITING_FINAL_APPROVAL',
+  'READY_TO_PUBLISH',
+  'PUBLISHING',
   'PUBLISHED',
-  'ANALYZING',
+  'FAILED',
   'REJECTED',
 ]);
-export type WorkflowState = z.infer<typeof WorkflowStateSchema>;
+export type JobState = z.infer<typeof JobStateSchema>;
+
+export const PipelineModeSchema = z.enum(['mock', 'live']);
+export type PipelineMode = z.infer<typeof PipelineModeSchema>;
 
 export const ApprovalStageSchema = z.enum(['IDEA', 'SCRIPT', 'FINAL_VIDEO']);
 export type ApprovalStage = z.infer<typeof ApprovalStageSchema>;
 
-export const ApprovalDecisionSchema = z.enum([
-  'PENDING',
-  'APPROVED',
-  'REJECTED',
-  'REVISIONS_REQUESTED',
-]);
+export const ApprovalDecisionSchema = z.enum(['APPROVED', 'REJECTED', 'REVISIONS_REQUESTED']);
 export type ApprovalDecision = z.infer<typeof ApprovalDecisionSchema>;
+
+const isoDate = z.string().datetime();
 
 // =============================================================================
 // 1. TOPIC DISCOVERY & SCORING
@@ -53,21 +57,20 @@ export type ApprovalDecision = z.infer<typeof ApprovalDecisionSchema>;
 
 export const TopicCandidateSchema = z.object({
   id: z.string().uuid(),
-  title: z.string().min(5),
+  title: z.string().min(5).max(140),
   premise: z.string().min(10),
   pillar: ContentPillarSchema,
-  sourceUrls: z.array(z.string().url()).min(1),
-  discoveredAt: z.string().datetime(),
+  /** Reference URLs are only recorded once research has actually retrieved them; discovery never invents them. */
+  sourceUrls: z.array(z.string().url()).default([]),
+  discoveredAt: isoDate,
   tags: z.array(z.string()).default([]),
-  state: WorkflowStateSchema.default('DISCOVERED'),
-  similarityHash: z.string().optional(),
+  status: TopicStatusSchema.default('DISCOVERED'),
+  /** Normalized, order-independent key of significant title tokens used for deduplication. */
+  dedupeKey: z.string().optional(),
 });
 export type TopicCandidate = z.infer<typeof TopicCandidateSchema>;
 
-export const TopicScoreSchema = z.object({
-  id: z.string().uuid(),
-  topicId: z.string().uuid(),
-  overallScore: z.number().min(0).max(100),
+export const ScoreDimensionsSchema = z.object({
   curiosity: z.number().min(0).max(10),
   audiencePotential: z.number().min(0).max(10),
   originality: z.number().min(0).max(10),
@@ -75,18 +78,27 @@ export const TopicScoreSchema = z.object({
   visualPotential: z.number().min(0).max(10),
   sourceAvailability: z.number().min(0).max(10),
   freshness: z.number().min(0).max(10),
-  productionComplexity: z.number().min(0).max(10), // Lower is easier or balanced
-  copyrightRisk: z.number().min(0).max(10), // 0 = safe, 10 = extreme risk
-  repetitionRisk: z.number().min(0).max(10), // 0 = fresh, 10 = duplicate
-  monetizationRisk: z.number().min(0).max(10), // 0 = safe, 10 = dangerous
-  reasoning: z.string(),
+  productionComplexity: z.number().min(0).max(10),
+  copyrightRisk: z.number().min(0).max(10),
+  repetitionRisk: z.number().min(0).max(10),
+  monetizationRisk: z.number().min(0).max(10),
+});
+export type ScoreDimensions = z.infer<typeof ScoreDimensionsSchema>;
+
+export const TopicScoreSchema = ScoreDimensionsSchema.extend({
+  id: z.string().uuid(),
+  topicId: z.string().uuid(),
+  /** Computed deterministically from the dimensions — never taken from the LLM. */
+  overallScore: z.number().min(0).max(100),
+  reasoning: z.string().min(1),
   passGate: z.boolean(),
-  scoredAt: z.string().datetime(),
+  gateReasons: z.array(z.string()).default([]),
+  scoredAt: isoDate,
 });
 export type TopicScore = z.infer<typeof TopicScoreSchema>;
 
 // =============================================================================
-// 2. RESEARCH, CLAIMS & PROVENANCE
+// 2. RESEARCH, SOURCES & CLAIM VERIFICATION
 // =============================================================================
 
 export const CredibilityTierSchema = z.enum([
@@ -95,6 +107,7 @@ export const CredibilityTierSchema = z.enum([
   'PEER_REVIEWED',
   'REPUTABLE_JOURNALISM',
   'PUBLIC_DATASET',
+  'UNCLASSIFIED',
 ]);
 export type CredibilityTier = z.infer<typeof CredibilityTierSchema>;
 
@@ -105,20 +118,45 @@ export const SourceReferenceSchema = z.object({
   publisher: z.string(),
   publishDate: z.string().optional(),
   credibilityTier: CredibilityTierSchema,
-  retrievedAt: z.string().datetime(),
+  retrievedAt: isoDate,
+  retrievalMethod: z.enum(['search_raw_content', 'http_fetch', 'search_snippet']),
+  contentChars: z.number().int().nonnegative(),
+  contentSha256: z.string().length(64),
   archiveUrl: z.string().url().optional(),
 });
 export type SourceReference = z.infer<typeof SourceReferenceSchema>;
 
+export const ClaimVerificationStatusSchema = z.enum(['VERIFIED', 'UNVERIFIED', 'REJECTED']);
+export type ClaimVerificationStatus = z.infer<typeof ClaimVerificationStatusSchema>;
+
+export const EntailmentSchema = z.enum(['SUPPORTED', 'PARTIAL', 'NOT_SUPPORTED', 'NOT_CHECKED']);
+export type Entailment = z.infer<typeof EntailmentSchema>;
+
+export const ClaimEvidenceSchema = z.object({
+  sourceId: z.string().uuid(),
+  quote: z.string().min(1),
+  /** True only when the quote was found (normalized) inside the retrieved text of `sourceId`. */
+  quoteFound: z.boolean(),
+});
+export type ClaimEvidence = z.infer<typeof ClaimEvidenceSchema>;
+
 export const ClaimSchema = z.object({
   id: z.string().uuid(),
-  text: z.string(),
+  text: z.string().min(5),
   entity: z.string(),
-  sourceId: z.string().uuid(),
-  sourceCitation: z.string(),
-  confidence: z.number().min(0).max(1), // 1.0 = absolute certainty
+  /** Sources whose retrieved text contains supporting evidence. Empty for unverified claims. */
+  sourceIds: z.array(z.string().uuid()),
+  evidence: z.array(ClaimEvidenceSchema),
+  verificationStatus: ClaimVerificationStatusSchema,
+  verificationReason: z.string().min(1),
+  checks: z.object({
+    quoteFound: z.boolean(),
+    numbersConsistent: z.boolean(),
+    entailment: EntailmentSchema,
+  }),
+  /** Derived from the checks, never from LLM self-assessment. */
+  confidence: z.number().min(0).max(1),
   isKeyFact: z.boolean().default(true),
-  verified: z.boolean().default(true),
 });
 export type Claim = z.infer<typeof ClaimSchema>;
 
@@ -126,34 +164,35 @@ export const ResearchPacketSchema = z.object({
   id: z.string().uuid(),
   topicId: z.string().uuid(),
   title: z.string(),
-  summary: z.string(),
+  summary: z.string().min(1),
   keyEntities: z.array(z.string()),
-  claims: z.array(ClaimSchema).min(2),
+  claims: z.array(ClaimSchema),
   sources: z.array(SourceReferenceSchema).min(1),
   uncertaintyNotes: z.array(z.string()).default([]),
-  researchedAt: z.string().datetime(),
+  verifiedClaimCount: z.number().int().nonnegative(),
+  researchedAt: isoDate,
 });
 export type ResearchPacket = z.infer<typeof ResearchPacketSchema>;
 
 // =============================================================================
-// 3. STORY ARCHITECTURE & MACHINE-READABLE SCRIPT
+// 3. STORY & SCRIPT
 // =============================================================================
 
 export const StoryOutlineSchema = z.object({
   id: z.string().uuid(),
   topicId: z.string().uuid(),
-  logline: z.string(),
-  centralConflict: z.string(),
-  hookConcept: z.string(),
+  logline: z.string().min(1),
+  centralConflict: z.string().min(1),
+  hookConcept: z.string().min(1),
   narrativeArc: z.object({
-    hook: z.string(), // 0-2s
-    context: z.string(), // 2-8s
-    development: z.string(), // 8-30s
-    twist: z.string(), // 30-45s
-    payoff: z.string(), // 45-60s
+    hook: z.string().min(1),
+    context: z.string().min(1),
+    development: z.string().min(1),
+    twist: z.string().min(1),
+    payoff: z.string().min(1),
   }),
   targetDurationSeconds: z.number().min(30).max(60).default(45),
-  createdAt: z.string().datetime(),
+  createdAt: isoDate,
 });
 export type StoryOutline = z.infer<typeof StoryOutlineSchema>;
 
@@ -171,16 +210,15 @@ export type MediaFormat = z.infer<typeof MediaFormatSchema>;
 
 export const SceneSchema = z.object({
   sceneNumber: z.number().int().positive(),
-  startTime: z.number().min(0),
-  endTime: z.number().min(0),
-  durationSeconds: z.number().positive(),
   narration: z.string().min(1),
-  visualObjective: z.string(),
-  mediaFormat: MediaFormatSchema,
-  assetKeywords: z.array(z.string()),
+  visualObjective: z.string().min(1),
+  mediaFormat: MediaFormatSchema.default('LICENSED_STOCK'),
+  /** Generic, stock-searchable visual terms (no names or dates). */
+  assetKeywords: z.array(z.string().min(2)).min(1),
   visualPrompt: z.string().optional(),
   textOverlay: z.string().optional(),
   transitionIntent: z.enum(['CUT', 'FADE', 'ZOOM_IN', 'PAN_LEFT', 'PAN_RIGHT']).default('CUT'),
+  /** Verified claim IDs asserted by this scene. Never back-filled. */
   claimIds: z.array(z.string().uuid()).default([]),
 });
 export type Scene = z.infer<typeof SceneSchema>;
@@ -189,41 +227,23 @@ export const ShortScriptSchema = z.object({
   id: z.string().uuid(),
   storyId: z.string().uuid(),
   topicId: z.string().uuid(),
-  title: z.string(),
+  title: z.string().min(5).max(100),
+  description: z.string().max(5000).default(''),
   hookText: z.string().min(5),
   targetDurationSeconds: z.number().min(30).max(60),
   scenes: z.array(SceneSchema).min(3),
-  totalWords: z.number().positive(),
-  estimatedDurationSeconds: z.number().positive(),
-  createdAt: z.string().datetime(),
+  totalWords: z.number().int().positive(),
+  generationAttempts: z.number().int().positive().default(1),
+  createdAt: isoDate,
 });
 export type ShortScript = z.infer<typeof ShortScriptSchema>;
 
 // =============================================================================
-// 4. ASSETS & VOICE SYNTHESIS
+// 4. VOICE NARRATION & TIMELINE
 // =============================================================================
 
-export const AssetTypeSchema = z.enum(['IMAGE', 'VIDEO', 'AUDIO_VOICE', 'AUDIO_MUSIC', 'GRAPHIC']);
-export type AssetType = z.infer<typeof AssetTypeSchema>;
-
-export const AssetDescriptorSchema = z.object({
-  id: z.string().uuid(),
-  assetType: AssetTypeSchema,
-  sourceUrl: z.string(),
-  provider: z.string(), // 'pexels' | 'unsplash' | 'replicate' | 'local_synthetic' | etc.
-  license: z.string(), // 'Pexels License', 'CC-BY-4.0', 'Public Domain', 'Internal Synth'
-  commercialUseAllowed: z.boolean(),
-  attributionRequired: z.boolean(),
-  retrievedAt: z.string().datetime(),
-  localPath: z.string(),
-  storageKey: z.string().optional(),
-  sceneNumber: z.number().int().optional(),
-  metadata: z.record(z.unknown()).default({}),
-});
-export type AssetDescriptor = z.infer<typeof AssetDescriptorSchema>;
-
 export const WordTimestampSchema = z.object({
-  word: z.string(),
+  word: z.string().min(1),
   start: z.number().min(0),
   end: z.number().min(0),
 });
@@ -232,17 +252,147 @@ export type WordTimestamp = z.infer<typeof WordTimestampSchema>;
 export const VoiceNarrationSchema = z.object({
   id: z.string().uuid(),
   scriptId: z.string().uuid(),
-  provider: z.string(), // 'elevenlabs' | 'openai' | 'mock_tts'
+  provider: z.string(),
   voiceId: z.string(),
-  audioPath: z.string(),
+  modelId: z.string(),
+  /** Normalized narration actually used by the renderer (PCM WAV). */
+  audioPath: z.string().min(1),
+  /** Untouched provider output. */
+  rawAudioPath: z.string().min(1),
+  /** Probed from the normalized file, not estimated. */
   durationSeconds: z.number().positive(),
-  wordTimestamps: z.array(WordTimestampSchema),
-  synthesizedAt: z.string().datetime(),
+  sampleRate: z.number().int().positive(),
+  channels: z.number().int().positive(),
+  codec: z.string(),
+  integratedLufs: z.number(),
+  truePeakDb: z.number(),
+  wordTimestamps: z.array(WordTimestampSchema).min(1),
+  sha256: z.string().length(64),
+  cacheKey: z.string().length(64),
+  synthesizedAt: isoDate,
 });
 export type VoiceNarration = z.infer<typeof VoiceNarrationSchema>;
 
+export const TimelineSceneSchema = z.object({
+  sceneNumber: z.number().int().positive(),
+  start: z.number().min(0),
+  end: z.number().positive(),
+  firstWordIndex: z.number().int().nonnegative(),
+  lastWordIndex: z.number().int().nonnegative(),
+});
+export type TimelineScene = z.infer<typeof TimelineSceneSchema>;
+
+export const CaptionCueSchema = z.object({
+  index: z.number().int().nonnegative(),
+  sceneNumber: z.number().int().positive(),
+  start: z.number().min(0),
+  end: z.number().positive(),
+  lines: z.array(z.string().min(1)).min(1).max(2),
+  firstWordIndex: z.number().int().nonnegative(),
+  lastWordIndex: z.number().int().nonnegative(),
+});
+export type CaptionCue = z.infer<typeof CaptionCueSchema>;
+
+/** Single authoritative timeline derived from narration word timestamps. */
+/** A visual cut inside a scene. Long scenes are split so no single clip holds the screen too long. */
+export const TimelineShotSchema = z.object({
+  sceneNumber: z.number().int().positive(),
+  shotIndex: z.number().int().nonnegative(),
+  start: z.number().min(0),
+  end: z.number().positive(),
+});
+export type TimelineShot = z.infer<typeof TimelineShotSchema>;
+
+export const TimelineSchema = z.object({
+  fps: z.number().int().positive(),
+  narrationDurationSeconds: z.number().positive(),
+  totalDurationSeconds: z.number().positive(),
+  totalFrames: z.number().int().positive(),
+  scenes: z.array(TimelineSceneSchema).min(1),
+  shots: z.array(TimelineShotSchema).min(1),
+  captions: z.array(CaptionCueSchema).min(1),
+});
+export type Timeline = z.infer<typeof TimelineSchema>;
+
 // =============================================================================
-// 5. RENDERING CONTRACTS
+// 5. MEDIA ASSETS
+// =============================================================================
+
+export const AssetTypeSchema = z.enum(['IMAGE', 'VIDEO']);
+export type AssetType = z.infer<typeof AssetTypeSchema>;
+
+/** Normalized search result from any stock provider (nothing downloaded yet). */
+export const AssetCandidateSchema = z.object({
+  provider: z.string(),
+  providerMediaId: z.string(),
+  mediaType: AssetTypeSchema,
+  pageUrl: z.string().url(),
+  previewUrl: z.string().url().optional(),
+  downloadUrl: z.string().url(),
+  /** Dimensions of the rendition referenced by downloadUrl. */
+  width: z.number().int().positive(),
+  height: z.number().int().positive(),
+  aspectRatio: z.number().positive(),
+  durationSeconds: z.number().positive().optional(),
+  fileSizeBytes: z.number().int().positive().optional(),
+  tags: z.array(z.string()),
+  description: z.string().default(''),
+  author: z.string().optional(),
+  license: z.string(),
+  commercialUseAllowed: z.boolean(),
+  attributionRequired: z.boolean(),
+});
+export type AssetCandidate = z.infer<typeof AssetCandidateSchema>;
+
+export const AssetRankingSchema = z.object({
+  score: z.number(),
+  relevance: z.number().min(0).max(1),
+  matchedTerms: z.array(z.string()),
+  orientation: z.number(),
+  resolution: z.number(),
+  duration: z.number(),
+  reasons: z.array(z.string()),
+});
+export type AssetRanking = z.infer<typeof AssetRankingSchema>;
+
+export const MediaProbeSchema = z.object({
+  formatName: z.string(),
+  videoCodec: z.string(),
+  width: z.number().int().positive(),
+  height: z.number().int().positive(),
+  durationSeconds: z.number().nonnegative(),
+  hasAudio: z.boolean(),
+  sizeBytes: z.number().int().positive(),
+});
+export type MediaProbe = z.infer<typeof MediaProbeSchema>;
+
+/** A downloaded, ffprobe-validated asset bound to a scene. */
+export const AssetDescriptorSchema = z.object({
+  id: z.string().uuid(),
+  assetType: AssetTypeSchema,
+  provider: z.string(),
+  providerAssetId: z.string(),
+  sourceUrl: z.string().url(),
+  pageUrl: z.string().url(),
+  license: z.string().min(1),
+  licenseVerified: z.boolean(),
+  commercialUseAllowed: z.boolean(),
+  attributionRequired: z.boolean(),
+  width: z.number().int().positive(),
+  height: z.number().int().positive(),
+  localPath: z.string().min(1),
+  sha256: z.string().length(64),
+  sceneNumber: z.number().int().positive(),
+  shotIndex: z.number().int().nonnegative().default(0),
+  probe: MediaProbeSchema,
+  ranking: AssetRankingSchema,
+  retrievedAt: isoDate,
+  metadata: z.record(z.unknown()).default({}),
+});
+export type AssetDescriptor = z.infer<typeof AssetDescriptorSchema>;
+
+// =============================================================================
+// 6. RENDERING
 // =============================================================================
 
 export const VideoTemplateTypeSchema = z.enum([
@@ -259,110 +409,179 @@ export const RenderJobSchema = z.object({
   scriptId: z.string().uuid(),
   templateType: VideoTemplateTypeSchema.default('DOCUMENTARY'),
   videoPath: z.string(),
-  durationSeconds: z.number().positive(),
-  resolution: z.object({
-    width: z.literal(1080),
-    height: z.literal(1920),
-  }),
+  captionsPath: z.string(),
+  /** Probed from the produced MP4. 0 for failed renders. */
+  durationSeconds: z.number().nonnegative(),
+  resolution: z.object({ width: z.literal(1080), height: z.literal(1920) }),
   fps: z.number().default(30),
-  renderedAt: z.string().datetime(),
-  status: z.enum(['PENDING', 'RENDERING', 'COMPLETED', 'FAILED']),
+  sha256: z.string().optional(),
+  renderedAt: isoDate,
+  status: z.enum(['COMPLETED', 'FAILED']),
   error: z.string().optional(),
 });
 export type RenderJob = z.infer<typeof RenderJobSchema>;
 
 // =============================================================================
-// 6. QA ASSESSMENT
+// 7. QA
 // =============================================================================
 
 export const QAStatusSchema = z.enum(['PASS', 'WARN', 'FAIL']);
 export type QAStatus = z.infer<typeof QAStatusSchema>;
 
-export const QACheckItemSchema = z.object({
+export const QACheckSchema = z.object({
+  id: z.string(),
+  category: z.string(),
   status: QAStatusSchema,
+  /** A blocking WARN or any FAIL prevents publication. */
+  blocking: z.boolean(),
   message: z.string(),
-  details: z.record(z.unknown()).optional(),
+  measured: z.unknown().optional(),
+  expected: z.unknown().optional(),
 });
-export type QACheckItem = z.infer<typeof QACheckItemSchema>;
+export type QACheck = z.infer<typeof QACheckSchema>;
+
+export const QAReportSchema = z.object({
+  kind: z.enum(['MEDIA', 'CONTENT']),
+  checks: z.array(QACheckSchema).min(1),
+  overallStatus: QAStatusSchema,
+  publishEligible: z.boolean(),
+  blockingReasons: z.array(z.string()),
+});
+export type QAReport = z.infer<typeof QAReportSchema>;
 
 export const QAResultSchema = z.object({
   id: z.string().uuid(),
+  jobId: z.string().uuid(),
   renderId: z.string().uuid(),
   scriptId: z.string().uuid(),
+  videoSha256: z.string().length(64),
+  media: QAReportSchema,
+  content: QAReportSchema,
   overallStatus: QAStatusSchema,
-  factualQA: QACheckItemSchema,
-  storyQA: QACheckItemSchema,
-  visualQA: QACheckItemSchema,
-  audioQA: QACheckItemSchema,
-  copyrightQA: QACheckItemSchema,
-  repetitionQA: QACheckItemSchema,
-  policyQA: QACheckItemSchema,
-  evaluatedAt: z.string().datetime(),
-  recommendation: z.string(),
+  publishEligible: z.boolean(),
+  blockingReasons: z.array(z.string()),
+  evaluatedAt: isoDate,
 });
 export type QAResult = z.infer<typeof QAResultSchema>;
 
 // =============================================================================
-// 7. HUMAN APPROVAL
+// 8. APPROVALS
 // =============================================================================
 
 export const ApprovalEventSchema = z.object({
   id: z.string().uuid(),
+  jobId: z.string().uuid(),
   stage: ApprovalStageSchema,
-  targetId: z.string().uuid(), // topicId | scriptId | renderId
+  targetId: z.string().uuid(),
   decision: ApprovalDecisionSchema,
+  /** 'human' for explicit reviewer decisions; 'policy:<name>' for configured automatic approvals. */
+  decidedBy: z.string().min(1),
   directorNotes: z.string().optional(),
-  decidedAt: z.string().datetime(),
+  decidedAt: isoDate,
 });
 export type ApprovalEvent = z.infer<typeof ApprovalEventSchema>;
 
 // =============================================================================
-// 8. PUBLISHING & YOUTUBE INTEGRATION
+// 9. PUBLISHING
 // =============================================================================
 
-export const PublishStatusSchema = z.enum([
-  'PENDING',
-  'SCHEDULED',
-  'UPLOADING',
-  'UPLOADED',
-  'FAILED',
-]);
+export const PublishTargetSchema = z.enum(['youtube', 'local_export', 'mock']);
+export type PublishTarget = z.infer<typeof PublishTargetSchema>;
+
+export const PublishStatusSchema = z.enum(['PUBLISHING', 'PUBLISHED', 'FAILED']);
 export type PublishStatus = z.infer<typeof PublishStatusSchema>;
+
+export const YouTubeMetadataSchema = z.object({
+  title: z.string().min(5).max(100).refine((t) => !/[<>]/.test(t), 'title must not contain < or >'),
+  description: z.string().max(5000),
+  tags: z.array(z.string().min(1).max(100)).refine((t) => t.join(',').length <= 500, 'tags exceed 500 characters'),
+  privacyStatus: z.enum(['private', 'unlisted', 'public']),
+});
+export type YouTubeMetadata = z.infer<typeof YouTubeMetadataSchema>;
 
 export const PublishJobSchema = z.object({
   id: z.string().uuid(),
+  jobId: z.string().uuid(),
   renderId: z.string().uuid(),
-  platform: z.literal('YOUTUBE'),
-  youtubeVideoId: z.string().optional(),
-  privacyStatus: z.enum(['private', 'unlisted', 'public']).default('private'),
-  title: z.string().min(5).max(100),
-  description: z.string(),
-  tags: z.array(z.string()),
+  target: PublishTargetSchema,
   status: PublishStatusSchema,
-  scheduledTime: z.string().datetime().optional(),
-  publishedAt: z.string().datetime().optional(),
+  videoSha256: z.string().length(64),
+  externalId: z.string().optional(),
+  url: z.string().optional(),
+  metadata: YouTubeMetadataSchema,
+  startedAt: isoDate,
+  publishedAt: isoDate.optional(),
   error: z.string().optional(),
 });
 export type PublishJob = z.infer<typeof PublishJobSchema>;
 
 // =============================================================================
-// 9. ANALYTICS & LEARNING
+// 10. JOBS
+// =============================================================================
+
+export const JobErrorKindSchema = z.enum([
+  'CONFIGURATION',
+  'AUTHENTICATION',
+  'RATE_LIMIT',
+  'TIMEOUT',
+  'PROVIDER_UNAVAILABLE',
+  'INVALID_RESPONSE',
+  'VALIDATION',
+  'QA_FAILED',
+  'INTERNAL',
+]);
+export type JobErrorKind = z.infer<typeof JobErrorKindSchema>;
+
+export const JobArtifactsSchema = z.object({
+  topicId: z.string().uuid().optional(),
+  scoreId: z.string().uuid().optional(),
+  researchId: z.string().uuid().optional(),
+  storyId: z.string().uuid().optional(),
+  scriptId: z.string().uuid().optional(),
+  narrationId: z.string().uuid().optional(),
+  timelinePath: z.string().optional(),
+  captionsPath: z.string().optional(),
+  assetIds: z.array(z.string().uuid()).optional(),
+  renderId: z.string().uuid().optional(),
+  qaId: z.string().uuid().optional(),
+  publishId: z.string().uuid().optional(),
+});
+export type JobArtifacts = z.infer<typeof JobArtifactsSchema>;
+
+export const JobSchema = z.object({
+  id: z.string().uuid(),
+  mode: PipelineModeSchema,
+  state: JobStateSchema,
+  /** State that was executing when the job failed; resume re-enters it. */
+  failedStage: JobStateSchema.optional(),
+  errorKind: JobErrorKindSchema.optional(),
+  errorMessage: z.string().optional(),
+  retryable: z.boolean().optional(),
+  artifacts: JobArtifactsSchema,
+  workDir: z.string(),
+  attempts: z.number().int().nonnegative(),
+  lockedBy: z.string().optional(),
+  lockedAt: isoDate.optional(),
+  createdAt: isoDate,
+  updatedAt: isoDate,
+});
+export type Job = z.infer<typeof JobSchema>;
+
+// =============================================================================
+// 11. ANALYTICS (not yet implemented against a real API)
 // =============================================================================
 
 export const AnalyticsRecordSchema = z.object({
   id: z.string().uuid(),
   youtubeVideoId: z.string(),
-  renderId: z.string().uuid(),
+  jobId: z.string().uuid(),
   topicId: z.string().uuid(),
   pillar: ContentPillarSchema,
-  templateType: VideoTemplateTypeSchema,
   views: z.number().int().nonnegative(),
   likes: z.number().int().nonnegative(),
   comments: z.number().int().nonnegative(),
-  shares: z.number().int().nonnegative(),
-  subscribersGained: z.number().int().nonnegative(),
-  retentionRate: z.number().min(0).max(1), // Average percentage viewed (0.0 to 1.0)
+  retentionRate: z.number().min(0).max(1),
   averageViewDurationSeconds: z.number().nonnegative(),
-  recordedAt: z.string().datetime(),
+  recordedAt: isoDate,
 });
 export type AnalyticsRecord = z.infer<typeof AnalyticsRecordSchema>;

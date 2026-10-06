@@ -1,82 +1,63 @@
-import { ShortScript, ResearchPacket, AssetDescriptor } from '@shorts/schemas';
-import { logger } from './logger.js';
+import type { AssetDescriptor, ResearchPacket, ShortScript } from '@shorts/schemas';
 
-export interface ProvenanceValidationResult {
+export interface ScriptProvenanceResult {
   valid: boolean;
+  /** Claim IDs referenced by scenes that do not exist in the research packet. */
+  unknownClaims: string[];
+  /** Claim IDs referenced by scenes whose verification status is not VERIFIED. */
   unverifiedClaims: string[];
+  /** Verified claims whose cited sources are missing from the packet. */
   missingSources: string[];
-  unlicensedAssets: string[];
-  warnings: string[];
+  referencedVerifiedClaims: string[];
 }
 
 export class ProvenanceTracker {
   /**
-   * Verifies that all claims referenced in a script exist in the research packet and have valid sources.
+   * A script is provenance-valid only when every referenced claim exists, is VERIFIED,
+   * and each of its supporting sources is present in the packet.
    */
-  static verifyScriptClaims(script: ShortScript, research: ResearchPacket): ProvenanceValidationResult {
-    const validClaimIds = new Set(research.claims.map((c) => c.id));
-    const validSourceIds = new Set(research.sources.map((s) => s.id));
-
+  static verifyScriptClaims(script: ShortScript, research: ResearchPacket): ScriptProvenanceResult {
+    const claimsById = new Map(research.claims.map((c) => [c.id, c]));
+    const sourceIds = new Set(research.sources.map((s) => s.id));
+    const unknownClaims: string[] = [];
     const unverifiedClaims: string[] = [];
     const missingSources: string[] = [];
-    const warnings: string[] = [];
+    const referenced = new Set<string>();
 
     for (const scene of script.scenes) {
       for (const claimId of scene.claimIds) {
-        if (!validClaimIds.has(claimId)) {
-          unverifiedClaims.push(`Scene ${scene.sceneNumber}: Claim ID ${claimId} not found in research`);
+        const claim = claimsById.get(claimId);
+        if (!claim) {
+          unknownClaims.push(`scene ${scene.sceneNumber}: ${claimId}`);
           continue;
         }
-
-        const claim = research.claims.find((c) => c.id === claimId);
-        if (claim) {
-          if (!validSourceIds.has(claim.sourceId)) {
-            missingSources.push(`Claim "${claim.text.slice(0, 40)}..." has unknown source ID ${claim.sourceId}`);
-          }
-          if (claim.confidence < 0.7) {
-            warnings.push(`Claim "${claim.text.slice(0, 40)}..." has low confidence score (${claim.confidence})`);
-          }
+        if (claim.verificationStatus !== 'VERIFIED') {
+          unverifiedClaims.push(`scene ${scene.sceneNumber}: ${claimId} (${claim.verificationStatus}: ${claim.verificationReason})`);
+          continue;
         }
+        if (claim.sourceIds.length === 0 || claim.sourceIds.some((s) => !sourceIds.has(s))) {
+          missingSources.push(`claim ${claimId} cites a source not present in the research packet`);
+          continue;
+        }
+        referenced.add(claimId);
       }
     }
-
-    const valid = unverifiedClaims.length === 0 && missingSources.length === 0;
-
-    if (!valid) {
-      logger.warn('Script provenance validation failed', {
-        stage: 'PROVENANCE',
-        unverifiedClaims,
-        missingSources,
-      });
-    }
-
     return {
-      valid,
+      valid: unknownClaims.length === 0 && unverifiedClaims.length === 0 && missingSources.length === 0,
+      unknownClaims,
       unverifiedClaims,
       missingSources,
-      unlicensedAssets: [],
-      warnings,
+      referencedVerifiedClaims: [...referenced],
     };
   }
 
-  /**
-   * Validates asset licensing and commercial usage rights.
-   */
   static verifyAssetLicenses(assets: AssetDescriptor[]): { valid: boolean; flaggedAssets: string[] } {
     const flaggedAssets: string[] = [];
-
     for (const asset of assets) {
-      if (!asset.commercialUseAllowed) {
-        flaggedAssets.push(`Asset ${asset.id} (${asset.provider}): Commercial use prohibited`);
-      }
-      if (!asset.license || asset.license.toLowerCase().includes('unknown')) {
-        flaggedAssets.push(`Asset ${asset.id} (${asset.provider}): License unverified`);
-      }
+      if (!asset.commercialUseAllowed) flaggedAssets.push(`asset ${asset.id} (${asset.provider}): commercial use not allowed`);
+      if (!asset.licenseVerified) flaggedAssets.push(`asset ${asset.id} (${asset.provider}): license not verified`);
+      if (!asset.license || /unknown/i.test(asset.license)) flaggedAssets.push(`asset ${asset.id} (${asset.provider}): license unknown`);
     }
-
-    return {
-      valid: flaggedAssets.length === 0,
-      flaggedAssets,
-    };
+    return { valid: flaggedAssets.length === 0, flaggedAssets };
   }
 }
