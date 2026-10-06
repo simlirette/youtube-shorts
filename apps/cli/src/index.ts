@@ -1,225 +1,246 @@
-import { Command } from 'commander';
-import { randomUUID } from 'node:crypto';
-import { ShortsRepository, logger, ContentStateMachine } from '@shorts/core';
-import { ProviderFactory } from '@shorts/providers';
+import fs from 'node:fs';
+import { Command, Option } from 'commander';
+import { ApprovalStageSchema, CONTENT_PILLARS, ContentPillar, Job, JobStateSchema, PipelineMode } from '@shorts/schemas';
 import {
-  DiscoveryAgent,
-  ScoringAgent,
-  ResearchAgent,
-  StoryEditorAgent,
-  ScriptwriterAgent,
-  VisualDirectorAgent,
-  VoiceAgent,
-  QAAgent,
-  AnalyticsAgent,
-} from '@shorts/agents';
-import { VideoRenderer } from '@shorts/rendering';
-import { ContentPillar, ApprovalEvent, PublishJob } from '@shorts/schemas';
+  AppConfig,
+  PipelineError,
+  ShortsRepository,
+  ValidationError,
+  configForMode,
+  createDatabase,
+  getConfig,
+  logger,
+  runProcess,
+} from '@shorts/core';
+import { missingLiveCredentials } from '@shorts/providers';
+import { PipelineRunner } from '@shorts/pipeline';
 
 const program = new Command();
+program.name('shorts').description('YouTube Shorts production engine').version('0.2.0');
+
+const modeOption = () => new Option('--mode <mode>', 'execution mode (required unless PIPELINE_MODE is set)').choices(['mock', 'live']);
+
+function resolveMode(cfg: AppConfig, flag?: string): PipelineMode {
+  const mode = (flag ?? cfg.PIPELINE_MODE) as PipelineMode | undefined;
+  if (!mode) throw new ValidationError('Choose an execution mode explicitly: --mode mock|live (or set PIPELINE_MODE)');
+  return mode;
+}
+
+function banner(mode: PipelineMode): void {
+  const line =
+    mode === 'live'
+      ? 'MODE: LIVE — real providers (OpenAI/Tavily/ElevenLabs/stock media), real API cost'
+      : 'MODE: MOCK — deterministic local providers, no external calls';
+  process.stderr.write(`\n=== ${line} ===\n\n`);
+}
+
+async function openRepo(cfg: AppConfig): Promise<ShortsRepository> {
+  const repo = new ShortsRepository(createDatabase(cfg));
+  await repo.init();
+  return repo;
+}
+
+async function setup(modeFlag?: string): Promise<{ cfg: AppConfig; repo: ShortsRepository; runner: PipelineRunner }> {
+  const base = getConfig();
+  const mode = resolveMode(base, modeFlag);
+  const cfg = configForMode(base, mode);
+  banner(mode);
+  const repo = new ShortsRepository(createDatabase(cfg));
+  await repo.init();
+  const runner = new PipelineRunner(cfg, repo, { mode });
+  return { cfg, repo, runner };
+}
+
+async function resolveJobId(repo: ShortsRepository, idOrPrefix: string): Promise<string> {
+  const job = (await repo.getJob(idOrPrefix)) ?? (await repo.findJobByPrefix(idOrPrefix));
+  if (!job) throw new ValidationError(`No job matches "${idOrPrefix}"`);
+  return job.id;
+}
+
+function printJob(job: Job): void {
+  const status = job.state === 'FAILED' ? `FAILED at ${job.failedStage} (${job.errorKind}${job.retryable ? ', retryable' : ''}): ${job.errorMessage}` : job.state;
+  console.log(`Job ${job.id} [${job.mode}] → ${status}`);
+  console.log(`  work dir: ${job.workDir}`);
+  if (job.state === 'AWAITING_IDEA_APPROVAL') console.log(`  next: shorts approve ${job.id.slice(0, 8)} IDEA   (or --reject)`);
+  if (job.state === 'AWAITING_SCRIPT_APPROVAL') console.log(`  next: review ${job.workDir}/script/script.json, then shorts approve ${job.id.slice(0, 8)} SCRIPT`);
+  if (job.state === 'AWAITING_FINAL_APPROVAL') console.log(`  next: watch ${job.workDir}/final/short.mp4, then shorts approve ${job.id.slice(0, 8)} FINAL_VIDEO`);
+  if (job.state === 'READY_TO_PUBLISH') console.log(`  next: shorts publish ${job.id.slice(0, 8)}`);
+  if (job.state === 'FAILED' && job.failedStage !== 'PUBLISHING') console.log(`  resume: shorts resume ${job.id.slice(0, 8)}`);
+}
+
+function exitFor(job: Job): number {
+  return job.state === 'FAILED' ? 2 : 0;
+}
+
 program
-  .name('shorts')
-  .description('YouTube Shorts Production Engine CLI')
-  .version('0.1.0');
+  .command('run')
+  .alias('pipeline')
+  .description('Create a production job and advance it as far as the approval policy allows')
+  .addOption(modeOption())
+  .addOption(new Option('--pillar <pillar>', 'content pillar').choices(CONTENT_PILLARS))
+  .option('--topic <topicId>', 'produce a specific catalog topic')
+  .action(async (o) => {
+    const { runner } = await setup(o.mode);
+    const job = await runner.createJob({ topicId: o.topic });
+    const done = await runner.run(job.id, { pillar: o.pillar as ContentPillar | undefined });
+    printJob(done);
+    process.exitCode = exitFor(done);
+  });
 
-// =============================================================================
-// PIPELINE (FULL END-TO-END EXECUTION)
-// =============================================================================
 program
-  .command('pipeline')
-  .description('Run complete end-to-end production loop (Discovery -> Render -> QA -> Publish)')
-  .option('--mock', 'Force mock mode for zero-credential local dry run', true)
-  .option('--pillar <pillar>', 'Content pillar (BUSINESS, TECHNOLOGY, ENGINEERING, SCIENCE, STRANGE_REAL_WORLD)', 'ENGINEERING')
-  .action(async (options) => {
-    try {
-      console.log('\n==================================================================');
-      console.log('   🚀 YOUTUBE SHORTS ENGINE — FULL PRODUCTION PIPELINE STARTING   ');
-      console.log('==================================================================\n');
+  .command('resume <jobId>')
+  .description('Resume a failed or interrupted job (completed stages are not repeated)')
+  .addOption(modeOption())
+  .addOption(new Option('--from <stage>', 'restart from an earlier stage').choices(JobStateSchema.options))
+  .option('--steal-lock', 'take over a job locked by a process that is no longer running', false)
+  .action(async (id, o) => {
+    const { repo, runner } = await setup(o.mode);
+    const done = await runner.resume(await resolveJobId(repo, id), { fromStage: o.from, stealLock: o.stealLock });
+    printJob(done);
+    process.exitCode = exitFor(done);
+  });
 
-      const repo = new ShortsRepository();
-      await repo.init();
+program
+  .command('approve <jobId> <stage>')
+  .description('Record a human decision for IDEA | SCRIPT | FINAL_VIDEO')
+  .addOption(modeOption())
+  .option('--reject', 'reject instead of approve', false)
+  .option('--revise', 'request script revisions (SCRIPT only)', false)
+  .option('--notes <notes>', 'director notes')
+  .option('--continue', 'continue running the job after approval', false)
+  .action(async (id, stage, o) => {
+    const { repo, runner } = await setup(o.mode);
+    const jobId = await resolveJobId(repo, id);
+    const st = ApprovalStageSchema.parse(String(stage).toUpperCase());
+    const decision = o.reject ? 'REJECTED' : o.revise ? 'REVISIONS_REQUESTED' : 'APPROVED';
+    let job = await runner.approve(jobId, st, decision, o.notes);
+    if (o.continue && job.state !== 'READY_TO_PUBLISH') job = await runner.run(jobId);
+    printJob(job);
+  });
 
-      const providers = ProviderFactory.createBundle(options.mock);
-      const discoveryAgent = new DiscoveryAgent(providers.llm, repo);
-      const scoringAgent = new ScoringAgent(providers.llm, repo);
-      const researchAgent = new ResearchAgent(providers.llm, providers.search, repo);
-      const storyAgent = new StoryEditorAgent(providers.llm, repo);
-      const scriptAgent = new ScriptwriterAgent(providers.llm, repo);
-      const visualAgent = new VisualDirectorAgent(providers.asset, repo);
-      const voiceAgent = new VoiceAgent(providers.tts, repo);
-      const renderer = new VideoRenderer(repo);
-      const qaAgent = new QAAgent(repo);
-      const analyticsAgent = new AnalyticsAgent(repo);
+program
+  .command('publish <jobId>')
+  .description('Publish an approved job (all publication gates are re-checked)')
+  .addOption(modeOption())
+  .action(async (id, o) => {
+    const { repo, runner } = await setup(o.mode);
+    const jobId = await resolveJobId(repo, id);
+    const job = await repo.requireJob(jobId);
+    if (job.state !== 'READY_TO_PUBLISH') throw new ValidationError(`Job is ${job.state}; only READY_TO_PUBLISH jobs can be published`);
+    const done = await runner.run(jobId);
+    printJob(done);
+    process.exitCode = exitFor(done);
+  });
 
-      // 1. DISCOVERY
-      console.log('[STAGE 1/11] Discovering novel topics...');
-      const topics = await discoveryAgent.discoverTopics(options.pillar as ContentPillar, 1);
-      if (topics.length === 0) {
-        throw new Error('No novel topics discovered.');
-      }
-      const topic = topics[0];
-      console.log(`  ✓ Selected Topic: "${topic.title}" [${topic.pillar}]`);
-
-      // 2. SCORING
-      console.log('\n[STAGE 2/11] Scoring topic viability & risk...');
-      const score = await scoringAgent.scoreTopic(topic);
-      console.log(`  ✓ Score: ${score.overallScore}/100 | Curiosity: ${score.curiosity}/10 | Policy Risk: ${score.monetizationRisk}/10`);
-      console.log(`  ✓ Reasoning: ${score.reasoning}`);
-
-      // 3. HUMAN APPROVAL 1 (IDEA)
-      console.log('\n[STAGE 3/11] Human Review Gate 1: Idea Approval...');
-      const ideaApproval: ApprovalEvent = {
-        id: randomUUID(),
-        stage: 'IDEA',
-        targetId: topic.id,
-        decision: 'APPROVED',
-        directorNotes: 'Automated test approval for high-scoring engineering topic',
-        decidedAt: new Date().toISOString(),
-      };
-      await repo.saveApproval(ideaApproval);
-      console.log(`  ✓ Idea Approved by Director.`);
-
-      // 4. RESEARCH
-      console.log('\n[STAGE 4/11] Conducting deep research & claim extraction...');
-      const research = await researchAgent.conductResearch(topic);
-      console.log(`  ✓ Gathered ${research.sources.length} sources and ${research.claims.length} verified factual claims.`);
-      for (const claim of research.claims) {
-        console.log(`     • [${(claim.confidence * 100).toFixed(0)}%] ${claim.text.slice(0, 75)}...`);
-      }
-
-      // 5. STORY DEVELOPMENT
-      console.log('\n[STAGE 5/11] Architecting narrative dramatic arc...');
-      const story = await storyAgent.developStory(topic, research);
-      console.log(`  ✓ Logline: ${story.logline}`);
-
-      // 6. SCRIPTWRITING
-      console.log('\n[STAGE 6/11] Generating structured scene script...');
-      const script = await scriptAgent.writeScript(story, research);
-      console.log(`  ✓ Generated script with ${script.scenes.length} scenes (${script.totalWords} words, ~${script.estimatedDurationSeconds}s).`);
-      console.log(`  ✓ Hook: "${script.hookText}"`);
-
-      // 7. HUMAN APPROVAL 2 (SCRIPT)
-      console.log('\n[STAGE 7/11] Human Review Gate 2: Script Approval...');
-      const scriptApproval: ApprovalEvent = {
-        id: randomUUID(),
-        stage: 'SCRIPT',
-        targetId: script.id,
-        decision: 'APPROVED',
-        directorNotes: 'Approved script pacing and claim references',
-        decidedAt: new Date().toISOString(),
-      };
-      await repo.saveApproval(scriptApproval);
-      ContentStateMachine.transition('SCRIPT_REVIEW', 'SCRIPT_APPROVED', { scriptId: script.id });
-      ContentStateMachine.transition('SCRIPT_APPROVED', 'ASSET_PREPARATION', { scriptId: script.id });
-      await repo.updateTopicState(topic.id, 'ASSET_PREPARATION');
-      console.log(`  ✓ Script Approved by Director.`);
-
-      // 8. ASSETS & VOICE SYNTHESIS
-      console.log('\n[STAGE 8/11] Sourcing visual assets & synthesizing voiceover...');
-      const assets = await visualAgent.planAndCollectAssets(script);
-      console.log(`  ✓ Prepared ${assets.length} visual assets with commercial licenses.`);
-
-      const voice = await voiceAgent.generateVoiceover(script);
-      console.log(`  ✓ Voice narration synthesized (${voice.durationSeconds}s, ${voice.wordTimestamps.length} words).`);
-
-      // 9. VIDEO RENDERING
-      console.log('\n[STAGE 9/11] Rendering 1080x1920 vertical video (FFmpeg)...');
-      const render = await renderer.renderShort(script, assets, voice, {
-        templateType: 'DOCUMENTARY',
-        enableSubtitles: true,
-      });
-      console.log(`  ✓ Video rendered: ${render.videoPath}`);
-      console.log(`  ✓ Resolution: ${render.resolution.width}x${render.resolution.height} @ ${render.fps}fps`);
-
-      // 10. QA EVALUATION
-      console.log('\n[STAGE 10/11] Running automated 7-stage QA assessment...');
-      const qa = await qaAgent.evaluateShort({
-        script,
-        research,
-        render,
-        assets,
-      });
-      console.log(`  ✓ QA Overall Status: [${qa.overallStatus}]`);
-      console.log(`     • Factual QA: ${qa.factualQA.status} — ${qa.factualQA.message}`);
-      console.log(`     • Story QA:   ${qa.storyQA.status} — ${qa.storyQA.message}`);
-      console.log(`     • Visual QA:  ${qa.visualQA.status} — ${qa.visualQA.message}`);
-      console.log(`     • Audio QA:   ${qa.audioQA.status} — ${qa.audioQA.message}`);
-      console.log(`     • Policy QA:  ${qa.policyQA.status} — ${qa.policyQA.message}`);
-
-      // 11. APPROVAL & PUBLISHING
-      console.log('\n[STAGE 11/11] Final Video Approval & YouTube Staging...');
-      const finalApproval: ApprovalEvent = {
-        id: randomUUID(),
-        stage: 'FINAL_VIDEO',
-        targetId: render.id,
-        decision: 'APPROVED',
-        directorNotes: 'Final QA passed, staging for YouTube upload',
-        decidedAt: new Date().toISOString(),
-      };
-      await repo.saveApproval(finalApproval);
-      ContentStateMachine.transition('QA_PASSED', 'APPROVED', { renderId: render.id });
-      ContentStateMachine.transition('APPROVED', 'UPLOADING', { renderId: render.id });
-
-      const uploadResult = await providers.youtube.uploadVideo({
-        videoPath: render.videoPath,
-        title: script.title,
-        description: `${script.hookText}\n\n#Shorts #Engineering #History #Documentary`,
-        tags: topic.tags,
-        privacyStatus: 'private',
-      });
-
-      const publishJob: PublishJob = {
-        id: randomUUID(),
-        renderId: render.id,
-        platform: 'YOUTUBE',
-        youtubeVideoId: uploadResult.youtubeVideoId,
-        privacyStatus: 'private',
-        title: script.title,
-        description: script.hookText,
-        tags: topic.tags,
-        status: 'UPLOADED',
-        publishedAt: new Date().toISOString(),
-      };
-      await repo.savePublishJob(publishJob);
-      ContentStateMachine.transition('UPLOADING', 'PUBLISHED', { renderId: render.id });
-      await repo.updateTopicState(topic.id, 'PUBLISHED');
-
-      console.log(`  ✓ YouTube Staging Complete:`);
-      console.log(`     • Video ID: ${uploadResult.youtubeVideoId}`);
-      console.log(`     • Watch URL: ${uploadResult.watchUrl}`);
-      console.log(`     • Privacy: private (Ready for Director launch)`);
-
-      // 12. ANALYTICS & LEARNING
-      console.log('\n[LEARNING LOOP] Ingesting performance feedback...');
-      const metrics = await providers.youtube.getVideoAnalytics(uploadResult.youtubeVideoId);
-      const analyticsRecord = {
-        id: randomUUID(),
-        youtubeVideoId: uploadResult.youtubeVideoId,
-        renderId: render.id,
-        topicId: topic.id,
-        pillar: topic.pillar,
-        templateType: render.templateType,
-        views: metrics.views || 0,
-        likes: metrics.likes || 0,
-        comments: metrics.comments || 0,
-        shares: metrics.shares || 0,
-        subscribersGained: metrics.subscribersGained || 0,
-        retentionRate: metrics.retentionRate || 0,
-        averageViewDurationSeconds: metrics.averageViewDurationSeconds || 0,
-        recordedAt: new Date().toISOString(),
-      };
-      await repo.saveAnalytics(analyticsRecord);
-
-      const feedback = await analyticsAgent.analyzePerformance([analyticsRecord]);
-      console.log(`  ✓ Recommendation: ${feedback.recommendations[0]}`);
-
-      console.log('\n==================================================================');
-      console.log('   🎉 PIPELINE RUN SUCCEEDED — 100% MVP LOOP OPERATIONAL!       ');
-      console.log('==================================================================\n');
-    } catch (err) {
-      console.error('\n❌ PIPELINE EXECUTION FAILED:', err);
-      process.exit(1);
+program
+  .command('jobs')
+  .description('List jobs')
+  .addOption(modeOption())
+  .addOption(new Option('--state <state>').choices(JobStateSchema.options))
+  .action(async (o) => {
+    const repo = await openRepo(configForMode(getConfig(), resolveMode(getConfig(), o.mode)));
+    for (const j of await repo.listJobs(o.state)) {
+      console.log(`${j.id.slice(0, 8)}  ${j.mode.padEnd(4)}  ${j.state.padEnd(24)}  ${j.updatedAt}${j.state === 'FAILED' ? `  ${j.failedStage}: ${j.errorKind}` : ''}`);
     }
   });
 
-program.parse(process.argv);
+program
+  .command('job <jobId>')
+  .description('Show a detailed job report (JSON)')
+  .addOption(modeOption())
+  .action(async (id, o) => {
+    const mode = resolveMode(getConfig(), o.mode);
+    const cfg = configForMode(getConfig(), mode);
+    const repo = await openRepo(cfg);
+    const jobId = await resolveJobId(repo, id);
+    const runner = new PipelineRunner(cfg, repo, { mode });
+    console.log(JSON.stringify(await runner.report(jobId), null, 2));
+  });
+
+program
+  .command('discover')
+  .description('Discover and store novel topic candidates')
+  .addOption(modeOption())
+  .addOption(new Option('--pillar <pillar>').choices(CONTENT_PILLARS))
+  .option('--count <n>', 'number of topics', '3')
+  .action(async (o) => {
+    const { runner } = await setup(o.mode);
+    const res = await runner.discover(o.pillar, Number(o.count));
+    console.log(`Requested ${res.requested}, stored ${res.topics.length}${res.shortfall ? ` (SHORTFALL ${res.shortfall})` : ''}`);
+    for (const t of res.topics) console.log(`  + [${t.id.slice(0, 8)}] ${t.title} (${t.pillar})`);
+    for (const r of res.rejected) console.log(`  - ${r.title}: ${r.reason}`);
+  });
+
+program
+  .command('doctor')
+  .description('Check configuration, tools, fonts and credentials without calling paid APIs')
+  .addOption(modeOption())
+  .action(async (o) => {
+    const mode = resolveMode(getConfig(), o.mode);
+    const cfg = configForMode(getConfig(), mode);
+    const problems: string[] = [];
+    for (const [bin, label] of [[cfg.FFMPEG_PATH, 'ffmpeg'], [cfg.FFPROBE_PATH, 'ffprobe']] as const) {
+      try {
+        const r = await runProcess(bin, ['-version'], { timeoutMs: 10_000 });
+        console.log(`✓ ${label}: ${r.stdout.split('\n')[0]}`);
+      } catch {
+        problems.push(`${label} not runnable (${bin})`);
+      }
+    }
+    if (fs.existsSync(cfg.captionFontFile)) console.log(`✓ caption font: ${cfg.captionFontFile}`);
+    else problems.push(`caption font missing: ${cfg.captionFontFile}`);
+    if (mode === 'live') {
+      const missing = missingLiveCredentials(cfg);
+      if (missing.length) problems.push(`missing live credentials: ${missing.join(', ')}`);
+      else console.log(`✓ live credentials present for LLM=${cfg.LLM_PROVIDER}, search=${cfg.SEARCH_PROVIDER}, tts=${cfg.TTS_PROVIDER}, assets=${cfg.ASSET_PROVIDER}, publish=${cfg.PUBLISH_TARGET}`);
+    }
+    console.log(`✓ approval policy: idea=${cfg.APPROVAL_IDEA}, script=${cfg.APPROVAL_SCRIPT}, final=${cfg.APPROVAL_FINAL}`);
+    await openRepo(cfg);
+    console.log(`✓ database ready (${cfg.USE_SQLITE_FALLBACK ? cfg.sqlitePath : 'postgres'})`);
+    if (problems.length) {
+      for (const p of problems) console.log(`✗ ${p}`);
+      process.exitCode = 1;
+    }
+  });
+
+program
+  .command('schedule')
+  .description('Unattended loop: resume retryable failures, then start new jobs up to a daily cap')
+  .addOption(modeOption())
+  .option('--interval-minutes <n>', 'minutes between ticks', '60')
+  .option('--max-per-day <n>', 'maximum new jobs per rolling 24h', '1')
+  .option('--max-attempts <n>', 'maximum automatic resumes per job', '3')
+  .addOption(new Option('--pillar <pillar>').choices(CONTENT_PILLARS))
+  .option('--once', 'run a single tick and exit', false)
+  .action(async (o) => {
+    const { repo, runner } = await setup(o.mode);
+    const tick = async () => {
+      for (const j of await repo.listJobs('FAILED', 50)) {
+        if (j.mode !== runner.mode || !j.retryable || j.attempts >= Number(o.maxAttempts) || j.failedStage === 'PUBLISHING') continue;
+        logger.info(`schedule: resuming retryable job ${j.id}`, { jobId: j.id });
+        printJob(await runner.resume(j.id, { pillar: o.pillar }).catch((e) => { logger.error('resume failed', e); return j; }));
+      }
+      const since = new Date(Date.now() - 24 * 3600 * 1000).toISOString();
+      if ((await repo.countJobsCreatedSince(since)) < Number(o.maxPerDay)) {
+        const job = await runner.createJob();
+        printJob(await runner.run(job.id, { pillar: o.pillar }));
+      } else {
+        logger.info('schedule: daily job cap reached');
+      }
+    };
+    await tick();
+    if (o.once) return;
+    const ms = Number(o.intervalMinutes) * 60_000;
+    // eslint-disable-next-line no-constant-condition
+    while (true) {
+      await new Promise((r) => setTimeout(r, ms));
+      await tick().catch((e) => logger.error('schedule tick failed', e));
+    }
+  });
+
+program.parseAsync(process.argv).catch((err) => {
+  const msg = err instanceof PipelineError ? `${err.kind}: ${err.message}` : (err as Error).message;
+  logger.error(msg);
+  if (err instanceof ValidationError && err.violations.length) for (const v of err.violations) process.stderr.write(`  - ${v}\n`);
+  process.exitCode = 1;
+});
