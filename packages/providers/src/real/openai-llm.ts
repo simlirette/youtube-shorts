@@ -1,80 +1,62 @@
-import { LLMProvider, LLMGenerateOptions } from '../interfaces.js';
-import { TopicCandidate, TopicScore, ResearchPacket, StoryOutline, ShortScript, ContentPillar } from '@shorts/schemas';
+import { ConfigurationError, InvalidResponseError, httpJson } from '@shorts/core';
+import type { ProviderContext } from '../interfaces.js';
+import { RawCompletion, StructuredLLMBase, requireNonEmpty } from '../llm-base.js';
 
-export class OpenAILLMProvider implements LLMProvider {
-  name = 'OpenAILLMProvider';
-  private apiKey: string;
-  private model: string;
+interface ChatCompletionResponse {
+  model?: string;
+  choices?: Array<{ finish_reason?: string; message?: { content?: string | null; refusal?: string | null } }>;
+  usage?: { prompt_tokens?: number; completion_tokens?: number };
+}
 
-  constructor(apiKey?: string, model: string = 'gpt-4o') {
-    this.apiKey = apiKey || process.env.OPENAI_API_KEY || '';
-    this.model = model;
+export class OpenAILLMProvider extends StructuredLLMBase {
+  readonly name = 'openai';
+
+  constructor(
+    private readonly apiKey: string,
+    readonly model: string,
+    private readonly opts: { timeoutMs: number; maxAttempts: number },
+    ctx: ProviderContext = {}
+  ) {
+    super(ctx);
+    if (!apiKey) throw new ConfigurationError('OPENAI_API_KEY is required for the OpenAI provider');
   }
 
-  private ensureConfigured(): void {
-    if (!this.apiKey) {
-      throw new Error('OpenAI request failed: missing OPENAI_API_KEY in environment or .env');
-    }
-  }
-
-  async generateText(prompt: string, options?: LLMGenerateOptions): Promise<string> {
-    this.ensureConfigured();
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${this.apiKey}`,
+  protected async complete(system: string, user: string, o: { temperature: number; maxTokens: number; model: string; task: string }): Promise<RawCompletion> {
+    const res = await httpJson<ChatCompletionResponse>(
+      'https://api.openai.com/v1/chat/completions',
+      {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${this.apiKey}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model: o.model,
+          messages: [
+            { role: 'system', content: system },
+            { role: 'user', content: user },
+          ],
+          temperature: o.temperature,
+          max_tokens: o.maxTokens,
+          response_format: { type: 'json_object' },
+        }),
       },
-      body: JSON.stringify({
-        model: this.model,
-        messages: [
-          ...(options?.systemPrompt ? [{ role: 'system', content: options.systemPrompt }] : []),
-          { role: 'user', content: prompt },
-        ],
-        temperature: options?.temperature ?? 0.7,
-        max_tokens: options?.maxTokens ?? 1500,
-      }),
-    });
-
-    if (!response.ok) {
-      const err = await response.text();
-      throw new Error(`OpenAI API error (${response.status}): ${err}`);
-    }
-
-    const data = await response.json();
-    return data.choices?.[0]?.message?.content || '';
-  }
-
-  async generateJSON<T>(prompt: string, schemaDescription: string, options?: LLMGenerateOptions): Promise<T> {
-    const raw = await this.generateText(
-      `${prompt}\n\nRespond ONLY with valid JSON conforming to this schema:\n${schemaDescription}`,
-      { ...options, responseFormat: 'json' }
+      {
+        provider: this.name,
+        operation: `chat.completions:${o.task}`,
+        timeoutMs: this.opts.timeoutMs,
+        maxAttempts: this.opts.maxAttempts,
+        fetchImpl: this.ctx.fetchImpl,
+        sleep: this.ctx.sleep,
+      }
     );
-    return JSON.parse(raw) as T;
-  }
-
-  async generateTopicCandidates(_pillar?: ContentPillar, _count?: number): Promise<TopicCandidate[]> {
-    this.ensureConfigured();
-    throw new Error('OpenAILLMProvider.generateTopicCandidates: real provider call not yet invoked');
-  }
-
-  async scoreTopic(_topic: TopicCandidate): Promise<TopicScore> {
-    this.ensureConfigured();
-    throw new Error('OpenAILLMProvider.scoreTopic: real provider call not yet invoked');
-  }
-
-  async conductResearch(_topic: TopicCandidate): Promise<ResearchPacket> {
-    this.ensureConfigured();
-    throw new Error('OpenAILLMProvider.conductResearch: real provider call not yet invoked');
-  }
-
-  async developStory(_topic: TopicCandidate, _research: ResearchPacket): Promise<StoryOutline> {
-    this.ensureConfigured();
-    throw new Error('OpenAILLMProvider.developStory: real provider call not yet invoked');
-  }
-
-  async writeScript(_story: StoryOutline, _research: ResearchPacket): Promise<ShortScript> {
-    this.ensureConfigured();
-    throw new Error('OpenAILLMProvider.writeScript: real provider call not yet invoked');
+    const choice = res.data.choices?.[0];
+    if (!choice) throw new InvalidResponseError(this.name, 'response contained no choices');
+    if (choice.message?.refusal) throw new InvalidResponseError(this.name, `model refused: ${choice.message.refusal}`);
+    return {
+      text: requireNonEmpty(this.name, choice.message?.content, 'completion content'),
+      inputTokens: res.data.usage?.prompt_tokens ?? 0,
+      outputTokens: res.data.usage?.completion_tokens ?? 0,
+      model: res.data.model ?? o.model,
+      finishReason: choice.finish_reason,
+      httpAttempts: res.attempts,
+    };
   }
 }

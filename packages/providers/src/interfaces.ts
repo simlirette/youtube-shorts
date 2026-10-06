@@ -1,40 +1,78 @@
-import {
-  TopicCandidate,
-  TopicScore,
-  ResearchPacket,
-  StoryOutline,
-  ShortScript,
-  AssetDescriptor,
-  VoiceNarration,
-  PublishJob,
-  AnalyticsRecord,
-  ContentPillar,
-} from '@shorts/schemas';
+import type { z } from 'zod';
+import type { AssetCandidate, AssetType, PipelineMode, PublishTarget, YouTubeMetadata } from '@shorts/schemas';
+import type { FetchLike } from '@shorts/core';
 
 // =============================================================================
-// LLM PROVIDER
+// OBSERVABILITY
 // =============================================================================
 
-export interface LLMGenerateOptions {
-  systemPrompt?: string;
+export interface ProviderCallReport {
+  provider: string;
+  operation: string;
+  status: 'OK' | 'ERROR';
+  attempts: number;
+  durationMs: number;
+  costUsd: number;
+  units?: Record<string, number>;
+  error?: string;
+}
+
+export type ProviderObserver = (report: ProviderCallReport) => void;
+
+/** Shared construction context for every provider implementation. */
+export interface ProviderContext {
+  observer?: ProviderObserver;
+  /** Injected for tests; defaults to global fetch. */
+  fetchImpl?: FetchLike;
+  /** Injected for tests to avoid real backoff waits. */
+  sleep?: (ms: number) => Promise<void>;
+}
+
+// =============================================================================
+// LLM
+// =============================================================================
+
+export interface LLMUsage {
+  inputTokens: number;
+  outputTokens: number;
+  estimatedCostUsd: number;
+}
+
+export interface LLMResponse<T> {
+  content: T;
+  usage: LLMUsage;
+  model: string;
+  durationMs: number;
+  /** Number of model completions requested (validation re-prompts included). */
+  attempts: number;
+}
+
+export interface StructuredRequest<T> {
+  /** Stable task name used for logs, cost attribution and mock routing. */
+  task: string;
+  system: string;
+  prompt: string;
+  /** Human-readable description of the JSON shape shown to the model. */
+  schemaHint: string;
+  /** Structural contract; the response must parse. */
+  schema: z.ZodType<T, z.ZodTypeDef, unknown>;
+  /** Semantic contract; non-empty result triggers a corrective re-prompt. */
+  validate?: (value: T) => string[] | Promise<string[]>;
+  /** Total completions allowed for structural + semantic validation failures (default 2). */
+  maxValidationAttempts?: number;
   temperature?: number;
   maxTokens?: number;
-  responseFormat?: 'text' | 'json';
+  model?: string;
 }
 
 export interface LLMProvider {
-  name: string;
-  generateText(prompt: string, options?: LLMGenerateOptions): Promise<string>;
-  generateJSON<T>(prompt: string, schemaDescription: string, options?: LLMGenerateOptions): Promise<T>;
-  generateTopicCandidates(pillar?: ContentPillar, count?: number): Promise<TopicCandidate[]>;
-  scoreTopic(topic: TopicCandidate): Promise<TopicScore>;
-  conductResearch(topic: TopicCandidate): Promise<ResearchPacket>;
-  developStory(topic: TopicCandidate, research: ResearchPacket): Promise<StoryOutline>;
-  writeScript(story: StoryOutline, research: ResearchPacket): Promise<ShortScript>;
+  readonly name: string;
+  readonly model: string;
+  generateStructured<T>(req: StructuredRequest<T>): Promise<LLMResponse<T>>;
 }
 
 // =============================================================================
-// SEARCH PROVIDER
+// SEARCH
 // =============================================================================
 
 export interface SearchResultItem {
@@ -43,93 +81,129 @@ export interface SearchResultItem {
   snippet: string;
   sourceDomain: string;
   publishedDate?: string;
+  /** Full cleaned page text when the provider returns it. */
+  rawContent?: string;
+}
+
+export interface SearchOptions {
+  maxResults: number;
+  includeRawContent: boolean;
 }
 
 export interface SearchProvider {
-  name: string;
-  search(query: string, maxResults?: number): Promise<SearchResultItem[]>;
+  readonly name: string;
+  search(query: string, opts: SearchOptions): Promise<SearchResultItem[]>;
+}
+
+export interface RetrievedSourceContent {
+  url: string;
+  title: string;
+  cleanText: string;
+  contentLength: number;
+  statusCode: number;
+  retrievedAt: string;
+  error?: string;
+}
+
+/** Fetches full page text when a search result lacks it. Failures are returned as data. */
+export interface PageRetriever {
+  retrieveUrl(url: string): Promise<RetrievedSourceContent>;
 }
 
 // =============================================================================
-// TTS PROVIDER
+// TTS
 // =============================================================================
 
-export interface TTSOptions {
+export interface TTSRequest {
+  text: string;
   voiceId?: string;
-  speed?: number; // 1.0 = normal
-  pitch?: number;
+}
+
+export interface CharacterAlignment {
+  characters: string[];
+  startTimes: number[];
+  endTimes: number[];
+}
+
+export interface TTSResult {
+  provider: string;
+  voiceId: string;
+  modelId: string;
+  /** Encoded audio exactly as returned by the provider. */
+  audio: Buffer;
+  audioExtension: 'mp3' | 'wav';
+  /** Character-level timing for the submitted text. Required: no timing is ever fabricated. */
+  alignment: CharacterAlignment;
 }
 
 export interface TTSProvider {
-  name: string;
-  synthesizeSpeech(
-    scriptId: string,
-    narrationText: string,
-    outputFilePath: string,
-    options?: TTSOptions
-  ): Promise<VoiceNarration>;
+  readonly name: string;
+  readonly voiceId: string;
+  readonly modelId: string;
+  /** Identifies voice settings that change the audio (part of the TTS cache key). */
+  readonly settingsKey: string;
+  synthesize(req: TTSRequest): Promise<TTSResult>;
 }
 
 // =============================================================================
-// IMAGE / VIDEO / ASSET PROVIDER
+// STOCK MEDIA
 // =============================================================================
 
-export interface ImageGenerateOptions {
-  width: number;
-  height: number;
-  style?: string;
+export interface AssetSearchRequest {
+  query: string;
+  mediaType: AssetType;
+  /** Upper bound on results requested from the provider. */
+  perPage?: number;
 }
 
-export interface ImageProvider {
-  name: string;
-  generateImage(prompt: string, outputPath: string, options?: ImageGenerateOptions): Promise<AssetDescriptor>;
-}
-
-export interface VideoProvider {
-  name: string;
-  generateVideo(prompt: string, outputPath: string, durationSeconds: number): Promise<AssetDescriptor>;
+export interface AssetDownloadResult {
+  path: string;
+  bytes: number;
+  sha256: string;
+  contentType: string;
 }
 
 export interface AssetProvider {
-  name: string;
-  searchStockAssets(
-    keywords: string[],
-    assetType: 'IMAGE' | 'VIDEO',
-    sceneNumber?: number
-  ): Promise<AssetDescriptor[]>;
-  acquireAsset(
-    sourceUrl: string,
-    destinationPath: string,
-    metadata: Partial<AssetDescriptor>
-  ): Promise<AssetDescriptor>;
+  readonly name: string;
+  /** Normalized candidates (nothing downloaded). Empty array = no results; errors throw. */
+  search(req: AssetSearchRequest): Promise<AssetCandidate[]>;
+  /** Download a candidate's rendition to `destPath`. Validation is performed by the caller. */
+  download(candidate: AssetCandidate, destPath: string): Promise<AssetDownloadResult>;
 }
 
 // =============================================================================
-// STORAGE PROVIDER
+// PUBLISHING
 // =============================================================================
 
-export interface StorageProvider {
-  name: string;
-  save(localSourcePath: string, targetKey: string): Promise<string>; // Returns accessible URI or local path
-  get(targetKey: string): Promise<string>;
-  delete(targetKey: string): Promise<void>;
-}
-
-// =============================================================================
-// YOUTUBE PUBLISHING PROVIDER
-// =============================================================================
-
-export interface YouTubeUploadParams {
+export interface PublishRequest {
+  jobId: string;
   videoPath: string;
-  title: string;
-  description: string;
-  tags: string[];
-  privacyStatus: 'private' | 'unlisted' | 'public';
+  metadata: YouTubeMetadata;
 }
 
-export interface YouTubeProvider {
-  name: string;
-  uploadVideo(params: YouTubeUploadParams): Promise<{ youtubeVideoId: string; watchUrl: string }>;
-  getVideoAnalytics(youtubeVideoId: string): Promise<Partial<AnalyticsRecord>>;
-  verifyAuthentication(): Promise<boolean>;
+export interface PublishResult {
+  externalId: string;
+  url: string;
+}
+
+export interface Publisher {
+  readonly name: string;
+  readonly target: PublishTarget;
+  publish(req: PublishRequest): Promise<PublishResult>;
+}
+
+// =============================================================================
+// BUNDLE
+// =============================================================================
+
+export interface ProviderBundle {
+  mode: PipelineMode;
+  llm: LLMProvider;
+  /** Model used for claim entailment / content review (may equal `llm`). */
+  verifierLlm: LLMProvider;
+  search: SearchProvider;
+  retriever: PageRetriever;
+  tts: TTSProvider;
+  assets: AssetProvider;
+  publisher: Publisher;
 }

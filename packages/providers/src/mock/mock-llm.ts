@@ -1,281 +1,155 @@
-import { randomUUID } from 'node:crypto';
-import {
-  TopicCandidate,
-  TopicScore,
-  ResearchPacket,
-  StoryOutline,
-  ShortScript,
-  ContentPillar,
-} from '@shorts/schemas';
-import { LLMProvider, LLMGenerateOptions } from '../interfaces.js';
+import type { ProviderContext } from '../interfaces.js';
+import { RawCompletion, StructuredLLMBase } from '../llm-base.js';
 
-export class MockLLMProvider implements LLMProvider {
-  name = 'MockLLMProvider';
+const TOPIC_POOL = [
+  { title: 'Why the Millennium Bridge Wobbled on Opening Day', premise: 'London opened a new footbridge in 2000 and closed it two days later because walkers made it sway.', pillar: 'ENGINEERING', tags: ['bridge', 'london', 'resonance'] },
+  { title: 'The Molasses Flood That Swept Through Boston', premise: 'A storage tank burst in 1919 and released a wave of molasses through a Boston neighborhood.', pillar: 'STRANGE_REAL_WORLD', tags: ['boston', 'disaster'] },
+  { title: 'How a Unit Mix-Up Destroyed a Mars Orbiter', premise: 'A navigation team used imperial units while another used metric, and the spacecraft was lost.', pillar: 'SCIENCE', tags: ['space', 'nasa'] },
+  { title: 'The Citicorp Tower Flaw Fixed in Secret', premise: 'An engineering student question revealed a skyscraper could topple in strong winds.', pillar: 'ENGINEERING', tags: ['skyscraper', 'wind'] },
+  { title: 'The Coca-Cola Formula Change That Backfired', premise: 'In 1985 Coca-Cola replaced its recipe and reversed course within three months.', pillar: 'BUSINESS', tags: ['marketing', 'soda'] },
+  { title: 'How the Hyatt Regency Walkway Design Change Failed', premise: 'A late change to a hanger rod connection doubled the load it had to carry.', pillar: 'ENGINEERING', tags: ['structures'] },
+  { title: 'The Leaning Tower of Pisa Stabilization Project', premise: 'Engineers removed soil from under the tower to reduce its lean without toppling it.', pillar: 'ENGINEERING', tags: ['tower', 'soil'] },
+  { title: 'Why the Vasa Warship Sank on Its Maiden Voyage', premise: 'A top-heavy Swedish warship capsized within minutes of leaving the harbor in 1628.', pillar: 'STRANGE_REAL_WORLD', tags: ['ship', 'history'] },
+  { title: 'The Accidental Discovery of Penicillin Mold', premise: 'A contaminated culture dish revealed a mold that stopped bacteria from growing.', pillar: 'SCIENCE', tags: ['medicine'] },
+  { title: 'How Sony Lost the Videotape Format War', premise: 'Betamax had a head start but VHS won on recording time and licensing.', pillar: 'TECHNOLOGY', tags: ['video', 'format war'] },
+  { title: 'The Great Stink That Forced London Sewers', premise: 'A hot summer made the Thames smell so bad that Parliament funded a sewer network.', pillar: 'STRANGE_REAL_WORLD', tags: ['london', 'sanitation'] },
+  { title: 'How the Apollo Thirteen Crew Fixed Their Air', premise: 'Engineers on the ground improvised a carbon dioxide filter from spacecraft parts.', pillar: 'SCIENCE', tags: ['space'] },
+];
 
-  async generateText(prompt: string, _options?: LLMGenerateOptions): Promise<string> {
-    return `Mock LLM response for: ${prompt.slice(0, 50)}...`;
+const HOOKS = ['Nobody saw this coming.', 'It failed almost immediately.', 'One detail changed everything.', 'The fix took two years.', 'Engineers were baffled.', 'This should never have happened.'];
+
+const FILLER =
+  'Nobody expected the crowd itself to become the problem. Every step pushed a little harder, and the motion fed on itself. ' +
+  'It was a lesson written in steel and footsteps, and engineers around the world took careful notes about what happened next.';
+
+function words(text: string): string[] {
+  return text.trim().split(/\s+/).filter(Boolean);
+}
+
+/**
+ * Deterministic task-routed LLM for mock mode. It reads the same prompts a real model receives and
+ * produces contract-conforming JSON (quotes are copied from the provided sources, never invented).
+ */
+export class MockLLMProvider extends StructuredLLMBase {
+  readonly name = 'mock-llm';
+  readonly model = 'mock-llm-1';
+
+  constructor(ctx: ProviderContext = {}, private readonly overrides: Partial<Record<string, (prompt: string) => unknown>> = {}) {
+    super(ctx);
   }
 
-  async generateJSON<T>(prompt: string, _schemaDescription: string, _options?: LLMGenerateOptions): Promise<T> {
-    return { status: 'mock_json', promptSummary: prompt.slice(0, 30) } as T;
+  protected async complete(_system: string, user: string, o: { task: string; model: string }): Promise<RawCompletion> {
+    const override = this.overrides[o.task];
+    const content = override ? override(user) : this.route(o.task, user);
+    return { text: JSON.stringify(content), inputTokens: Math.ceil(user.length / 4), outputTokens: 200, model: this.model, httpAttempts: 1 };
   }
 
-  async generateTopicCandidates(pillar: ContentPillar = 'ENGINEERING', count: number = 3): Promise<TopicCandidate[]> {
-    const now = new Date().toISOString();
-    const candidates: Record<ContentPillar, Omit<TopicCandidate, 'id' | 'discoveredAt'>[]> = {
-      ENGINEERING: [
-        {
-          title: 'The Millennium Bridge Wobbly Problem',
-          premise: 'In 2000, London opened a $25M pedestrian bridge that began swaying violently within hours—not because of wind, but because pedestrians instinctively adjusted their steps in sync with the sway.',
-          pillar: 'ENGINEERING',
-          sourceUrls: ['https://www.nature.com/articles/35041703', 'https://www.arup.com/projects/millennium-bridge'],
-          tags: ['bridges', 'physics', 'synchronous lateral excitation', 'engineering failures'],
-          state: 'DISCOVERED',
-        },
-        {
-          title: 'The Soviet Submarine That Saved The World',
-          premise: 'During the 1962 Cuban Missile Crisis, Vasili Arkhipov refused to launch a nuclear torpedo despite two other commanding officers voting yes.',
-          pillar: 'ENGINEERING',
-          sourceUrls: ['https://nsarchive2.gwu.edu/nsa/cuba_mis_cri/'],
-          tags: ['cold war', 'submarine', 'nuclear', 'history'],
-          state: 'DISCOVERED',
-        },
-      ],
-      BUSINESS: [
-        {
-          title: 'Why Blockbuster Really Rejected Netflix for $50 Million',
-          premise: 'In 2000, Netflix offered to sell itself to Blockbuster for $50M. Blockbuster leadership laughed them out of the boardroom not from arrogance, but because late fees accounted for $800M of their profit.',
-          pillar: 'BUSINESS',
-          sourceUrls: ['https://hbr.org/2011/04/why-blockbuster-failed'],
-          tags: ['netflix', 'blockbuster', 'business strategy', 'disruption'],
-          state: 'DISCOVERED',
-        },
-      ],
-      TECHNOLOGY: [
-        {
-          title: 'The Bug That Nearly Launched World War III in 1983',
-          premise: 'Stanislav Petrov received an alert that 5 US nuclear ICBMs were airborne. He deduced it was a false alarm caused by rare sun-cloud reflections detected by Soviet satellite sensors.',
-          pillar: 'TECHNOLOGY',
-          sourceUrls: ['https://www.armscontrol.org/act/2004-09/features/stanislav-petrov-man-who-averted-nuclear-war'],
-          tags: ['satellites', 'false alarms', 'cold war', 'tech flaws'],
-          state: 'DISCOVERED',
-        },
-      ],
-      SCIENCE: [
-        {
-          title: 'The Accidental Discovery of Cosmic Microwave Radiation',
-          premise: 'In 1964, Penzias and Wilson detected an inescapable hum in their antenna. They cleaned out pigeon droppings before realizing they were hearing the echo of the Big Bang.',
-          pillar: 'SCIENCE',
-          sourceUrls: ['https://www.nobelprize.org/prizes/physics/1978/penzias/facts/'],
-          tags: ['cosmology', 'astronomy', 'big bang', 'serendipity'],
-          state: 'DISCOVERED',
-        },
-      ],
-      STRANGE_REAL_WORLD: [
-        {
-          title: 'The Great Boston Molasses Flood of 1919',
-          premise: 'A 50-foot steel tank burst in Boston, sending a 25-foot wave of hot molasses tearing through streets at 35 miles per hour.',
-          pillar: 'STRANGE_REAL_WORLD',
-          sourceUrls: ['https://www.scientificamerican.com/article/the-science-of-the-great-molasses-flood/'],
-          tags: ['history', 'disasters', 'fluid dynamics', 'bizarre'],
-          state: 'DISCOVERED',
-        },
-      ],
-    };
-
-    const pool = candidates[pillar] || candidates.ENGINEERING;
-    return pool.slice(0, count).map((item) => ({
-      ...item,
-      id: randomUUID(),
-      discoveredAt: now,
-    }));
-  }
-
-  async scoreTopic(topic: TopicCandidate): Promise<TopicScore> {
-    const isWobblyBridge = topic.title.includes('Bridge') || topic.title.includes('Millennium');
-    return {
-      id: randomUUID(),
-      topicId: topic.id,
-      overallScore: isWobblyBridge ? 92 : 88,
-      curiosity: 9.5,
-      audiencePotential: 9.0,
-      originality: 8.8,
-      storyDepth: 9.0,
-      visualPotential: 9.2,
-      sourceAvailability: 9.5,
-      freshness: 8.0,
-      productionComplexity: 4.0, // balanced
-      copyrightRisk: 1.0,        // very safe
-      repetitionRisk: 1.5,       // distinct
-      monetizationRisk: 0.5,     // clean educational history
-      reasoning: 'Highly visual engineering mystery with clear before/after mechanics and universal appeal. Low policy risk.',
-      passGate: true,
-      scoredAt: new Date().toISOString(),
-    };
-  }
-
-  async conductResearch(topic: TopicCandidate): Promise<ResearchPacket> {
-    const researchId = randomUUID();
-    const source1Id = randomUUID();
-    const source2Id = randomUUID();
-    const claim1Id = randomUUID();
-    const claim2Id = randomUUID();
-    const claim3Id = randomUUID();
-
-    return {
-      id: researchId,
-      topicId: topic.id,
-      title: topic.title,
-      summary: 'Thorough investigation into London Millennium Bridge lateral resonance failure and subsequent damping retrofit.',
-      keyEntities: ['London Millennium Bridge', 'Arup Engineering', 'Synchronous Lateral Excitation', 'TMD Dampers'],
-      uncertaintyNotes: ['Initial reports blamed wind vortex shedding before full dynamic sensor instrumentation.'],
-      researchedAt: new Date().toISOString(),
-      sources: [
-        {
-          id: source1Id,
-          url: 'https://www.nature.com/articles/35041703',
-          title: 'Crowd synchrony on the Millennium Bridge',
-          publisher: 'Nature Publishing Group',
-          publishDate: '2005-11-03',
-          credibilityTier: 'PEER_REVIEWED',
-          retrievedAt: new Date().toISOString(),
-        },
-        {
-          id: source2Id,
-          url: 'https://www.arup.com/projects/millennium-bridge',
-          title: 'Millennium Bridge Dynamic Stabilization Case Study',
-          publisher: 'Arup Group',
-          publishDate: '2001-05-15',
-          credibilityTier: 'PRIMARY_SOURCE',
-          retrievedAt: new Date().toISOString(),
-        },
-      ],
-      claims: [
-        {
-          id: claim1Id,
-          text: 'The Millennium Bridge opened in London in June 2000 and was closed after just two days due to excessive swaying.',
-          entity: 'London Millennium Bridge',
-          sourceId: source2Id,
-          sourceCitation: 'Arup Technical Case Study (2001), Section 1',
-          confidence: 0.99,
-          isKeyFact: true,
-          verified: true,
-        },
-        {
-          id: claim2Id,
-          text: 'The swaying was caused by synchronous lateral excitation: pedestrians naturally matched their footsteps to the sway frequency.',
-          entity: 'Synchronous Lateral Excitation',
-          sourceId: source1Id,
-          sourceCitation: 'Nature 438, 43–44 (2005)',
-          confidence: 0.98,
-          isKeyFact: true,
-          verified: true,
-        },
-        {
-          id: claim3Id,
-          text: 'Engineers installed 91 fluid viscous dampers and tuned mass dampers costing $8.9M to fix the bridge permanently.',
-          entity: 'Arup Engineering',
-          sourceId: source2Id,
-          sourceCitation: 'Arup Technical Case Study (2001), Section 4',
-          confidence: 0.95,
-          isKeyFact: true,
-          verified: true,
-        },
-      ],
-    };
-  }
-
-  async developStory(topic: TopicCandidate, _research: ResearchPacket): Promise<StoryOutline> {
-    return {
-      id: randomUUID(),
-      topicId: topic.id,
-      logline: 'How London built a $25M futuristic bridge that opened on Monday—and had to be shut down on Wednesday because walking on it made everyone unconsciously break it.',
-      centralConflict: 'Modern suspension design met unintended collective human biology.',
-      hookConcept: 'The bridge designed so well that human footsteps broke it.',
-      targetDurationSeconds: 45,
-      narrativeArc: {
-        hook: 'In 2000, London spent $25 million building this futuristic bridge. Within 48 hours, they had to shut it down.',
-        context: 'Engineers tested it against hurricane-force winds and massive loads. Nothing was broken.',
-        development: 'Yet as soon as thousands stepped on it, the deck swung side to side like a boat in rough seas.',
-        twist: 'The flaw wasn’t the steel or the cables. It was human psychology: when people felt a micro-wobble, they widened their stance and stepped in unison, amplifying the frequency 100 times.',
-        payoff: 'It took 91 giant shock absorbers hidden under the deck to silence the wobble forever.',
-      },
-      createdAt: new Date().toISOString(),
-    };
-  }
-
-  async writeScript(story: StoryOutline, research: ResearchPacket): Promise<ShortScript> {
-    const [c1, c2, c3] = research.claims;
-    const scriptId = randomUUID();
-
-    return {
-      id: scriptId,
-      storyId: story.id,
-      topicId: story.topicId,
-      title: 'Why London’s $25M Bridge Swayed Like a Boat',
-      hookText: 'In 2000, London opened a $25 million bridge. Two days later, they had to shut it down.',
-      targetDurationSeconds: 45,
-      totalWords: 115,
-      estimatedDurationSeconds: 45,
-      createdAt: new Date().toISOString(),
-      scenes: [
-        {
-          sceneNumber: 1,
-          startTime: 0,
-          endTime: 8,
-          durationSeconds: 8,
-          narration: 'In June 2000, London opened this futuristic twenty-five million dollar bridge. Forty-eight hours later, it was shut down.',
-          visualObjective: 'Show wide majestic shot of London Millennium Bridge crossing the Thames with crowds.',
-          mediaFormat: 'LICENSED_STOCK',
-          assetKeywords: ['london', 'millennium bridge', 'thames', 'suspension bridge'],
-          visualPrompt: 'Cinematic wide shot of London Millennium bridge over Thames river, dramatic sky, documentary tone',
-          textOverlay: 'OPENED: JUNE 2000\nCLOSED: 48 HOURS LATER',
-          transitionIntent: 'CUT',
-          claimIds: [c1.id],
-        },
-        {
-          sceneNumber: 2,
-          startTime: 8,
-          endTime: 20,
-          durationSeconds: 12,
-          narration: 'Engineers had tested for high winds and heavy loads. But the moment thousands of pedestrians walked across, the deck began violently swaying sideways.',
-          visualObjective: 'Show vintage archive footage or diagram of bridge swinging laterally with pedestrians losing balance.',
-          mediaFormat: 'HISTORICAL_IMAGE',
-          assetKeywords: ['bridge sway', 'pedestrians walking', 'resonance test'],
-          visualPrompt: 'Historical documentary photo of pedestrians holding rails of swaying bridge in London',
-          textOverlay: 'LATERAL RESONANCE',
-          transitionIntent: 'CUT',
-          claimIds: [c1.id],
-        },
-        {
-          sceneNumber: 3,
-          startTime: 20,
-          endTime: 33,
-          durationSeconds: 13,
-          narration: 'The flaw wasn’t the steel. It was human reflex: when people felt the slightest tilt, they unconsciously adjusted their stride to steady themselves—stepping in perfect sync.',
-          visualObjective: 'Show dynamic animated diagram of synchronized pedestrian footfalls amplifying horizontal wave motion.',
-          mediaFormat: 'CHART_DATA',
-          assetKeywords: ['physics wave diagram', 'footstep sync', 'resonance curve'],
-          visualPrompt: 'Scientific chart showing synchronized lateral excitation frequency curves and footstep vectors',
-          textOverlay: 'SYNCHRONOUS LATERAL EXCITATION',
-          transitionIntent: 'CUT',
-          claimIds: [c2.id],
-        },
-        {
-          sceneNumber: 4,
-          startTime: 33,
-          endTime: 45,
-          durationSeconds: 12,
-          narration: 'It took eighty-nine hydraulic dampers hidden beneath the deck to absorb the energy. A reminder that sometimes, the hardest engineering problem is human nature.',
-          visualObjective: 'Show close-up technical shot of fluid viscous dampers beneath the bridge structure.',
-          mediaFormat: 'LICENSED_STOCK',
-          assetKeywords: ['hydraulic damper', 'shock absorber', 'structural engineering'],
-          visualPrompt: 'Engineering macro shot of large industrial fluid viscous damper on steel suspension structure',
-          textOverlay: 'THE FIX: 91 DAMPERS',
-          transitionIntent: 'FADE',
-          claimIds: [c3.id],
-        },
-      ],
-    };
+  private route(task: string, prompt: string): unknown {
+    switch (task) {
+      case 'discovery': {
+        const n = Number(prompt.match(/EXACTLY (\d+)/)?.[1] ?? 3);
+        const avoid = prompt.slice(prompt.indexOf('ALREADY USED') >= 0 ? prompt.indexOf('ALREADY USED') : prompt.length).toLowerCase();
+        const fresh = TOPIC_POOL.filter((t) => !avoid.includes(t.title.toLowerCase()));
+        return { topics: fresh.slice(0, n) };
+      }
+      case 'scoring':
+        return {
+          dimensions: {
+            curiosity: 8, audiencePotential: 8, originality: 7, storyDepth: 8, visualPotential: 7, sourceAvailability: 9,
+            freshness: 6, productionComplexity: 4, copyrightRisk: 1, repetitionRisk: 2, monetizationRisk: 1,
+          },
+          reasoning: 'Mock assessment: clear conflict, documented sources, safe subject.',
+        };
+      case 'research_extraction': {
+        const blocks = [...prompt.matchAll(/<source id="(S\d+)"[^>]*>([\s\S]*?)<\/source>/g)];
+        const claims: unknown[] = [];
+        for (const [, ref, body] of blocks) {
+          const sentences = body.split(/(?<=\.)\s+/).map((s) => s.trim()).filter((s) => /\d/.test(s) && s.length > 30);
+          for (const s of sentences.slice(0, 3)) {
+            claims.push({ text: s, entity: 'Millennium Bridge', sourceRef: ref, evidenceQuote: s, isKeyFact: true });
+          }
+        }
+        return {
+          summary: 'The Millennium Footbridge swayed on opening, closed, and reopened after dampers were fitted.',
+          keyEntities: ['Millennium Bridge', 'Arup'],
+          sourceTiers: Object.fromEntries(blocks.map(([, ref]) => [ref, 'REPUTABLE_JOURNALISM'])),
+          claims,
+          uncertaintyNotes: [],
+        };
+      }
+      case 'claim_entailment': {
+        const refs = [...prompt.matchAll(/\[(C\d+)\]/g)].map((m) => m[1]);
+        return { results: [...new Set(refs)].map((r) => ({ claimRef: r, verdict: 'SUPPORTED', reason: 'Evidence states the claim directly.' })) };
+      }
+      case 'story': {
+        const topic = prompt.match(/Topic: "([^"]+)"/)?.[1] ?? 'an unexpected engineering story';
+        return {
+          logline: `The true story behind ${topic}.`,
+          centralConflict: 'Human footsteps versus a structure designed for static loads.',
+          hookConcept: 'A brand-new bridge defeated by people walking.',
+          narrativeArc: {
+            hook: 'A new bridge failed in days.',
+            context: 'London opened the footbridge in June 2000.',
+            development: 'Crowds felt the deck sway sideways.',
+            twist: 'Their own synchronized steps caused it.',
+            payoff: 'Dampers fixed it and it reopened in 2002.',
+          },
+        };
+      }
+      case 'script': {
+        const claimLines = [...prompt.matchAll(/\[(C\d+)\]\s+(.+)/g)].map((m) => ({ ref: m[1], text: m[2].trim() }));
+        const topicName = prompt.match(/LOGLINE: The true story behind (.+?)\.\n/)?.[1] ?? 'the Footbridge That Swayed';
+        const seed = [...topicName].reduce((h, ch) => (h * 31 + ch.charCodeAt(0)) >>> 0, 7);
+        const max = Number(prompt.match(/between (\d+) and (\d+) words/)?.[2] ?? 130);
+        const min = Number(prompt.match(/between (\d+) and (\d+) words/)?.[1] ?? 100);
+        const pick = (i: number) => claimLines[i % Math.max(1, claimLines.length)];
+        const scenes = [
+          { narration: HOOKS[seed % HOOKS.length], claimRefs: [] as string[] },
+          { narration: pick(0)?.text ?? '', claimRefs: pick(0) ? [pick(0).ref] : [] },
+          { narration: pick(1)?.text ?? '', claimRefs: pick(1) ? [pick(1).ref] : [] },
+          { narration: pick(2)?.text ?? '', claimRefs: pick(2) ? [pick(2).ref] : [] },
+          { narration: pick(3)?.text ?? '', claimRefs: pick(3) ? [pick(3).ref] : [] },
+        ];
+        // Pad deterministically into the required word range.
+        let total = scenes.reduce((n, s) => n + words(s.narration).length, 0);
+        const filler = words(FILLER);
+        let fi = 0;
+        let target = 3;
+        while (total < min + 5 && fi < filler.length * 4) {
+          scenes[target].narration += ' ' + filler[fi % filler.length];
+          fi++;
+          total++;
+          if (fi % 12 === 0) target = target === 3 ? 4 : 3;
+        }
+        for (const s of scenes) if (!/[.!?]$/.test(s.narration)) s.narration += '.';
+        while (total > max) {
+          const w = words(scenes[4].narration);
+          w.pop();
+          scenes[4].narration = w.join(' ') + '.';
+          total--;
+        }
+        return {
+          title: `Inside ${topicName}`.slice(0, 90),
+          description: 'How synchronized footsteps closed London’s Millennium Bridge two days after opening.',
+          scenes: scenes.map((s, i) => ({
+            narration: s.narration,
+            visualObjective: 'Pedestrians crossing a modern footbridge over a river',
+            assetKeywords: i % 2 === 0 ? ['bridge', 'river', 'city'] : ['people walking', 'crowd', 'footsteps'],
+            textOverlay: '',
+            claimRefs: s.claimRefs,
+          })),
+        };
+      }
+      case 'media_fit': {
+        const ids = [...prompt.matchAll(/\[(M\d+)\]/g)].map((m) => m[1]);
+        return { fit: ids, unfit: [] };
+      }
+      case 'media_keywords':
+        return { keywords: ['city', 'river', 'people walking', 'sky'] };
+      case 'content_review':
+        return { findings: [] };
+      default:
+        throw new Error(`MockLLMProvider has no route for task "${task}"`);
+    }
   }
 }

@@ -1,108 +1,75 @@
 import fs from 'node:fs';
-import path from 'node:path';
-import { spawn } from 'node:child_process';
-import { randomUUID } from 'node:crypto';
-import { AssetDescriptor, AssetType } from '@shorts/schemas';
-import { AssetProvider, ImageProvider, ImageGenerateOptions } from '../interfaces.js';
+import { createHash } from 'node:crypto';
+import type { AssetCandidate } from '@shorts/schemas';
+import { runFfmpeg, sha256File } from '@shorts/core';
+import type { AssetDownloadResult, AssetProvider, AssetSearchRequest } from '../interfaces.js';
 
-export class MockAssetProvider implements AssetProvider, ImageProvider {
-  name = 'MockAssetProvider';
+const SHAPES: Array<{ w: number; h: number; d: number }> = [
+  { w: 1080, h: 1920, d: 8 },
+  { w: 1920, h: 1080, d: 10 },
+  { w: 720, h: 1280, d: 6 },
+  { w: 1080, h: 1920, d: 12 },
+  { w: 1280, h: 720, d: 5 },
+  { w: 1080, h: 1920, d: 9 },
+];
 
-  private async generateSolidImage(
-    outputPath: string,
-    width: number = 1080,
-    height: number = 1920,
-    color: string = '#1e293b'
-  ): Promise<void> {
-    const outDir = path.dirname(path.resolve(outputPath));
-    if (!fs.existsSync(outDir)) {
-      fs.mkdirSync(outDir, { recursive: true });
-    }
+/**
+ * Mock stock provider. Produces real media files: videos carry a loud stereo audio track on
+ * purpose (stock footage often does) so the renderer's narration mapping is exercised.
+ */
+export class MockAssetProvider implements AssetProvider {
+  readonly name = 'mock-stock';
 
-    return new Promise((resolve, reject) => {
-      // Create a 1080x1920 image using FFmpeg color generator
-      const args = [
-        '-y',
-        '-f', 'lavfi',
-        '-i', `color=c=${color}:s=${width}x${height}:d=1`,
-        '-frames:v', '1',
-        outputPath,
-      ];
+  constructor(private readonly opts: { corruptDownloads?: boolean; empty?: boolean } = {}) {}
 
-      const child = spawn('ffmpeg', args, { stdio: 'pipe' });
-      child.on('close', (code) => {
-        if (code === 0) resolve();
-        else reject(new Error(`Failed to generate mock asset image: code ${code}`));
-      });
-      child.on('error', reject);
+  async search(req: AssetSearchRequest): Promise<AssetCandidate[]> {
+    if (this.opts.empty || !req.query.trim()) return [];
+    const tokens = req.query.toLowerCase().split(/\s+/).filter(Boolean);
+    const seed = createHash('md5').update(req.query).digest();
+    return SHAPES.map((s, i) => {
+      const id = `${seed.readUInt16BE(0)}${i}`;
+      const isImage = req.mediaType === 'IMAGE';
+      const w = isImage ? 720 : s.w;
+      const h = isImage ? 1280 : s.h;
+      return {
+        provider: this.name,
+        providerMediaId: id,
+        mediaType: req.mediaType,
+        pageUrl: `https://mock.invalid/media/${id}`,
+        downloadUrl: `https://mock.invalid/media/${id}.${isImage ? 'png' : 'mp4'}?w=${w}&h=${h}&d=${s.d}`,
+        width: w,
+        height: h,
+        aspectRatio: w / h,
+        durationSeconds: isImage ? undefined : s.d,
+        tags: i % 3 === 2 ? ['abstract', 'texture'] : [...tokens, 'stock'],
+        description: tokens.join(' '),
+        license: 'Mock Synthetic License',
+        commercialUseAllowed: true,
+        attributionRequired: false,
+      } satisfies AssetCandidate;
     });
   }
 
-  async generateImage(
-    prompt: string,
-    outputPath: string,
-    options?: ImageGenerateOptions
-  ): Promise<AssetDescriptor> {
-    const width = options?.width || 1080;
-    const height = options?.height || 1920;
-    // Rotate pleasing dark documentary slate colors
-    const colors = ['#0f172a', '#1e293b', '#18181b', '#111827'];
-    const chosenColor = colors[Math.floor(Math.random() * colors.length)];
-
-    await this.generateSolidImage(outputPath, width, height, chosenColor);
-
-    return {
-      id: randomUUID(),
-      assetType: 'IMAGE',
-      sourceUrl: `synthetic://local/prompt-${encodeURIComponent(prompt.slice(0, 20))}`,
-      provider: 'mock_synthetic',
-      license: 'Public Domain / Internal Synthetic',
-      commercialUseAllowed: true,
-      attributionRequired: false,
-      retrievedAt: new Date().toISOString(),
-      localPath: outputPath,
-      metadata: {
-        prompt,
-        width,
-        height,
-        color: chosenColor,
-      },
-    };
-  }
-
-  async searchStockAssets(
-    keywords: string[],
-    assetType: AssetType = 'IMAGE',
-    sceneNumber?: number
-  ): Promise<AssetDescriptor[]> {
-    const baseDir = path.resolve(process.cwd(), 'output/temp/assets');
-    const fileName = `scene_${sceneNumber || 1}_${Date.now()}.png`;
-    const destPath = path.join(baseDir, fileName);
-
-    const asset = await this.generateImage(keywords.join(' '), destPath);
-    if (sceneNumber !== undefined) {
-      asset.sceneNumber = sceneNumber;
+  async download(candidate: AssetCandidate, destPath: string): Promise<AssetDownloadResult> {
+    if (this.opts.corruptDownloads) {
+      fs.writeFileSync(destPath, Buffer.from('this is not a media file'.repeat(100)));
+    } else if (candidate.mediaType === 'VIDEO') {
+      const d = candidate.durationSeconds ?? 6;
+      await runFfmpeg(
+        [
+          '-y',
+          '-f', 'lavfi', '-i', `testsrc2=size=${candidate.width}x${candidate.height}:rate=30:duration=${d}`,
+          '-f', 'lavfi', '-i', `sine=frequency=880:sample_rate=48000:duration=${d}`,
+          '-ac', '2', '-c:v', 'libx264', '-preset', 'ultrafast', '-pix_fmt', 'yuv420p', '-c:a', 'aac', '-shortest', destPath,
+        ],
+        { description: 'mock stock video' }
+      );
+    } else {
+      await runFfmpeg(['-y', '-f', 'lavfi', '-i', `testsrc2=size=${candidate.width}x${candidate.height}:rate=1`, '-frames:v', '1', destPath], {
+        description: 'mock stock image',
+      });
     }
-    return [asset];
-  }
-
-  async acquireAsset(
-    sourceUrl: string,
-    destinationPath: string,
-    metadata: Partial<AssetDescriptor>
-  ): Promise<AssetDescriptor> {
-    await this.generateSolidImage(destinationPath);
-    return {
-      id: metadata.id || randomUUID(),
-      assetType: metadata.assetType || 'IMAGE',
-      sourceUrl,
-      provider: metadata.provider || 'mock_stock',
-      license: metadata.license || 'Licensed Stock Standard',
-      commercialUseAllowed: metadata.commercialUseAllowed ?? true,
-      attributionRequired: metadata.attributionRequired ?? false,
-      retrievedAt: new Date().toISOString(),
-      localPath: destinationPath,
-      metadata: metadata.metadata || {},
-    };
+    const bytes = fs.statSync(destPath).size;
+    return { path: destPath, bytes, sha256: await sha256File(destPath), contentType: candidate.mediaType === 'VIDEO' ? 'video/mp4' : 'image/png' };
   }
 }

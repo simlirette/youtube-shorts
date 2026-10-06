@@ -1,127 +1,84 @@
 import fs from 'node:fs';
-import { AnalyticsRecord } from '@shorts/schemas';
-import { YouTubeProvider, YouTubeUploadParams } from '../interfaces.js';
+import { YouTubeMetadataSchema } from '@shorts/schemas';
+import { ConfigurationError, InvalidResponseError, httpJson } from '@shorts/core';
+import type { ProviderContext, PublishRequest, PublishResult, Publisher } from '../interfaces.js';
 
-export class YouTubeOfficialProvider implements YouTubeProvider {
-  name = 'YouTubeOfficialProvider';
-  private clientId: string;
-  private clientSecret: string;
-  private refreshToken: string;
+/**
+ * YouTube Data API v3 publisher (resumable upload protocol).
+ * Not exercised against a real channel in this repository's acceptance runs (no OAuth credentials).
+ */
+export class YouTubePublisher implements Publisher {
+  readonly name = 'youtube';
+  readonly target = 'youtube' as const;
 
-  constructor() {
-    this.clientId = process.env.YOUTUBE_CLIENT_ID || '';
-    this.clientSecret = process.env.YOUTUBE_CLIENT_SECRET || '';
-    this.refreshToken = process.env.YOUTUBE_REFRESH_TOKEN || '';
+  constructor(
+    private readonly creds: { clientId: string; clientSecret: string; refreshToken: string },
+    private readonly opts: { timeoutMs: number; uploadTimeoutMs: number; maxAttempts: number },
+    private readonly ctx: ProviderContext = {}
+  ) {
+    const missing = Object.entries({ YOUTUBE_CLIENT_ID: creds.clientId, YOUTUBE_CLIENT_SECRET: creds.clientSecret, YOUTUBE_REFRESH_TOKEN: creds.refreshToken })
+      .filter(([, v]) => !v)
+      .map(([k]) => k);
+    if (missing.length) throw new ConfigurationError(`YouTube publishing requires ${missing.join(', ')}`);
   }
 
-  private ensureConfigured(): void {
-    const missing: string[] = [];
-    if (!this.clientId) missing.push('YOUTUBE_CLIENT_ID');
-    if (!this.clientSecret) missing.push('YOUTUBE_CLIENT_SECRET');
-    if (!this.refreshToken) missing.push('YOUTUBE_REFRESH_TOKEN');
-
-    if (missing.length > 0) {
-      throw new Error(`YouTube API request failed: missing [${missing.join(', ')}] in environment or .env`);
-    }
-  }
-
-  async verifyAuthentication(): Promise<boolean> {
-    try {
-      this.ensureConfigured();
-      return true;
-    } catch {
-      return false;
-    }
-  }
-
-  async uploadVideo(params: YouTubeUploadParams): Promise<{ youtubeVideoId: string; watchUrl: string }> {
-    this.ensureConfigured();
-    if (!fs.existsSync(params.videoPath)) {
-      throw new Error(`Video file not found at: ${params.videoPath}`);
-    }
-
-    // Refresh access token via Google OAuth2
-    const tokenRes = await fetch('https://oauth2.googleapis.com/token', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: new URLSearchParams({
-        client_id: this.clientId,
-        client_secret: this.clientSecret,
-        refresh_token: this.refreshToken,
-        grant_type: 'refresh_token',
-      }),
-    });
-
-    if (!tokenRes.ok) {
-      const err = await tokenRes.text();
-      throw new Error(`YouTube OAuth token refresh failed (${tokenRes.status}): ${err}`);
-    }
-
-    const { access_token } = await tokenRes.json();
-
-    // Multipart upload to YouTube Data API v3
-    const metadata = {
-      snippet: {
-        title: params.title,
-        description: params.description,
-        tags: params.tags,
-        categoryId: '27', // Education
-      },
-      status: {
-        privacyStatus: params.privacyStatus,
-        selfDeclaredMadeForKids: false,
-      },
-    };
-
-    const videoBuffer = fs.readFileSync(params.videoPath);
-    const boundary = '-------314159265358979323846';
-    const delimiter = `\r\n--${boundary}\r\n`;
-    const closeDelimiter = `\r\n--${boundary}--`;
-
-    const body = Buffer.concat([
-      Buffer.from(
-        delimiter +
-        'Content-Type: application/json; charset=UTF-8\r\n\r\n' +
-        JSON.stringify(metadata) +
-        delimiter +
-        'Content-Type: video/mp4\r\n\r\n'
-      ),
-      videoBuffer,
-      Buffer.from(closeDelimiter),
-    ]);
-
-    const uploadRes = await fetch(
-      'https://www.googleapis.com/upload/youtube/v3/videos?uploadType=multipart&part=snippet,status',
+  private async accessToken(): Promise<string> {
+    const res = await httpJson<{ access_token?: string }>(
+      'https://oauth2.googleapis.com/token',
       {
         method: 'POST',
-        headers: {
-          Authorization: `Bearer ${access_token}`,
-          'Content-Type': `multipart/related; boundary=${boundary}`,
-        },
-        body,
-      }
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: new URLSearchParams({
+          client_id: this.creds.clientId,
+          client_secret: this.creds.clientSecret,
+          refresh_token: this.creds.refreshToken,
+          grant_type: 'refresh_token',
+        }).toString(),
+      },
+      { provider: this.name, operation: 'oauth.refresh', timeoutMs: this.opts.timeoutMs, maxAttempts: this.opts.maxAttempts, fetchImpl: this.ctx.fetchImpl, sleep: this.ctx.sleep }
     );
-
-    if (!uploadRes.ok) {
-      const err = await uploadRes.text();
-      throw new Error(`YouTube upload failed (${uploadRes.status}): ${err}`);
-    }
-
-    const result = await uploadRes.json();
-    return {
-      youtubeVideoId: result.id,
-      watchUrl: `https://www.youtube.com/shorts/${result.id}`,
-    };
+    if (!res.data.access_token) throw new InvalidResponseError(this.name, 'token refresh returned no access_token');
+    return res.data.access_token;
   }
 
-  async getVideoAnalytics(youtubeVideoId: string): Promise<Partial<AnalyticsRecord>> {
-    this.ensureConfigured();
-    // Stub for live YouTube Analytics API
-    return {
-      youtubeVideoId,
-      views: 0,
-      likes: 0,
-      comments: 0,
-    };
+  async publish(req: PublishRequest): Promise<PublishResult> {
+    const metadata = YouTubeMetadataSchema.parse(req.metadata);
+    const stat = fs.statSync(req.videoPath);
+    const token = await this.accessToken();
+    const fetchImpl = this.ctx.fetchImpl ?? fetch;
+
+    // 1. Start a resumable session (metadata only).
+    const init = await fetchImpl('https://www.googleapis.com/upload/youtube/v3/videos?uploadType=resumable&part=snippet,status', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json; charset=UTF-8',
+        'X-Upload-Content-Type': 'video/mp4',
+        'X-Upload-Content-Length': String(stat.size),
+      },
+      body: JSON.stringify({
+        snippet: { title: metadata.title, description: metadata.description, tags: metadata.tags, categoryId: '27' },
+        status: { privacyStatus: metadata.privacyStatus, selfDeclaredMadeForKids: false },
+      }),
+      signal: AbortSignal.timeout(this.opts.timeoutMs),
+    });
+    if (!init.ok) throw new InvalidResponseError(this.name, `upload session init failed (HTTP ${init.status}): ${(await init.text()).slice(0, 300)}`);
+    const sessionUrl = init.headers.get('location');
+    if (!sessionUrl) throw new InvalidResponseError(this.name, 'upload session returned no Location header');
+
+    // 2. Upload the file in one streamed request. No automatic retry: a duplicate upload is worse than a failure.
+    const body = fs.createReadStream(req.videoPath) as unknown as BodyInit;
+    const up = await fetchImpl(sessionUrl, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'video/mp4', 'Content-Length': String(stat.size) },
+      body,
+      // @ts-expect-error Node's fetch requires duplex for streamed bodies
+      duplex: 'half',
+      signal: AbortSignal.timeout(this.opts.uploadTimeoutMs),
+    });
+    if (!up.ok) throw new InvalidResponseError(this.name, `upload failed (HTTP ${up.status}): ${(await up.text()).slice(0, 300)}`);
+    const result = (await up.json()) as { id?: string };
+    if (!result.id) throw new InvalidResponseError(this.name, 'upload response contained no video id');
+    return { externalId: result.id, url: `https://www.youtube.com/shorts/${result.id}` };
   }
 }
