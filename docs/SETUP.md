@@ -1,51 +1,17 @@
-# Setup & Installation Guide
+# Setup
 
-## System Requirements
+1. **Node.js ≥ 22.5** (the SQLite driver is `node:sqlite`; developed on Node 24), **pnpm ≥ 9**, **FFmpeg + ffprobe** on PATH (FFmpeg 7/8 with libx264, libass, libmp3lame).
+2. `pnpm install`
+3. `cp .env.example .env` and add credentials for live mode: `OPENAI_API_KEY`, `TAVILY_API_KEY`, `ELEVENLABS_API_KEY`, `PIXABAY_API_KEY` (plus YouTube OAuth only if `PUBLISH_TARGET=youtube`).
+4. `pnpm typecheck && pnpm build && pnpm test` (offline; no API calls).
+5. `pnpm cli doctor --mode live` — verifies tools, font, credentials, DB.
+6. `pnpm cli run --mode mock` — full local run with mock providers (uses `output/mock` and `database/mock-dev.sqlite`).
+7. `pnpm cli run --mode live` — real run; stops at `AWAITING_IDEA_APPROVAL` unless `APPROVAL_IDEA=auto`.
 
-1. **Node.js**: Version 20.0.0 or higher (Node 24 LTS recommended).
-2. **pnpm**: Version 9.0.0 or higher.
-3. **FFmpeg**: Version 6.0+ (FFmpeg 7/8 recommended) installed and available in your system `PATH`.
-   - Verify by running `ffmpeg -version`.
-4. **Git**: Installed and configured.
+### Database
 
-## Step-by-Step Installation
+SQLite by default (`database/dev.sqlite`, created on first use). A database created by the old v1 schema is detected and refused with instructions; move it aside to start fresh. Postgres: set `USE_SQLITE_FALLBACK=false` and `DATABASE_URL` (SQL is Postgres-compatible but not yet exercised against a live server).
 
-### 1. Clone & Enter Project
-```bash
-git clone https://github.com/simlirette/youtube-shorts.git
-cd youtube-shorts
-```
+### Unattended operation
 
-### 2. Install Dependencies
-```bash
-pnpm install
-```
-
-### 3. Configure Environment
-```bash
-# Copy template
-cp .env.example .env
-```
-By default, `.env.example` has all mock flags enabled (`MOCK_LLM=true`, `MOCK_TTS=true`, `MOCK_ASSETS=true`, `MOCK_YOUTUBE=true`). This allows the entire pipeline to execute without external API accounts.
-
-### 4. Database Setup
-The system defaults to a zero-config local SQLite database (`./database/dev.sqlite`) when `USE_SQLITE_FALLBACK=true`.
-
-For production with PostgreSQL:
-```bash
-# If using Docker
-docker run --name shorts-postgres -e POSTGRES_PASSWORD=postgres -e POSTGRES_DB=youtube_shorts -p 5432:5432 -d postgres:16
-```
-Then set `USE_SQLITE_FALLBACK=false` and configure `DATABASE_URL` in `.env`.
-
-### 5. Verify Build & Tests
-```bash
-pnpm build
-pnpm test
-```
-
-### 6. Run Mock Pipeline
-```bash
-pnpm run pipeline:mock
-```
-This generates a complete Short from discovery through rendering in `./output/renders/`.
+Run `pnpm cli schedule --mode live --max-per-day N` under a process supervisor (or `--once` from cron / Windows Task Scheduler). Only jobs whose approval policy allows it proceed past gates; with `APPROVAL_FINAL=manual` every Short waits for a human before publication.

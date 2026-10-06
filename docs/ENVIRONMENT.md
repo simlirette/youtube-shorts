@@ -1,29 +1,16 @@
-# Environment Variables Reference
+# Environment variables
 
-All runtime configuration is managed via environment variables defined in `.env` (derived from `.env.example`).
+`.env.example` is the authoritative, commented list. Configuration is parsed by `packages/core/src/config.ts` (Zod); an invalid value is a `ConfigurationError`, and empty values are treated as unset. Paths are resolved against the repository root, not the working directory.
 
-| Variable | Type | Default | Description |
-|---|---|---|---|
-| `NODE_ENV` | `string` | `development` | Runtime environment (`development`, `production`, `test`) |
-| `LOG_LEVEL` | `string` | `info` | Logging verbosity (`debug`, `info`, `warn`, `error`) |
-| `PORT` | `number` | `3000` | HTTP port for API and review dashboard |
-| `MOCK_LLM` | `boolean` | `true` | Use mock LLM generator instead of paid OpenAI/Gemini |
-| `MOCK_SEARCH` | `boolean` | `true` | Use mock search provider instead of Tavily/Serper |
-| `MOCK_TTS` | `boolean` | `true` | Use mock audio synthesizer instead of ElevenLabs/OpenAI |
-| `MOCK_ASSETS` | `boolean` | `true` | Use synthetic image generator instead of Pexels/Replicate |
-| `MOCK_YOUTUBE` | `boolean` | `true` | Use mock publisher instead of calling Google YouTube API |
-| `DATABASE_URL` | `string` | `postgresql://...` | Connection URI for PostgreSQL database |
-| `USE_SQLITE_FALLBACK` | `boolean` | `true` | When true, uses embedded SQLite without requiring PostgreSQL |
-| `SQLITE_DB_PATH` | `string` | `./database/dev.sqlite` | Filepath for local SQLite database file |
-| `OPENAI_API_KEY` | `string` | `""` | OpenAI API key for GPT-4o scripting / analysis |
-| `GEMINI_API_KEY` | `string` | `""` | Google Gemini API key for multimodal analysis / research |
-| `ELEVENLABS_API_KEY` | `string` | `""` | ElevenLabs API key for ultra-realistic documentary voiceover |
-| `ELEVENLABS_VOICE_ID`| `string` | `""` | Specific ElevenLabs voice ID to use |
-| `YOUTUBE_CLIENT_ID` | `string` | `""` | Google Cloud OAuth 2.0 Client ID |
-| `YOUTUBE_CLIENT_SECRET` | `string` | `""` | Google Cloud OAuth 2.0 Client Secret |
-| `YOUTUBE_REFRESH_TOKEN`| `string` | `""` | Google OAuth refresh token for automated uploads |
-| `YOUTUBE_CHANNEL_ID` | `string` | `""` | Target YouTube channel identifier |
-| `YOUTUBE_DEFAULT_PRIVACY`| `string` | `private` | Upload privacy status: `private`, `unlisted`, or `public` |
-| `FFMPEG_PATH` | `string` | `ffmpeg` | Path or binary name for FFmpeg executable |
-| `RENDER_OUTPUT_DIR` | `string` | `./output/renders` | Destination directory for rendered video files |
-| `TEMP_DIR` | `string` | `./output/temp` | Temporary scratch directory for asset processing |
+| Group | Variables | Notes |
+|---|---|---|
+| Mode | `PIPELINE_MODE` | `mock` or `live`; no default. Mock mode uses `output/mock` and `database/mock-*.sqlite`. |
+| Providers | `LLM_PROVIDER`, `ASSET_PROVIDER`, `PUBLISH_TARGET`, `OPENAI_*`, `GEMINI_*`, `TAVILY_*`, `ELEVENLABS_*`, `PIXABAY_API_KEY`, `PEXELS_API_KEY`, `YOUTUBE_*` | Live mode requires every credential of the selected providers; missing ones are listed together and the run aborts. |
+| Approvals | `APPROVAL_IDEA`, `APPROVAL_SCRIPT`, `APPROVAL_FINAL` | Default `manual`. |
+| Content | `SCRIPT_MIN_WORDS`, `SCRIPT_MAX_WORDS`, `SCRIPT_HOOK_MAX_WORDS`, `SCRIPT_MAX_ATTEMPTS`, `SHORT_MIN_SECONDS`, `SHORT_MAX_SECONDS`, `MIN_VERIFIED_CLAIMS`, `TOPIC_MIN_SCORE`, `MEDIA_MIN_RELEVANCE`, `LOUDNESS_TARGET_LUFS`, `LOUDNESS_TOLERANCE_LU` | |
+| Captions | `CAPTION_FONT_FILE`, `CAPTION_FONT_NAME` | Bundled Anton (OFL). Missing font is a configuration error. |
+| Reliability | `HTTP_TIMEOUT_MS`, `LLM_TIMEOUT_MS`, `TTS_TIMEOUT_MS`, `DOWNLOAD_TIMEOUT_MS`, `FFMPEG_TIMEOUT_MS`, `MAX_DOWNLOAD_BYTES`, `PROVIDER_MAX_ATTEMPTS`, `JOB_LOCK_TTL_MINUTES` | |
+| Cost ledger | `ELEVENLABS_USD_PER_1K_CHARS`, `TAVILY_USD_PER_CREDIT` | Estimates for `provider_runs`; LLM prices are a table in `llm-base.ts`. |
+| Storage | `OUTPUT_DIR`, `USE_SQLITE_FALLBACK`, `SQLITE_DB_PATH`, `DATABASE_URL`, `FFMPEG_PATH`, `FFPROBE_PATH` | |
+| API | `PORT`, `API_HOST`, `API_TOKEN`, `API_CORS_ORIGIN` | API refuses to start without a ≥16-char token. |
+| Logging | `LOG_LEVEL`, `LOG_FORMAT` | Logs redact key-like values and query-string credentials. |

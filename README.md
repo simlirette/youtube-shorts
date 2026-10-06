@@ -1,88 +1,62 @@
 # YouTube Shorts Production Engine
 
-An automated, faceless YouTube Shorts media-production engine designed to produce original, factually verified, high-retention documentary-style Shorts (30–60 seconds) at scale.
+Produces fact-checked, documentary-style YouTube Shorts (30–60 s, 1080×1920) from topic discovery to a QA-validated MP4, with explicit human/policy gates before anything is published.
 
-Built with **TypeScript**, **Node.js**, and **FFmpeg**, following strict architectural principles of asset provenance, factual source verification, provider agnosticism, and human-in-the-loop review.
+Built with TypeScript (pnpm workspaces), FFmpeg/ffprobe, SQLite (Postgres-compatible SQL), and real providers: OpenAI (LLM), Tavily (research), ElevenLabs (voice), Pixabay (stock media).
 
----
-
-## Content Pillars & Direction
-
-The engine focuses on **Short Documentary Stories**:
-1. **Business** (e.g., market inflection points, counterintuitive failures)
-2. **Technology** (e.g., forgotten tech wars, unexpected breakthroughs)
-3. **Engineering** (e.g., megastructure adaptations, critical edge-cases)
-4. **Science** (e.g., serendipitous discoveries, extreme experiments)
-5. **Strange / Unusual Real-World Stories** (e.g., eccentric events, bizarre historical outcomes)
-
----
-
-## System Lifecycle
+## What a job does
 
 ```text
-DISCOVER ──> SCORE ──> RESEARCH ──> STORY ──> SCRIPT
-                                                  │
-                                                  ▼
-PUBLISH <── APPROVED <── QA <── RENDER <── VISUAL & VOICE
-   │
-   ▼
-ANALYTICS ──> LEARN ──> (Future Scoring & Topic Selection)
+SELECTING_TOPIC   discover (exact-N with explicit shortfall, fuzzy dedupe) → deterministic score gate
+  → [IDEA gate]
+RESEARCHING       search → full-text sources → LLM claim extraction → verbatim quote location,
+                  numeric consistency, LLM entailment → only VERIFIED claims continue
+SCRIPTING         story → script (5 scenes, 100–130 words, hook ≤7 words, claim refs, numbers checked,
+                  fact review) with corrective retries; fails closed
+  → [SCRIPT gate]
+SYNTHESIZING_VOICE ElevenLabs with character timestamps → two-pass loudnorm WAV → probe/silence/
+                  loudness validation (cached, never re-billed on resume)
+BUILDING_TIMELINE single timeline from real word timestamps: scenes, ≤6 s shots, caption cues
+SOURCING_MEDIA    Pixabay search (24 h cache) → rank (relevance, orientation, resolution, duration,
+                  no production assets) → LLM visual-fit judge → download → ffprobe + full decode +
+                  black-frame check → keyword refinement / shot merge on shortage
+RENDERING         per-shot clips (-an, exact frames, landscape blurred-fill) → concat → ASS captions +
+                  narration with explicit -map, padded to the timeline (no -shortest)
+QA                objective media QA on the real MP4 + content QA; WARNs can be blocking
+  → [FINAL gate]  manual, or auto_after_qa
+READY_TO_PUBLISH → PUBLISHING → PUBLISHED   publish gate re-verifies everything incl. file sha256
 ```
 
-1. **Discovery & Scoring**: Ingests signals and scores ideas based on curiosity, originality, visual depth, and YouTube monetization policy safety.
-2. **Fact-Checked Research**: Gathers credible primary sources; extracts claims with confidence scores (`Claim -> Source -> Confidence`).
-3. **Narrative Architecture**: Distinct story editor shapes the hook, conflict, and payoff before script generation.
-4. **Structured Scripting**: Validated scene-by-scene script with timestamps, visual directions, and text overlay requirements.
-5. **Visuals & Voice**: Provider-agnostic asset retrieval/generation (licensed stock, diagrams, charts, motion graphics) and TTS pacing.
-6. **Deterministic Video Rendering**: Native FFmpeg engine composing 1080×1920 (9:16) H.264 video with synchronized dynamic captions.
-7. **Comprehensive QA**: Checks factual claims, audio levels, subtitle clipping, license compliance, and repetition against previous channel content.
-8. **Human Review Gates**: Director approval checkpoints for Idea, Script, and Final Render.
-9. **YouTube Integration**: Official YouTube API v3 integration with automated Private/Unlisted staging.
-10. **Analytics & Feedback**: Performance tracking to inform future topic scoring.
+Any failure moves the job to `FAILED` with a classified error (`AUTHENTICATION`, `RATE_LIMIT`, `TIMEOUT`, `VALIDATION`, `QA_FAILED`, …) and `output/jobs/<id>/error.json`. `shorts resume <id>` re-enters the failed stage; finished stages are not repeated.
 
----
+## Quick start
 
-## Quick Start
+Requirements: Node ≥ 22.5 (uses `node:sqlite`), pnpm ≥ 9, FFmpeg + ffprobe on PATH.
 
-### 1. Requirements
-- Node.js >= 20 (v24+ recommended)
-- `pnpm` >= 9
-- `ffmpeg` installed and available in system PATH
-
-### 2. Setup
 ```bash
-# Clone the repository
-git clone https://github.com/simlirette/youtube-shorts.git
-cd youtube-shorts
-
-# Install workspace dependencies
 pnpm install
+cp .env.example .env          # add keys for live mode
+pnpm typecheck && pnpm build && pnpm test
 
-# Copy environment template
-cp .env.example .env
+pnpm cli doctor --mode live   # config, tools, font, credentials (no paid calls)
+pnpm cli run --mode mock      # full local run with mock providers (isolated DB/output)
+pnpm cli run --mode live      # real providers; stops at manual gates by default
+pnpm cli jobs --mode live
+pnpm cli job <id> --mode live                 # JSON report: QA checks, costs, events
+pnpm cli approve <id> FINAL_VIDEO --mode live # after watching output/jobs/<id>/final/short.mp4
+pnpm cli publish <id> --mode live             # local export by default
+pnpm cli resume <id> --mode live [--from STAGE]
+pnpm cli schedule --mode live --max-per-day 1 # unattended loop (respects approval policy)
 
-# Run automated tests
-pnpm test
-
-# Run a complete end-to-end dry run (mock mode)
-pnpm run pipeline:mock
+pnpm test:live                # real-provider acceptance (costs money)
 ```
-
----
 
 ## Documentation
 
-- [Architecture Guide](docs/ARCHITECTURE.md)
-- [Setup & Prerequisites](docs/SETUP.md)
-- [Environment Variables](docs/ENVIRONMENT.md)
-- [API Reference](docs/API.md)
-- [Workflow & State Machine](docs/WORKFLOW.md)
-- [Architectural Decisions Log (ADR)](docs/DECISIONS.md)
-- [Development Guide](docs/DEVELOPMENT.md)
-- [Gemini Durable Instructions](GEMINI.md)
-
----
+- [Architecture](docs/ARCHITECTURE.md) · [Workflow & states](docs/WORKFLOW.md) · [CLI & API](docs/API.md)
+- [Setup](docs/SETUP.md) · [Environment](docs/ENVIRONMENT.md) · [Development](docs/DEVELOPMENT.md) · [Decisions](docs/DECISIONS.md)
+- [External audit](AUDIT_REPORT.md) · [Completion report](COMPLETION_REPORT.md)
 
 ## License
 
-Private / Proprietary. All rights reserved.
+Private / proprietary. Caption font Anton is licensed under the SIL Open Font License (`assets/fonts/OFL.txt`).

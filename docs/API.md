@@ -1,36 +1,34 @@
-# API Reference & Programmatic Contracts
+# CLI & REST API
 
-## CLI Commands
+## CLI (`pnpm cli <command>`)
 
-The engine provides an interactive and scriptable CLI via `pnpm`:
+Every command that touches jobs takes `--mode mock|live` (or `PIPELINE_MODE`). There is no default mode.
 
-```bash
-# Full end-to-end dry run (discovery -> render -> QA -> mock publish)
-pnpm run pipeline:mock
+| Command | Purpose |
+|---|---|
+| `doctor` | Check ffmpeg/ffprobe, caption font, live credentials, approval policy, DB schema. No paid calls. |
+| `run [--pillar P] [--topic ID]` | Create a job and advance it until it completes, waits at a gate, or fails. Alias: `pipeline`. Exit code 2 on FAILED. |
+| `resume <job> [--from STAGE] [--steal-lock]` | Resume a failed/interrupted job. `--from` restarts at an earlier work stage (later artifacts are discarded). |
+| `approve <job> IDEA\|SCRIPT\|FINAL_VIDEO [--reject] [--revise] [--notes …] [--continue]` | Record a human decision. |
+| `publish <job>` | Publish a READY_TO_PUBLISH job (all gates re-checked). |
+| `jobs [--state S]` / `job <job>` | List jobs / full JSON report (artifacts summary, QA checks, provider calls & estimated cost, events). |
+| `discover [--pillar P] [--count N]` | Store N novel topics (reports shortfall explicitly). |
+| `schedule [--interval-minutes 60] [--max-per-day 1] [--max-attempts 3] [--once]` | Unattended loop: resume retryable failures, then start new jobs under a daily cap. |
 
-# Individual pipeline execution commands
-pnpm run cli discover    # Discover candidate topics
-pnpm run cli score       # Score discovered topics
-pnpm run cli research    # Run research on approved topic
-pnpm run cli script      # Generate structured scene script
-pnpm run cli render      # Render Short from script
-pnpm run cli qa          # Run automated QA evaluation
-pnpm run cli approve     # Approve an idea, script, or render
-pnpm run cli publish     # Stage or publish approved video
-```
+Job ids accept unique prefixes (e.g. `shorts job 73e2e994`).
 
-## REST API Endpoints (Local Dashboard / Services)
+## REST API (`pnpm api`)
 
-The API service (`apps/api`) runs on `http://localhost:3000`:
+Requires `PIPELINE_MODE` and `API_TOKEN` (≥16 chars); binds to `API_HOST` (default `127.0.0.1`). All `/api/*` routes require `Authorization: Bearer <API_TOKEN>`. Long-running work is queued in-process and the request returns `202`.
 
-### Workflow & Content Endpoints
-- `GET /api/topics`: List candidate topics, scores, and review status.
-- `POST /api/topics/discover`: Trigger topic discovery run.
-- `POST /api/topics/:id/approve`: Approve a topic for research and development.
-- `GET /api/scripts/:id`: Retrieve structured script and scenes with provenance.
-- `POST /api/scripts/:id/approve`: Approve script for asset generation and rendering.
-- `POST /api/render/:scriptId`: Trigger rendering pipeline for a script.
-- `GET /api/qa/:renderId`: Fetch multi-stage QA report.
-- `POST /api/render/:renderId/approve`: Approve final video for YouTube upload.
-- `POST /api/publish/:renderId`: Publish video to YouTube (Private/Unlisted).
-- `GET /api/analytics`: Fetch YouTube performance and content pillar metrics.
+| Method & path | Body | Result |
+|---|---|---|
+| `GET /health` | — | `{status, mode}` (no auth) |
+| `GET /api/topics` | — | topic catalog |
+| `POST /api/topics/discover` | `{pillar?, count?}` | 202 |
+| `GET /api/jobs?state=` | — | jobs |
+| `GET /api/jobs/:id` | — | job report |
+| `POST /api/jobs` | `{pillar?, topicId?}` | 202 `{jobId}` |
+| `POST /api/jobs/:id/resume` | `{fromStage?}` | 202 |
+| `POST /api/jobs/:id/approve` | `{stage, decision, notes?}` | updated job (continues in background) |
+| `POST /api/jobs/:id/publish` | — | 202 (409 unless READY_TO_PUBLISH) |

@@ -1,42 +1,26 @@
-# Developer & Contributor Guide
+# Development
 
-## Development Philosophy
-- **Deterministic Code First**: LLMs make decisions only where human-like intelligence is required (topic ideation, claim evaluation, narrative structuring). All state management, validation, video rendering, and API communication are handled by deterministic code.
-- **Fail Fast & Trace Everything**: Unhandled errors must produce actionable log messages. Every media asset and factual claim must record full provenance.
-- **Zero Hallucination Tolerance**: In the research and script phases, any factual claim that cannot point to a source is flagged and rejected by QA.
+## Commands
 
-## Project Structure
-```text
-youtube-shorts/
-├── apps/
-│   ├── api/          # Express/Fastify REST API server
-│   └── cli/          # Interactive & automated CLI tool
-├── packages/
-│   ├── schemas/      # Pure Zod schemas & TypeScript contracts
-│   ├── core/         # Workflow engine, db repository, logger, provenance
-│   ├── providers/    # Abstract interfaces + Mock & real provider adapters
-│   ├── agents/       # Discovery, Scoring, Research, Story, Script, QA agents
-│   └── rendering/    # FFmpeg renderer, templates, caption generator
-├── database/         # SQL migration scripts and schema definitions
-├── templates/        # Video layouts (Documentary, Tech, Timeline, etc.)
-├── tests/            # Integration & end-to-end tests
-└── docs/             # Technical specifications & ADRs
-```
-
-## Running Tests
 ```bash
-# Run all unit and integration tests
-pnpm test
-
-# Run tests with coverage
-pnpm test:coverage
-
-# Run TypeScript typechecker across all packages
-pnpm typecheck
+pnpm typecheck        # tsc -b over all project references (packages, apps, tests)
+pnpm build            # same build graph; emits dist/ (gitignored)
+pnpm test             # offline suite: unit + integration with real FFmpeg and mock providers
+pnpm test:live        # real-provider acceptance (tests/live/*.live.ts) — costs money
 ```
 
-## Creating a New Provider
-1. Implement the interface defined in `packages/providers/src/types.ts`.
-2. Provide a concrete implementation in `packages/providers/src/concrete/`.
-3. Register the provider in `packages/providers/src/factory.ts` backed by environment variable toggles.
-4. Add unit tests verifying both real and fallback error handling.
+The offline suite never reads `.env` (`SHORTS_SKIP_DOTENV=1`) and uses temp directories + in-memory SQLite.
+
+## Adding a provider
+
+1. Implement the interface in `packages/providers/src/interfaces.ts` (`LLMProvider` via `StructuredLLMBase`, `SearchProvider`, `PageRetriever`, `TTSProvider`, `AssetProvider`, `Publisher`).
+2. Use `httpJson` / `httpDownload` from `@shorts/core` for every network call (timeouts, retries, classification, redacted logging). Add a `classify` hook if the provider reports auth failures with non-401 codes (Pixabay uses 400).
+3. Return normalized data (`AssetCandidate`, `TTSResult` with real alignment, …). Never fabricate missing fields.
+4. Register it in `createProviders` (`factory.ts`) and add its credentials to `missingLiveCredentials`.
+5. Add unit tests with an injected `fetchImpl` (success, empty, malformed, auth, timeout, retry) and a live acceptance test.
+
+## Conventions
+
+- Agents are stateless stage logic; persistence and state transitions live in `PipelineRunner`.
+- Anything an LLM produces goes through `generateStructured` with a Zod schema and, where relevant, a deterministic `validate`.
+- Throw typed `PipelineError`s (`ValidationError`, `InvalidResponseError`, …); never return a fake success.
