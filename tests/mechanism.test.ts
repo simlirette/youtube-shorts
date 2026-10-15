@@ -136,8 +136,10 @@ describe('mechanism captions', () => {
     const text = dialogues.map((d) => d.split(',').slice(9).join(',').replace(/\{[^}]*\}/g, '').replace(/\\N/g, ' ')).join(' ');
     expect(text.replace(/\s+/g, ' ').trim()).toBe(words.map((w) => w.word).join(' '));
     expect(dialogues.some((d) => d.includes('&H0000C8FF&'))).toBe(true);
-    expect(ass).toContain('{\fad(60,40)}'); // a bare  in a JS string is a form feed: the fade tag must keep its backslash
-    expect(ass).toContain('{\c&H0000C8FF&}');
+    // ASS override tags need a literal backslash; in a JS string a bare \f is a form feed and \c is just "c".
+    expect(ass).toContain('{\\fad(60,40)}');
+    expect(ass).toContain('{\\c&H0000C8FF&}');
+    expect(ass).not.toContain('\f');
   });
 });
 
