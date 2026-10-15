@@ -3,7 +3,7 @@ import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { repoRoot } from '@shorts/core';
 import { MechanismVideoSpecSchema, type MechanismVideoSpec } from '@shorts/schemas';
-import { buildHudAss, checkMechanismKit, findBlender, mechanismCaptionCues, narrationText, planMechanism, wordsFromAlignment } from '@shorts/rendering';
+import { buildCaptionAss, buildHudAss, checkMechanismKit, findBlender, mechanismCaptionCues, narrationText, planMechanism, wordsFromAlignment } from '@shorts/rendering';
 
 /** Alignment as ElevenLabs returns it: one entry per character of the submitted text. */
 function fakeAlignment(text: string, secondsPerChar = 0.06) {
@@ -117,10 +117,27 @@ describe('mechanism captions', () => {
     expect(cues[cues.length - 1].lastWordIndex).toBe(words.length - 1);
   });
 
-  it('writes headings with fades and escapes ASS braces', () => {
-    const ass = buildHudAss([{ start: 1, end: 3.5, text: '2 · {COMPRESSION}' }]);
+  it('writes headings with fades, upper-cased, with ASS braces removed', () => {
+    const ass = buildHudAss([{ start: 1, end: 3.5, text: 'Stroke 2 · {Compression}' }]);
     expect(ass).toContain('Dialogue: 0,0:00:01.00,0:00:03.50,Hud');
-    expect(ass).not.toContain('{COMPRESSION}');
+    expect(ass).toContain('STROKE 2 · COMPRESSION');
+    expect(ass).not.toContain('{Compression}');
+    expect(ass).toContain('Montserrat SemiBold');
+  });
+
+  it('builds clean bold captions: Montserrat Bold, one gold keyword per cue, lines kept in order', () => {
+    const { words } = plan();
+    const cues = mechanismCaptionCues(words);
+    const ass = buildCaptionAss(cues);
+    expect(ass).toContain('Style: Caption,Montserrat,');
+    const dialogues = ass.split('\n').filter((l) => l.startsWith('Dialogue:'));
+    expect(dialogues).toHaveLength(cues.length);
+    // Every spoken word survives, in order, once ASS colour overrides are stripped.
+    const text = dialogues.map((d) => d.split(',').slice(9).join(',').replace(/\{[^}]*\}/g, '').replace(/\\N/g, ' ')).join(' ');
+    expect(text.replace(/\s+/g, ' ').trim()).toBe(words.map((w) => w.word).join(' '));
+    expect(dialogues.some((d) => d.includes('&H0000C8FF&'))).toBe(true);
+    expect(ass).toContain('{\fad(60,40)}'); // a bare  in a JS string is a form feed: the fade tag must keep its backslash
+    expect(ass).toContain('{\c&H0000C8FF&}');
   });
 });
 

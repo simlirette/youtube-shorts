@@ -232,9 +232,9 @@ export function buildCaptionAss(cues: CaptionCue[], layout: CaptionLayout = CAPT
   const events = cues.map((c) => {
     const flat = c.lines.flatMap((l, li) => l.split(' ').map((w) => ({ w, li })));
     const k = emphasisIndex(flat.map((x) => x.w));
-    if (k >= 0) flat[k] = { ...flat[k], w: `{\c${HIGHLIGHT}}${flat[k].w}{\c&HFFFFFF&}` };
-    const text = c.lines.map((_, li) => flat.filter((x) => x.li === li).map((x) => x.w).join(' ')).join('\N');
-    return `Dialogue: 0,${assTime(c.start)},${assTime(c.end)},Caption,,0,0,0,,{\fad(60,40)}${text}`;
+    if (k >= 0) flat[k] = { ...flat[k], w: `{\\c${HIGHLIGHT}}${flat[k].w}{\\c&HFFFFFF&}` };
+    const text = c.lines.map((_, li) => flat.filter((x) => x.li === li).map((x) => x.w).join(' ')).join('\\N');
+    return `Dialogue: 0,${assTime(c.start)},${assTime(c.end)},Caption,,0,0,0,,{\\fad(60,40)}${text}`;
   });
   return ASS_HEADER(layout.width, layout.height, [`Style: ${style}`]) + events.join('\n') + '\n';
 }
@@ -247,7 +247,7 @@ export function buildHudAss(events: HudEvent[], layout: CaptionLayout = CAPTION_
   const style = ['Hud', 'Montserrat SemiBold', 38, '&H00FFFFFF', '&H000000FF', '&H00101010', '&H64000000', 0, 0, 0, 0, 100, 100, 5, 0, 1, 2, 1.5, 7, 96, 96, 150, 1].join(',');
   return (
     ASS_HEADER(layout.width, layout.height, [`Style: ${style}`]) +
-    events.map((e) => `Dialogue: 0,${assTime(e.start)},${assTime(e.end)},Hud,,0,0,0,,{\fad(250,200)}${e.text.toUpperCase().replace(/[{}]/g, '')}`).join('\n') +
+    events.map((e) => `Dialogue: 0,${assTime(e.start)},${assTime(e.end)},Hud,,0,0,0,,{\\fad(250,200)}${e.text.toUpperCase().replace(/[{}]/g, '')}`).join('\n') +
     '\n'
   );
 }
