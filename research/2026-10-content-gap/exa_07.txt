@@ -1,0 +1,281 @@
+﻿QUERY: YouTube Shorts RPM by niche 2026 history science education
+Title: YouTube Shorts RPM niche-by-niche: real monetization data from 274 channels - AIR Media-Tech
+URL: https://air.io/en/air-data-findings/what-is-youtube-shorts-rpm-in-your-niche-in-2026
+Published: 2026-06-23T11:40:07.000Z
+Author: N/A
+Highlights:
+# What Is YouTube Shorts RPM in Your Niche in 2026?
+...
+YouTube Shorts pays between $0.02 and $1.48 RPM, depending on your niche, roughly 3–14% of what long-form earns per 1,000 views. These figures come from YouTube Analytics API data across 274 channels, full-year medians.
+
+In this article, you'll get Shorts RPM figures by niche and channel size, the break-even calculation that shows how many Shorts views it takes to match 1,000 long-form views, and an honest answer on the long-form RPM question, including the methodological reason this study can answer it more cleanly than the comparisons you've seen before.
+...
+This research draws on data from 274 channels across 13 niches, accessed directly through the YouTube Analytics API. Every figure comes directly from YouTube Studio.
+...
+- Channel level: 274 channels producing 3,044 channel-month data points
+- Video level: 17 channels (directional only; flagged throughout wherever used)
+- Niches: News & Politics, Crafting and Handmade, Entertainment, Business & Finance, Gaming, Kids & Teens, Music, Education & Science, Lifestyle, Food & Cooking, Transport, Gadgets & Stuff, Health and Sport
+- Size tiers: small (10K–100K monthly views), medium (100K–10M), large (10M–50M)
+...
+The monetization answer is straightforward: Shorts generate 3–14% of what long-form earns per 1,000 views. In practical terms, a channel needs anywhere from 11,000 to 34,000 Shorts views to equal the revenue from 1,000 long-form views. For most channels, Shorts account for under 2% of total revenue, while often consuming a disproportionate share of production effort.
+...
+- Music
+- Education & Science
+- Gaming
+- Entertainment
+- Kids & Teens
+- Lifestyle
+- Crafting and Handmade
+- Gadgets & Tech
+...
+Music is the categorical ... in this dataset. ... Music channels achieve Shorts RPM of $1. ... 8 and reach 60% of their own long-form RPM. ... hit $0.97 Shorts RPM at 41% of long-form.
+...
+### Do YouTube Shorts Help Education & Science Channels?
+
+Education has the highest long-form RPM in the entire dataset, with $14.97 at the medium tier and $18.23 at the small tier. No other niche comes close. Educational advertisers (software, online learning, financial products, SaaS tools) pay premium CPMs because they are reaching an actively learning, high-intent audience.
+
+The data shows that Education channels classified as "transitional" (Shorts-heavy) show the sharpest subscriber underperformance of any niche, a 3.3× subscriber gap between mono-long and transitional channels at the 10M–50M tier.
+
+The subscriber data from a wider 18,000-channel sample shows Education channels do gain subscribers from mixing Shorts in— but given the RPM differential, that growth comes at a significant revenue cost per view that most Education channels won't find worth it.
+
+The strategic implication: an Education channel earning $18 RPM on long-form has an enormous opportunity cost for every view shifted to Shorts. If Shorts RPM in Education follows the pattern of other niches (3–8% of long-form RPM), the implied Shorts RPM would be $0.54–$1.44. To match 1,000 long-form Education views at $18 RPM, you'd need 12,500–33,000 Shorts views.
+...
+$3. ... 8 and Shorts RPM ... $0. ... even calculation produces approximately 34,00 ... 1,00 ... -form views. No ... the dataset shows a
+...
+Shorts monetization checklist
+
+| Question | What the data says |
+| --- | --- |
+| Is Shorts RPM worth chasing for revenue? | No — except in Music with Content ID |
+| How many Shorts views to match 1K long-form? | 11,000–34,000 for most niches; ~1,100 for Music |
+| Does posting Shorts hurt long-form RPM? | Signal exists in Entertainment (−60%) and Kids (−26%); Gaming is stable; causality unproven |
+| Is 1–5 Shorts/month safe? | In most cases, yes. Minimal RPM impact is visible in dose-response data across most niches |
+| What does heavy Shorts posting (21+/month) cost? | Heavy Shorts posting decreases revenue in most niches. |
+| When is Shorts' revenue share meaningful? | Kids large at 21+/month (41%); Music small (7%); otherwise <5% |
+...
+way that is ... % Shorts-to-long ... are operating in a ... in Music and own ... viability as a
+...
+channels in the within-channel sample earn 60% less long-form RPM in Shorts months. The dose-response shows $4.99 RPM at 0 Shorts falling to $1.15 at 21+. The causality is not proven, but the pattern is too consistent to ignore. Entertainment ... with high long-form RPM baselines should monitor their own Studio data carefully when scaling Shorts.
+...
+The dose-response data consistently show that the RPM and revenue gap between Shorts-active and non-Shorts channels is largest at the highest Shorts volumes. Low Shorts cadence (1–5 per month) shows minimal RPM impact in most niches. This is consistent with the data: the 0.28–0.40 shorts ratio range (roughly 1 Short per 2–3 long-form videos) is where mixed strategy outperforms both mono-long and transitional in subscriber growth.
+...
+The 45.7% Shorts monetized playback rate (versus 12.1% for long-form) reflects COPPA ... s ad-serving restrictions and makes Kids Shorts proportionally more monetizable than their RPM suggests. At the large tier with 21+ ... per month, ... revenue share reaches 41%.
+
+---
+
+Title: YouTube Shorts RPM vs long-form: real monetization data from 274 channels - AIR Media-Tech
+URL: https://air.io/en/air-data-findings/youtube-shorts-rpm-vs-long-form-how-much-do-shorts-earn-in-2026
+Published: 2026-06-23T22:34:33.000Z
+Author: N/A
+Highlights:
+Online, the question about how much YouTube Shorts pays comes up constantly. We pulled data directly from the YouTube Analytics API across 274 channels that mix in Shorts and saw that YouTube Shorts RPM is 3–14% of long-form RPM in almost every niche, meaning most channels need between 11,000 and 34,000 Shorts views to earn what 1,000 long-form views generate.
+...
+The strategic conclusion the data supports: a mixed strategy at 0.28–0.40 Short ratio (roughly 1 Short per 2–3 long-form uploads) is where most niches show the best subscriber and revenue outcomes. Heavy Shorts pivots show consistent performance decline.
+...
+- Shorts RPM is 3–14% of long-form RPM in almost every niche. Music is the only exception where Content ID closes the gap to 41–60%. For every other niche, Shorts pay a fraction of what a long-form view generates, which has nothing to do with algorithmic penalties but everything to do with the monetization model being structurally different.
+- It takes 11,000–34,000 Shorts views to match 1,000 long-form views in revenue. Music channels need only ~1,100 (roughly 1:1). Kids & Teens large channels need ~2,156. Everyone else is in the 11,000–26,000 range, with Crafting at the far end at ~34,000. The calculation is simple: long-form RPM ÷ Shorts RPM × 1,000.
+- Entertainment channels show the sharpest RPM compression when Shorts are added. The within-channel comparison shows the same channels earning $4.58 RPM in months without Shorts and $1.84 in months with Shorts, a 60% drop. The dose-response goes further: $4.99 at 0 Shorts per month falls to $1.15 at 21+, a 77% decline. The causality is unproven, but the signal is too consistent to ignore.
+...
+non-Shorts ... ($3.42 vs $3.29). Gaming audiences are habitual because they don't ... Shorts for long-form content the way Entertainment audiences do
+...
+- Education has the highest RPM in the dataset ($14.97–$18.23) and zero Shorts channels in the sample. The opportunity cost of shifting Education views to Shorts is the largest of any niche. The strategy data shows Education channels pivoting to Shorts face the sharpest subscriber decline of any niche, a 3.3× gap between mono-long and transitional channels.
+- Kids & Teens Shorts have a 45.7% monetized playback rate versus 12.1% for long-form, which is related to a COPPA effect. This makes Shorts proportionally more monetizable in Kids than their RPM suggests. At the large tier with 21+ Shorts per month, Shorts revenue share reaches 41%.
+- The sweet spot is 1–5 Shorts per month. This is where dose-response data shows minimal long-form RPM impact across most niches, and where strategy data shows mixed-strategy channels outperforming both mono-long and transitional in subscriber growth.
+...
+The data in this research comes from 274 channels across 13 niches with YouTube Analytics API access. All figures are verified and pulled directly from YouTube Studio.
+...
+- Channel level: 274 channels, 3,044 channel-month observations
+- Video level: 17 channels only (indicative; all video-level findings marked accordingly)
+- Niches: News & Politics, Crafting and Handmade, Entertainment, Business & Finance, Gaming, Kids & Teens, Music, Education & Science, Lifestyle, Food & Cooking, Transport, Gadgets & Stuff, Health and Sport
+- Size tiers: small (10K–100K monthly views), medium (100K–10M), large (10M–50M)
+...
+### How Much Do Shorts Pay Compared to Long-Form, by Niche?
+
+The central finding: for most niches, Shorts RPM is 3-14% of long-form RPM. Music is the exception, where Shorts RPM reaches 41–60% of long-form RPM in Music channels, driven by Content ID revenue that other niches cannot access.
+
+As you can see, Shorts RPM clusters between $0.07 and $0.20 per 1,000 views for most niches. The few exceptions are Music (Content ID), Lifestyle small (brand deal contamination in the sample), and Gaming small.
+...
+Music is the complete outlier. A Music small channel needs only about 1,100 Shorts views to match 1,000 long-form views, which is roughly a 1:1 exchange rate. This is because Music Shorts are frequently monetized via Content ID: when a Short uses copyrighted music, the rights holder receives a share of the revenue, and many Music channels are the rights holders. This mechanism is completely unavailable to non-Music niches.
+
+For almost every other niche, the gap is 11,000-26,000 Shorts views per 1,000 long-form views. A Gaming channel generating 100,000 long-form views per month at $3.17 RPM earns $317. To match that from Shorts alone at $0.17 RPM, the channel would need 1,865,000 Shorts views per month.
+...
+Entertainment shows the most dramatic compression: the same channels earn $4.58 RPM in months when they don't post Shorts and $1.84 when they do, which is a whopping 60% drop. Kids & Teens shows a 26% drop. Gaming shows almost no change. Music shows a modest increase in YouTube Shorts months.
+...
+Entertainment shows a monotonic decline: $4.99 at 0 Shorts per month, falling to $1.15 at 21+ Shorts per month, a 77% drop. This is the strongest dose-response signal in the dataset.
+...
+If you're in Entertainment and considering a heavy Shorts strategy, the dose-response data suggests significant long-form RPM compression above 6-20 Shorts per month. If you're in Gaming, the RPM signal is noisier, and the channel-level data shows greater stability. The sweet spot across most niches where RPM damage is minimal appears to be 1–5 Shorts per month, which aligns with what the broader posting frequency data shows — the channels that over-posted even long videos had 55% fewer subscribers than those posting at ... optimal rate.
+...
+The one context where Shorts revenue share climbs to significance is Kids & Teens at the large tier, posting 21+ Shorts per month: Shorts account for 41% of revenue at that combination. For large kids' channels, Shorts volume can shift the entire revenue mix. This is consistent with the Kids & Teens video-level finding that Shorts have a 45.7% monetized playback rate versus 12.1% for long-form, which is a structural effect of COPPA ad-serving restrictions that suppress ad serving on long-form kids content, making Shorts proportionally more monetizable in absolute terms.
+...
+The counterintuitive finding: Shorts show higher RPM ($0.29) than long-form ($0.15) at the video level, despite lower advertiser CPM ($1.30 vs $1.69). The explanation is the monetized playback rate: 45.7% of Shorts views carry a monetized ad versus only 12.1% of long-form views. Nearly 1 in 2 Shorts views is monetized. Only 1 in 8 long-form views carries an ad in Kids & Teens content.
+
+This is a
+...
+their long-form RPM on Shorts, a
+...
+The within-channel comparison shows Entertainment channels earning $4.58 RPM in months without Shorts and $1.84 in months with Shorts. The dose-response extends that finding further: long-form RPM at zero Shorts per month ($4.99) falls to $1.15 at 21+. Causality isn't established, but a consistent 60% RPM drop across multiple channels is a signal that warrants tracking in your own Studio data before you scale Shorts volume up.
+...
+Low Shorts cadence shows minimal RPM impact in the dose-response data across most niches. The damage appears at the high end: 21+ Shorts per month is where the RPM and revenue gaps between Shorts-active and non-Shorts channels are widest. The 0.28–0.40 Shorts ratio (one Short per two to three long-form uploads) is the range where mixed-strategy channels show the strongest combined subscriber and revenue performance.
+...
+COPPA's ad-serving restrictions suppress long-form monetization significantly: only 1 in 8 long-form views in Kids & Teens carries a monetized ad. Shorts, by contrast, show a 45.7% monetized playback rate in this niche. That structural difference makes Shorts proportionally more monetizable here than their per-view RPM suggests. At the large tier with 21+ Shorts per month, Shorts revenue share reaches 41% of total channel revenue.
+
+---
+
+Title: YouTube Shorts RPM by Niche: 2026 Data from 274 Channels
+URL: https://ytbench.com/blog/youtube-shorts-rpm
+Published: 2026-09-26T01:42:58.000Z
+Author: ytbench team
+Highlights:
+YouTube Shorts RPM by Niche: 2026 Data from 274 Channels
+...
+YouTube Shorts RPM is the one number that tells a creator what their Shorts actually earn. Most figures online are advertiser CPM or one creator' ... . This page uses YouTube's own ... and Studio data from 274 channels, then sets each niche against its long-form RPM.
+...
+## YouTube Shorts RPM by Niche and Channel Size
+
+AIR Media-Tech pulled a year of YouTube Analytics data from 274 channels and reported median Shorts RPM by niche and by channel size (monthly views: small 10K–100K, medium 100K–10M, large 10M–50M). The medium tier is the most complete:
+
+Median Shorts RPM · channels with 100K–10M monthly views
+
+Music$0.97
+
+Lifestyle$0.16–$0.20
+
+Gaming$0.15–$0.17
+
+Entertainment$0.07–$0.12
+
+Crafting$0.11
+
+Kids & Teens$0.06–$0.09
+...
+| Niche | Small | Medium | Large |
+| --- | --- | --- | --- |
+| Music | $1.48 | $0.97 | — |
+| Lifestyle | $0.23–$0.28 | $0.16–$0.20 | — |
+| Gaming | $0.17 | $0.15–$0.17 | — |
+| Entertainment | — | $0.07–$0.12 | — |
+| Crafting | — | $0.11 | — |
+| Kids & Teens | $0.11 | $0.06–$0.09 | $0.02–$0.05 |
+
+Source: AIR Media-Tech, “What Is YouTube Shorts RPM in Your Niche in 2026?” (June 23, 2026): YouTube Analytics API data from 274 channels, full-year medians.
+
+Two cells are left out on purpose. The study had no Shorts data for Education, and it flagged small Entertainment channels as unreliable. Across the whole dataset, Shorts RPM ran at roughly 3%–14% of long-form RPM in the same niche — the same range our YouTube Money Calculator cites when it explains why it leaves Shorts out.
+...
+| Niche | Long-form RPM (calculator) | Shorts RPM (medium) | Shorts views needed (our math) | AIR estimate |
+| --- | --- | --- | --- | --- |
+| Music | $1.35–$4.16 | $0.97 | 1,400–4,300 | ~1,470 |
+| Lifestyle | $1.77–$5.24 | $0.16–$0.20 | 8,900–32,800 | ~26,063 |
+| Gaming | $0.70–$3.62 | $0.15–$0.17 | 4,100–24,100 | ~17,474 |
+| Entertainment | $0.88–$5.02 | $0.07–$0.12 | 7,300–71,700 | ~12,933–29,143 |
+| Crafting | $1.00–$3.90 | $0.11 | 9,100–35,500 | ~34,000 |
+| Kids & Teens | $0.16–$0.88 | $0.06–$0.09 | 1,800–14,700 | ~11,522 |
+...
+as an exchange rate. ... Lifestyle creator who shifts effort from one long-form video into Shorts needs those ... tens of thousands of ... just to stay even on revenue. Kids & Teens is the opposite case: its long- ... rate is already held down by the ... on children's ... . AIR measured only about 1 in 8 long-form Kids views carrying an ad, against 45.7% of Shorts views, so the gap between the ... smaller there.
+
+## Why Music Breaks the Pattern
+
+Music is the only niche where Shorts come close to long-form. Small Music channels had a median Shorts RPM of $1.48, 60% of their long-form RPM; medium Music channels reached $0.97, or 41%. Every other niche sat far lower.
+...
+Outside Music, most niche-and-size groups had a median Shorts RPM between $0.06 and $0.28, so anything near $0.30 is strong. Music is the exception: small Music channels reached a median of $1.48.
+
+---
+
+Title: YouTube Earnings Calculator (2026): Updated RPM & Niches
+URL: https://www.learningrevolution.net/youtube-earnings-calculator/
+Published: 2026-03-03T00:00:00.000Z
+Author: Jawad Khan
+Highlights:
+| Online Education / eLearning | $5 – $7.50 | $6.25 | $625 | EdTech advertisers: Coursera, Skillshare, Udemy |
+| Science & Technology | $5 – $7 | $6 | $600 | Broad science content; STEM audience valuable to tech advertisers |
+...
+| History & Documentary | $4 – $6 | $5 | $500 | Streaming services, book publishers, learning platforms |
+...
+| Education (General) | $4 – $6.50 | $5.25 | $525 | Varies widely by topic; test prep and language learning earn more |
+...
+| YouTube Shorts (all niches) | $0.03 – $0.15 | $0.07 | $7 | Pooled revenue model; 50–70% lower than long-form equivalent |
+...
+Shorts note: YouTube Shorts RPM is not directly comparable to long-form RPM. A Shorts RPM of $0.07 on 10 million views equals $700 — the same as a long-form channel earning $7 RPM on 100,000 views. The format difference changes the scale at which earnings become meaningful.
+...
+### YouTube RPM for Education Channels
+
+Education channels earn $4–$6.50 RPM on average, with significant variation based on topic and audience. Academic tutoring, language learning, and test preparation content attracts online learning platform advertisers (Coursera, Skillshare, Duolingo) that pay moderate CPMs. Science and history education earns in this range consistently.
+...
+### YouTube RPM for History and Documentary Channels
+
+History and documentary channels earn $4–$6 RPM with a Tier 1 audience. The advertiser mix includes streaming services, book publishers, and online learning platforms — mid-tier advertisers that pay more than entertainment but less than finance. Channels blending history with current events or personal finance angles (e.g., “the economic history of…”) tend to earn at the higher end of this range.
+
+History channels with a global audience that skews toward South Asia or Southeast Asia earn $1–$2.50 RPM, since the advertiser market for history content in those regions is much thinner.
+...
+Long-form videos (8+ minutes) enable mid-roll ads, which means multiple ad impressions per view. Videos 15+ minutes with several mid-rolls earn the most on a per-view basis. Shorts earn 50–70% less than long-form in the same niche because YouTube pools Shorts ad revenue across multiple creators in a session. Live streams monetize through ads, Super Chats, and memberships but RPM varies based on viewer interaction.
+...
+What is YouTube RPM for history and documentary channels?
+
+History and documentary channels on YouTube typically earn $4–$6 RPM with a Tier 1 audience. Educational history content attracts mid-tier advertisers — streaming services, book publishers, online learning platforms — which pay more than entertainment advertisers but less than financial services. Channels that blend history with current events or economic analysis tend to see RPM at the higher end of this range. A history channel with 70% US viewers will earn considerably more than one with primarily South Asian or Southeast Asian traffic.
+...
+What is YouTube Shorts RPM in 2026?
+
+YouTube Shorts RPM in 2026 typically ranges from $0.03 to $0.08 per 1,000 views — roughly 50–70% lower than long-form content in the same niche. YouTube pools ad revenue from the Shorts feed and distributes it across all creators whose Shorts were watched in a session, rather than paying per individual ad view. The payout improved after YouTube updated its Shorts monetization model in 2023, but Shorts still earn significantly less than 8+ minute videos per 1,000 views. Most creators use Shorts to grow subscribers and funnel viewers toward long-form content where RPM is higher.
+
+---
+
+Title: YouTube Shorts RPM in 2026: Real Ranges · Grow Creator
+URL: https://growcreator.pro/blog/youtube-shorts-rpm-2026
+Published: 2026-07-09T00:00:00.000Z
+Author: Grow Creator Team
+Highlights:
+A realistic YouTube Shorts RPM in 2026 is roughly $0.01–$0.08 per 1,000 views for most creators — a fraction of long-form rates. Your niche and audience country move it far more than view count: US finance, business, and tech Shorts sit near the top of that range, while broad entertainment, gaming, and vlogs and low-CPM regions sit near the bottom. These are third-party estimates, not figures YouTube publishes.
+...
+- Niche is the biggest lever: finance, business, and tech attract far higher advertiser rates than gaming, entertainment, or vlogs.
+...
+## YouTube Shorts RPM by niche (2026 estimates)
+
+Niche is the single biggest RPM lever because advertisers bid far more to reach some audiences than others. The table below shows directional third-party ranges — treat them as relative ordering, not promises, and always check your own Studio numbers.
+
+| Niche | Rough Shorts RPM (per 1,000 views) | Why |
+| --- | --- | --- |
+| Finance, business, investing | ~$0.05–$0.10+ | Highest advertiser bids; high-value viewers |
+| Tech, software, B2B, AI tools | ~$0.04–$0.08 | Strong CPMs, purchase-intent audience |
+| Education, how-to, careers | ~$0.03–$0.06 | Solid mid-range advertiser demand |
+| Health, fitness, food | ~$0.02–$0.05 | Broad appeal, moderate CPMs |
+| Gaming | ~$0.01–$0.03 | Large volume, lower advertiser rates |
+| Entertainment, comedy, vlogs | ~$0.01–$0.02 | Broadest audience, lowest CPMs |
+
+The gap between the top and bottom rows is several times over — the same million views can mean very different pay depending purely on topic. If you're weighing where your channel sits, niche matters more than most creators expect, and advertiser demand is what drives category economics.
+...
+There's no universal figure, but commonly cited third ... party estimates put Shorts RPM around $0.01–$0.08 per 1,000 views in 2026. What ... "good" depends on your niche and audience ... — a US finance creator near $0.06–$0.10 and ... creator near $0.01–$0.02 can both be healthy for their category. Your real RPM is in YouTube Studio under Revenue; benchmark it against your own history rather ... a single number online.
+...
+### Which YouTube niches have the highest Shorts RPM?
+
+Finance, business, investing, tech, software, and B2B consistently sit at the top because advertisers bid the most to reach those audiences. Education and how-to are solid mid-range. Gaming, entertainment, comedy, and vlogs tend to have the lowest RPM because their broad audiences carry lower advertiser rates. These are directional third-party estimates — your own Studio revenue is the only exact figure.
+
+---
+
+Title: The Highest-RPM Shorts Niches Going Into 2026 | TimeToPost
+URL: https://timetopost.co/blog/highest-rpm-shorts-niches-2026/
+Published: 2026-09-09T08:02:27.000Z
+Author: Mel Owen
+Highlights:
+with the exact same view count. ... $30. The other earns $200. Same platform, same format, same million views. The difference isn ... the niche, and going into ... the gap between a high ... CPM Shorts niche and a ... -CPM one is wide enough to decide whether ... channel is worth the hours you're putting into it.
+
+The baseline creators report for YouTube Shorts is roughly $0.03 to $0.10 per 1,000 Shorts-feed views. That's the number most "how much do Shorts pay" articles stop at, and it's honest but incomplete. Niches with strong advertiser demand, finance, tech, B2B, can reach $0.15 to $0.25 per 1,000 views. That's not a rounding error. It's the difference between a Short needing 10 million views to clear $1,000 and needing 4 million.
+...
+views after the platform ... production quality. ... fintech app might pay to ... 's audience is valuable too, just to a much cheaper category of ... : mobile games, snack brands, impulse-buy retail.
+...
+## The Three ... Tiers Going Into 2026
+...
+| Tier | Example niches | YouTube Shorts RPM (creator-reported) | What drives it | |---|---|---|---| | High-CPM | Personal finance, investing, SaaS/tech reviews, B2B, productivity tools | $0.15 to $0.25 per 1,000 views | High-value advertisers (fintech, software, enterprise tools) bidding for a buying-intent audience | | Mid-CPM | Education, DIY/home improvement, career advice, general tech news | Somewhere between the two bands, creator-reported and inconsistent | Decent advertiser demand, but split across a broader, less purchase-ready audience | | Baseline | Entertainment, comedy, reaction content, general lifestyle | $0.03 to $0.10 per 1,000 views | Massive audience volume, but advertisers pay less per viewer because intent is low |
+
+Say your channel sits in the baseline tier and averages 5 million Shorts views a month. At $0.03 to $0.10 per 1,000 views, that's roughly $150 to $500 a month. Move the same production system into a high-CPM niche at $0.15 to $0.25 per 1,000 views, and 5 million views becomes $750 to $1,250. Same effort, same schedule, better math, assuming you can actually hold an audience in the higher-CPM niche, which is the part people skip.
+...
+High-CPM niches are harder to grow. Finance and B2B audiences are smaller and more skeptical than entertainment audiences, and the content bar is higher: viewers in these niches can tell when a creator doesn't actually understand what they're talking about, and they leave. You'll typically see slower subscriber growth and a smaller top-of-funnel than a comedy or reaction channel chasing the same hours of work.
+
+That's the real tradeoff. Low-CPM niches monetize a huge volume of easy-to-produce views at a low rate. High-CPM niches monetize a smaller, harder-won audience at 2x to 5x the rate. Neither is objectively better. A channel doing 20 million baseline-tier views a month can out-earn a channel doing 3 million high-CPM views. Volume beats virality, and it can beat CPM tier too, if you can actually hit that volume.
+...
+### What is the highest-RPM niche for YouTube Shorts in 2026?
+
+Creator-reported figures put finance, SaaS/tech, and B2B content at the top of the range, roughly $0.15 to $0.25 per 1,000 Shorts-feed views, compared to a $0.03 to $0.10 baseline for entertainment and general content. These are creator-reported ranges, not official YouTube figures, and individual results vary.
+...
+TikTok doesn't publish an official rate. Creator-reported 2026 figures put TikTok's Creator Rewards Program at roughly $0.20 to $1.00 per 1,000 qualified US views (views watched 5+ seconds), though this has reportedly compressed since 2024-2025. It's paid to eligible accounts in a specific list of countries, not a universal rate, so treat any single number as a range with real variance, not a guarantee.
+...
+you can realistically sustain ... quality that high ... forced pivot into
+

@@ -1,0 +1,58 @@
+{
+ "ours__crow_QA": {
+  "durationSeconds": 23.7,
+  "cuts": 5,
+  "avgShotSeconds": 3.94,
+  "integratedLufs": -15.3,
+  "silenceCount": 5,
+  "silenceTotalSeconds": 3.2,
+  "words": 64,
+  "wordsPerSecond": 2.88,
+  "speechStartsAt": 0,
+  "speechCoverage": 0.94,
+  "avgSentenceWords": 12.8,
+  "first3sText": "Why is it illegal to own a crow as a pet"
+ },
+ "ours__planes_3R": {
+  "durationSeconds": 28.2,
+  "cuts": 6,
+  "avgShotSeconds": 4.03,
+  "integratedLufs": -15.3,
+  "silenceCount": 9,
+  "silenceTotalSeconds": 6.4,
+  "words": 73,
+  "wordsPerSecond": 2.73,
+  "speechStartsAt": 0,
+  "speechCoverage": 0.95,
+  "avgSentenceWords": 14.6,
+  "first3sText": "Why do planes look like they're moving in slow motion across the"
+ },
+ "ours__smallpox_STORY": {
+  "durationSeconds": 50.7,
+  "cuts": 11,
+  "avgShotSeconds": 4.22,
+  "integratedLufs": -15.5,
+  "silenceCount": 12,
+  "silenceTotalSeconds": 7.1,
+  "words": 108,
+  "wordsPerSecond": 2.17,
+  "speechStartsAt": 0,
+  "speechCoverage": 0.98,
+  "avgSentenceWords": 9,
+  "first3sText": "What if smallpox simply vanished In 1966"
+ },
+ "ours__tacoma_STORY": {
+  "durationSeconds": 52.1,
+  "cuts": 10,
+  "avgShotSeconds": 4.73,
+  "integratedLufs": -15.6,
+  "silenceCount": 13,
+  "silenceTotalSeconds": 8,
+  "words": 112,
+  "wordsPerSecond": 2.21,
+  "speechStartsAt": 0,
+  "speechCoverage": 0.97,
+  "avgSentenceWords": 8.6,
+  "first3sText": "How did a bridge dance wildly Opened"
+ }
+}

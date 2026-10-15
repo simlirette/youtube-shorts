@@ -15,12 +15,12 @@ const limits = { minSeconds: 5, maxSeconds: 60, targetLufs: -14, toleranceLu: 2 
 
 const script: ShortScript = {
   id: randomUUID(), storyId: randomUUID(), topicId: randomUUID(), title: 'Test Short Title', description: 'd', hookText: 'Why did it sway?',
-  targetDurationSeconds: 45, totalWords: 0, generationAttempts: 1, createdAt: new Date().toISOString(),
+  targetDurationSeconds: 45, totalWords: 0, generationAttempts: 1, format: 'STORY', createdAt: new Date().toISOString(),
   scenes: [
     'Why did it sway?',
     'The bridge opened in June and thousands of people crossed it on the very first day of operation.',
     'Within two days engineers closed it again, because the deck moved sideways under the crowd in a way nobody expected.',
-  ].map((narration, i) => ({ sceneNumber: i + 1, narration, visualObjective: 'bridge', mediaFormat: 'LICENSED_STOCK' as const, assetKeywords: ['bridge', 'river'], transitionIntent: 'CUT' as const, claimIds: [] })),
+  ].map((narration, i) => ({ sceneNumber: i + 1, narration, visualObjective: 'bridge', mediaFormat: 'LICENSED_STOCK' as const, visualSubject: 'steel footbridge over river', visualExclusions: [], assetKeywords: ['bridge', 'river'], transitionIntent: 'CUT' as const, claimIds: [], beats: [] })),
 };
 script.totalWords = script.scenes.reduce((n, s) => n + s.narration.split(/\s+/).length, 0);
 

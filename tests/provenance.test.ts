@@ -40,8 +40,8 @@ const research: ResearchPacket = {
 
 const script = (claimIds: string[]): ShortScript => ({
   id: randomUUID(), storyId: randomUUID(), topicId: research.topicId, title: 'Bridge story', description: '', hookText: 'It swayed.',
-  targetDurationSeconds: 45, totalWords: 10, generationAttempts: 1, createdAt: new Date().toISOString(),
-  scenes: [1, 2, 3].map((n) => ({ sceneNumber: n, narration: 'Line.', visualObjective: 'x', mediaFormat: 'LICENSED_STOCK', assetKeywords: ['bridge'], transitionIntent: 'CUT', claimIds: n === 2 ? claimIds : [] })),
+  targetDurationSeconds: 45, totalWords: 10, generationAttempts: 1, format: 'STORY', createdAt: new Date().toISOString(),
+  scenes: [1, 2, 3].map((n) => ({ sceneNumber: n, narration: 'Line.', visualObjective: 'x', visualSubject: 'steel footbridge', visualExclusions: [], mediaFormat: 'LICENSED_STOCK', assetKeywords: ['bridge'], transitionIntent: 'CUT', claimIds: n === 2 ? claimIds : [], beats: [] })),
 });
 
 describe('ProvenanceTracker', () => {

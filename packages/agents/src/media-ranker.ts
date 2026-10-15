@@ -3,6 +3,8 @@ import { significantTokens } from '@shorts/core';
 
 export interface RankContext {
   keywords: string[];
+  /** Imagery the scene must not show; a candidate whose tags contain an exclusion is rejected. */
+  exclusions?: string[];
   sceneDurationSeconds: number;
   usedMediaKeys: Set<string>;
   minRelevance: number;
@@ -44,6 +46,14 @@ export function rankCandidate(c: AssetCandidate, ctx: RankContext): RankOutcome 
   if (ctx.usedMediaKeys.has(mediaKey(c))) return { ok: false, reason: 'already used in this Short' };
   const prod = `${c.tags.join(', ')} ${c.description}`.match(PRODUCTION_ASSET);
   if (prod) return { ok: false, reason: `production asset (${prod[0]}), not finished footage` };
+  if (ctx.exclusions?.length) {
+    const bag = new Set(significantTokens(`${c.tags.join(' ')} ${c.description}`));
+    const hit = ctx.exclusions.find((ex) => {
+      const t = significantTokens(ex);
+      return t.length > 0 && t.every((x) => bag.has(x));
+    });
+    if (hit) return { ok: false, reason: `matches scene exclusion "${hit}"` };
+  }
   if (c.fileSizeBytes && c.fileSizeBytes > ctx.maxBytes) return { ok: false, reason: `file too large (${c.fileSizeBytes} bytes)` };
 
   const { relevance, matched } = relevanceScore(ctx.keywords, c);
@@ -57,7 +67,7 @@ export function rankCandidate(c: AssetCandidate, ctx: RankContext): RankOutcome 
   else if (ar <= 0.8) orientation = 0.8;
   else if (ar <= 1.05) orientation = 0.45;
   else orientation = 0.3;
-  if (!portrait) reasons.push('landscape/square: rendered with blurred-fill background');
+  if (!portrait) reasons.push('landscape/square: cropped to fill the vertical frame');
 
   let resolution: number;
   if (portrait) {
@@ -65,10 +75,16 @@ export function rankCandidate(c: AssetCandidate, ctx: RankContext): RankOutcome 
     else if (c.width >= 720) resolution = 0.6;
     else return { ok: false, reason: `portrait width ${c.width} < 720` };
   } else {
-    if (c.width >= 1920) resolution = 1;
-    else if (c.width >= 1280) resolution = 0.75;
-    else if (c.width >= 1080) resolution = 0.55;
-    else return { ok: false, reason: `landscape width ${c.width} < 1080` };
+    // Landscape clips are cropped to fill 9:16, so their height decides the output sharpness
+    // (≥ 960 px keeps the upscale ≤ 2×; below that the shot would have to be letterboxed).
+    if (c.width < 1080) return { ok: false, reason: `landscape width ${c.width} < 1080` };
+    if (c.height >= 1920) resolution = 1;
+    else if (c.height >= 1080) resolution = 0.8;
+    else if (c.height >= 960) resolution = 0.6;
+    else {
+      resolution = 0.25;
+      reasons.push('low height: would be letterboxed instead of filling the frame');
+    }
   }
 
   let duration: number;

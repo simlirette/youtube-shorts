@@ -9,25 +9,37 @@ Built with TypeScript (pnpm workspaces), FFmpeg/ffprobe, SQLite (Postgres-compat
 ```text
 SELECTING_TOPIC   discover (exact-N with explicit shortfall, fuzzy dedupe) → deterministic score gate
   → [IDEA gate]
-RESEARCHING       search → full-text sources → LLM claim extraction → verbatim quote location,
+RESEARCHING       search → source credibility policy (HIGH/ACCEPTABLE/QUESTIONABLE/REJECTED) →
+                  full-text sources → LLM claim extraction → verbatim quote location,
                   numeric consistency, LLM entailment → only VERIFIED claims continue
-SCRIPTING         story → script (5 scenes, 100–130 words, hook ≤7 words, claim refs, numbers checked,
-                  fact review) with corrective retries; fails closed
+SCRIPTING         story → script in a rotated format (question formats 55–95 words, STORY 100–118; claim refs, numbers checked,
+                  visual subject/exclusions per scene, fact review) with corrective retries; fails closed
   → [SCRIPT gate]
 SYNTHESIZING_VOICE ElevenLabs with character timestamps → two-pass loudnorm WAV → probe/silence/
                   loudness validation (cached, never re-billed on resume)
 BUILDING_TIMELINE single timeline from real word timestamps: scenes, ≤6 s shots, caption cues
 SOURCING_MEDIA    Pixabay search (24 h cache) → rank (relevance, orientation, resolution, duration,
-                  no production assets) → LLM visual-fit judge → download → ffprobe + full decode +
-                  black-frame check → keyword refinement / shot merge on shortage
+                  no production assets, scene exclusions) → LLM visual-fit judge → download → ffprobe +
+                  full decode + black/blank/green-screen/letterbox/static frame checks → vision check
+                  on a contact sheet (finalists only) → keyword refinement / shot merge on shortage
 RENDERING         per-shot clips (-an, exact frames, landscape blurred-fill) → concat → ASS captions +
                   narration with explicit -map, padded to the timeline (no -shortest)
 QA                objective media QA on the real MP4 + content QA; WARNs can be blocking
-  → [FINAL gate]  manual, or auto_after_qa
+  → [FINAL gate]  manual, or auto_after_qa (never when QA flags human review)
 READY_TO_PUBLISH → PUBLISHING → PUBLISHED   publish gate re-verifies everything incl. file sha256
 ```
 
 Any failure moves the job to `FAILED` with a classified error (`AUTHENTICATION`, `RATE_LIMIT`, `TIMEOUT`, `VALIDATION`, `QA_FAILED`, …) and `output/jobs/<id>/error.json`. `shorts resume <id>` re-enters the failed stage; finished stages are not repeated.
+
+## Growth system (what makes it a channel, not just a renderer)
+
+- **Gap discovery** (`shorts gaps`): real viewer questions from YouTube autocomplete, measured against YouTube search — long-form demand vs existing Shorts supply → deterministic gap score. Free (no API key), one cheap triage call.
+- **Formats** that rotate (`QUESTION_ANSWER` 55–85 words, `THREE_REASONS` 65–95, `STORY` 100–118): question-first hooks, shorter narration (fewer voice credits), no template look.
+- **Credit protection**: script review before voice, stock-footage preflight before voice, ElevenLabs balance check, TTS cache, campaign stop on account errors.
+- **YouTube**: `shorts youtube auth` (OAuth, PKCE), AI disclosure, category, scheduled releases (audited projects), daily upload cap.
+- **Analytics** (`shorts analytics sync|report`): owner metrics (engaged views, % viewed) by format, topic cluster, length and release hour; format rotation learns from it.
+
+The operating manual is **[docs/PLAYBOOK.md](docs/PLAYBOOK.md)**.
 
 ## Quick start
 
@@ -48,12 +60,18 @@ pnpm cli publish <id> --mode live             # local export by default
 pnpm cli resume <id> --mode live [--from STAGE]
 pnpm cli schedule --mode live --max-per-day 1 # unattended loop (respects approval policy)
 
+pnpm cli gaps --mode live                     # measured viewer-question gaps (free)
+pnpm cli daily --mode live --new 3            # daily loop up to the review gates
+pnpm cli review --mode live                   # scripts (before voice credits) and finished videos
+pnpm cli youtube auth | youtube status        # connect the channel
+pnpm cli analytics sync --mode live && pnpm cli analytics report --mode live
+
 pnpm test:live                # real-provider acceptance (costs money)
 ```
 
 ## Documentation
 
-- [Architecture](docs/ARCHITECTURE.md) · [Workflow & states](docs/WORKFLOW.md) · [CLI & API](docs/API.md)
+- **[Channel playbook](docs/PLAYBOOK.md)** · **[$0 workflow (Gemini free + Blender)](docs/FREE_WORKFLOW.md)** · [Architecture](docs/ARCHITECTURE.md) · [Workflow & states](docs/WORKFLOW.md) · [CLI & API](docs/API.md)
 - [Setup](docs/SETUP.md) · [Environment](docs/ENVIRONMENT.md) · [Development](docs/DEVELOPMENT.md) · [Decisions](docs/DECISIONS.md)
 - [External audit](AUDIT_REPORT.md) · [Completion report](COMPLETION_REPORT.md)
 

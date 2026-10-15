@@ -7,6 +7,10 @@ import {
   decodeErrors,
   detectBlack,
   detectSilence,
+  analysisBox,
+  analyzeFrame,
+  extractRgbFrames,
+  frameDefects,
   getConfig,
   measureLoudness,
   runFfmpeg,
@@ -14,7 +18,7 @@ import {
   summarizeMedia,
   volumeStats,
 } from '@shorts/core';
-import { CAPTION_LAYOUT, CaptionLayout } from './captions.js';
+import { CAPTION_LAYOUT, CaptionLayout, TITLE_CARD_LAYOUT } from './captions.js';
 import { OUTPUT } from './renderer.js';
 
 export interface MediaQALimits {
@@ -22,6 +26,19 @@ export interface MediaQALimits {
   maxSeconds: number;
   targetLufs: number;
   toleranceLu: number;
+  /** Narration must start by this time (s). */
+  speechStartMax?: number;
+  /** Longest silence allowed inside the narration stem (s). */
+  maxSpeechGap?: number;
+  /** Target speaking pace (words per second, measured from word timestamps). */
+  paceMin?: number;
+  paceMax?: number;
+  /** Share of shots that must fill the frame (others need human review). */
+  fullBleedMinRatio?: number;
+  /** Largest source-to-output upscale allowed for a crop. */
+  maxUpscale?: number;
+  /** True-peak ceiling of the final mix (dBTP). */
+  truePeakMax?: number;
 }
 
 export interface MediaQAInput {
@@ -34,6 +51,21 @@ export interface MediaQAInput {
   renderDir: string;
   limits: MediaQALimits;
   layout?: CaptionLayout;
+  /** Framing actually used per shot (from the assets), for the full-bleed and upscale checks. */
+  framing?: Array<{
+    label: string;
+    mode: 'cover' | 'crop_pan' | 'letterbox';
+    upscale: number;
+    reason: string;
+  }>;
+  /** Music bed: what the variant asked for and what was mixed. */
+  music?: {
+    requested: boolean;
+    trackId: string | null;
+    disabledReason?: string;
+    gainDb?: number;
+    trackLufs?: number;
+  };
 }
 
 export interface CaptionBox {
@@ -51,6 +83,8 @@ function summarizeChecks(checks: QACheck[]): QAReport {
     overallStatus: fails.length ? 'FAIL' : checks.some((c) => c.status === 'WARN') ? 'WARN' : 'PASS',
     publishEligible: fails.length === 0 && blockingWarns.length === 0,
     blockingReasons: [...fails, ...blockingWarns].map((c) => `${c.id}: ${c.message}`),
+    requiresHumanReview: checks.some((c) => c.reviewRequired),
+    reviewReasons: checks.filter((c) => c.reviewRequired).map((c) => `${c.id}: ${c.message}`),
   };
 }
 
@@ -119,10 +153,65 @@ export async function measureCaptionBoxes(renderDir: string, timeline: Timeline)
     }
     measured.set(frame, x2 >= x1 ? { x1: x1 * 2, x2: x2 * 2 + 1, y1: y1 * 2, y2: y2 * 2 + 1 } : null);
   });
-  return timeline.captions.map((c, i) => ({ cueIndex: c.index, t: frames[i] / fps, box: measured.get(frames[i]) ?? null }));
+  return timeline.captions.map((c, i) => ({
+    cueIndex: c.index,
+    t: frames[i] / fps,
+    box: measured.get(frames[i]) ?? null,
+  }));
 }
 
-/** Mean absolute luma difference in `region` between captioned and uncaptioned frames. */
+/** Bounding boxes of lit pixels of an ASS file rendered alone over black, at the given times. */
+export async function measureAssBoxes(renderDir: string, assFile: string, times: number[], fps: number, totalSeconds: number): Promise<Array<CaptionBox['box']>> {
+  const W = OUTPUT.width / 2;
+  const H = OUTPUT.height / 2;
+  const frames = times.map((t) => Math.round(t * fps));
+  const unique = [...new Set(frames)].sort((a, b) => a - b);
+  const cfg = getConfig();
+  const res = await runProcessBuffer(
+    cfg.FFMPEG_PATH,
+    [
+      '-hide_banner',
+      '-nostdin',
+      '-v',
+      'error',
+      '-f',
+      'lavfi',
+      '-i',
+      `color=c=black:s=${OUTPUT.width}x${OUTPUT.height}:r=${fps}:d=${totalSeconds.toFixed(3)}`,
+      '-vf',
+      `ass=${assFile}:fontsdir=fonts,${selectExpr(unique)},scale=${W}:${H}:flags=area,format=gray`,
+      '-fps_mode',
+      'passthrough',
+      '-f',
+      'rawvideo',
+      '-',
+    ],
+    { cwd: renderDir, description: `${assFile} layout measurement` }
+  );
+  if (res.code !== 0) throw new Error(`${assFile} measurement render failed: ${res.stderr.slice(-300)}`);
+  const frameBytes = W * H;
+  const out = new Map<number, CaptionBox['box']>();
+  unique.forEach((frame, fi) => {
+    const base = fi * frameBytes;
+    let x1 = Infinity,
+      x2 = -Infinity,
+      y1 = Infinity,
+      y2 = -Infinity;
+    for (let y = 0; y < H; y++) {
+      for (let x = 0; x < W; x++) {
+        if (res.stdout[base + y * W + x] > 96) {
+          if (x < x1) x1 = x;
+          if (x > x2) x2 = x;
+          if (y < y1) y1 = y;
+          if (y > y2) y2 = y;
+        }
+      }
+    }
+    out.set(frame, x2 >= x1 ? { x1: x1 * 2, x2: x2 * 2 + 1, y1: y1 * 2, y2: y2 * 2 + 1 } : null);
+  });
+  return frames.map((f) => out.get(f) ?? null);
+}
+
 /** Selected frames of a video as cropped grayscale pixel buffers (frame order = ascending frame index). */
 async function grayFrames(videoPath: string, frames: number[], region: { x: number; y: number; w: number; h: number }, fps: number): Promise<Buffer[]> {
   const cfg = getConfig();
@@ -175,7 +264,15 @@ export async function evaluateMedia(input: MediaQAInput): Promise<QAReport> {
   const layout = input.layout ?? CAPTION_LAYOUT;
   const { timeline, narration, limits } = input;
   const add = (id: string, category: string, status: QACheck['status'], message: string, extra: Partial<QACheck> = {}) =>
-    checks.push({ id, category, status, blocking: status !== 'PASS', message, ...extra });
+    checks.push({
+      id,
+      category,
+      status,
+      blocking: status !== 'PASS',
+      reviewRequired: false,
+      message,
+      ...extra,
+    });
   const guard = async (id: string, category: string, fn: () => Promise<void>) => {
     try {
       await fn();
@@ -209,7 +306,9 @@ export async function evaluateMedia(input: MediaQAInput): Promise<QAReport> {
   const v = probe.video;
   add('video.streams', 'video', probe.videoStreams === 1 ? 'PASS' : 'FAIL', `${probe.videoStreams} video stream(s)`, { expected: 1 });
   if (v) {
-    add('video.codec', 'video', v.codec === 'h264' ? 'PASS' : 'FAIL', v.codec, { expected: 'h264' });
+    add('video.codec', 'video', v.codec === 'h264' ? 'PASS' : 'FAIL', v.codec, {
+      expected: 'h264',
+    });
     add('video.geometry', 'video', v.width === OUTPUT.width && v.height === OUTPUT.height ? 'PASS' : 'FAIL', `${v.width}x${v.height}`, { expected: '1080x1920' });
     add('video.fps', 'video', Math.abs(v.fps - OUTPUT.fps) < 0.01 ? 'PASS' : 'FAIL', `${v.fps.toFixed(3)} fps`, { expected: 30 });
     add('video.pixfmt', 'video', v.pixFmt === 'yuv420p' ? 'PASS' : 'FAIL', String(v.pixFmt), { expected: 'yuv420p' });
@@ -219,7 +318,9 @@ export async function evaluateMedia(input: MediaQAInput): Promise<QAReport> {
   const a = probe.audio;
   add('audio.streams', 'audio', probe.audioStreams === 1 ? 'PASS' : 'FAIL', `${probe.audioStreams} audio stream(s)`, { expected: 1 });
   if (a) {
-    add('audio.codec', 'audio', a.codec === 'aac' ? 'PASS' : 'FAIL', a.codec, { expected: 'aac' });
+    add('audio.codec', 'audio', a.codec === 'aac' ? 'PASS' : 'FAIL', a.codec, {
+      expected: 'aac',
+    });
     add('audio.format', 'audio', a.sampleRate === 48000 && a.channels === 2 ? 'PASS' : 'FAIL', `${a.sampleRate} Hz, ${a.channels} ch`, { expected: '48000 Hz, 2 ch' });
   }
 
@@ -265,16 +366,110 @@ export async function evaluateMedia(input: MediaQAInput): Promise<QAReport> {
       const l = await measureLoudness(input.videoPath);
       const off = Math.abs(l.integratedLufs - limits.targetLufs);
       const status = !Number.isFinite(l.integratedLufs) || l.integratedLufs < -30 ? 'FAIL' : off > limits.toleranceLu ? 'WARN' : 'PASS';
-      add('audio.loudness', 'audio', status, `${l.integratedLufs} LUFS`, { expected: `${limits.targetLufs}±${limits.toleranceLu}` });
-      const tpStatus = l.truePeakDb > 0 ? 'FAIL' : l.truePeakDb > -0.5 ? 'WARN' : 'PASS';
-      add('audio.truePeak', 'audio', tpStatus, `${l.truePeakDb} dBFS`, { expected: '<= -0.5 dBFS' });
+      add('audio.loudness', 'audio', status, `${l.integratedLufs} LUFS`, {
+        expected: `${limits.targetLufs}±${limits.toleranceLu}`,
+      });
+      const tpMax = limits.truePeakMax ?? -0.5;
+      const tpStatus = l.truePeakDb > 0 ? 'FAIL' : l.truePeakDb > tpMax ? 'WARN' : 'PASS';
+      add('audio.truePeak', 'audio', tpStatus, `${l.truePeakDb} dBTP`, {
+        expected: `<= ${tpMax} dBTP`,
+      });
     });
+
+    // Narration continuity and pace, measured on the narration stem (music is never mistaken for speech).
+    const words = narration.wordTimestamps;
+    if (limits.speechStartMax !== undefined) {
+      add('audio.speechStart', 'audio', words[0].start <= limits.speechStartMax ? 'PASS' : 'FAIL', `first word at ${words[0].start.toFixed(2)}s`, { expected: `<= ${limits.speechStartMax}s` });
+    }
+    if (limits.maxSpeechGap !== undefined) {
+      const maxGap = limits.maxSpeechGap;
+      await guard('audio.speechContinuity', 'audio', async () => {
+        const last = words[words.length - 1];
+        const gaps = (await detectSilence(narration.audioPath, -45, maxGap)).filter((s) => s.start > words[0].start + 0.05 && s.end < last.end - 0.05);
+        let alignedMax = 0;
+        for (let i = 1; i < words.length; i++) alignedMax = Math.max(alignedMax, words[i].start - words[i - 1].end);
+        add(
+          'audio.speechContinuity',
+          'audio',
+          gaps.length === 0 && alignedMax <= maxGap + 1e-3 ? 'PASS' : 'FAIL',
+          gaps.length
+            ? `narration stem has ${gaps.length} silence(s) >= ${maxGap}s (first ${gaps[0].start.toFixed(2)}-${gaps[0].end.toFixed(2)}s)`
+            : `longest pause between words ${alignedMax.toFixed(2)}s; no dead air in the narration stem`,
+          { measured: alignedMax, expected: `<= ${maxGap}s` }
+        );
+      });
+    }
+    if (limits.paceMin !== undefined && limits.paceMax !== undefined) {
+      const span = words[words.length - 1].end - words[0].start;
+      const wps = span > 0 ? words.length / span : 0;
+      const inRange = wps >= limits.paceMin && wps <= limits.paceMax;
+      checks.push({
+        id: 'audio.pace',
+        category: 'audio',
+        status: inRange ? 'PASS' : 'WARN',
+        blocking: false,
+        reviewRequired: !inRange,
+        message: `${wps.toFixed(2)} words/s over ${span.toFixed(1)}s of speech`,
+        measured: Math.round(wps * 100) / 100,
+        expected: `${limits.paceMin}-${limits.paceMax}`,
+      });
+    }
+
+    // Music bed: audible after the narration ends (the bed carries the tail), or honestly reported as absent.
+    if (input.music) {
+      const m = input.music;
+      if (m.trackId) {
+        await guard('audio.musicBed', 'audio', async () => {
+          const lastEnd = words[words.length - 1].end;
+          const win = Math.max(0.15, timeline.totalDurationSeconds - 0.4 - (lastEnd + 0.1));
+          const tail = await runFfmpeg(['-nostats', '-ss', (lastEnd + 0.1).toFixed(3), '-t', win.toFixed(3), '-i', input.videoPath, '-map', '0:a:0', '-af', 'volumedetect', '-f', 'null', '-'], {
+            description: 'music bed tail level',
+          });
+          const mean = Number(tail.stderr.match(/mean_volume:\s*(-?[\d.]+)/)?.[1] ?? -91);
+          add('audio.musicBed', 'audio', mean > -60 ? 'PASS' : 'FAIL', `track ${m.trackId}; bed level after narration ${mean} dB`, {
+            expected: '> -60 dB (bed present), voice dominant (see audio.isNarration)',
+          });
+        });
+      } else if (m.requested) {
+        checks.push({
+          id: 'audio.musicBed',
+          category: 'audio',
+          status: 'WARN',
+          blocking: false,
+          reviewRequired: false,
+          message: `NOT MET: music requested but disabled — ${m.disabledReason ?? 'no approved track'}`,
+        });
+      } else {
+        add('audio.musicBed', 'audio', 'PASS', 'music off for this variant (experiment arm or configuration)');
+      }
+    }
     await guard('audio.isNarration', 'audio', async () => {
       const [ref, out] = await Promise.all([audioEnvelope(narration.audioPath), audioEnvelope(input.videoPath)]);
       const n = Math.min(ref.length, out.length);
       const r = correlation(ref.slice(0, n), out.slice(0, n));
-      add('audio.isNarration', 'audio', r >= 0.9 ? 'PASS' : 'FAIL', `envelope correlation with narration ${r.toFixed(3)} over ${n} windows`, { measured: r, expected: '>= 0.9' });
+      // A ducked music bed fills the micro-gaps between words, so the bar is lower with a bed — and
+      // voice dominance is then proven separately by loudness (audio.voiceDominant).
+      const min = input.music?.trackId ? 0.85 : 0.9;
+      add('audio.isNarration', 'audio', r >= min ? 'PASS' : 'FAIL', `envelope correlation with narration ${r.toFixed(3)} over ${n} windows`, { measured: r, expected: `>= ${min}` });
     });
+    if (input.music?.trackId) {
+      await guard('audio.voiceDominant', 'audio', async () => {
+        // The bed's level is set by the mix recipe (track loudness + applied gain); it is verified here
+        // against the narration stem's measured loudness. Ducking then lowers it further under speech,
+        // and audio.isNarration checks the mixed artifact itself.
+        const m = input.music!;
+        if (typeof m.gainDb !== 'number' || typeof m.trackLufs !== 'number') {
+          add('audio.voiceDominant', 'audio', 'FAIL', 'bed gain or track loudness was not recorded with the render', { expected: '>= 12 LU below the voice' });
+        } else {
+          const stem = await measureLoudness(narration.audioPath);
+          const below = stem.integratedLufs - (m.trackLufs + m.gainDb);
+          add('audio.voiceDominant', 'audio', below >= 12 ? 'PASS' : 'FAIL', `bed set ${below.toFixed(1)} LU below the narration (${stem.integratedLufs} LUFS), ducked further under speech`, {
+            measured: below,
+            expected: '>= 12 LU below the voice',
+          });
+        }
+      });
+    }
   }
 
   // ---- Visual content ----------------------------------------------------------------------------
@@ -287,6 +482,78 @@ export async function evaluateMedia(input: MediaQAInput): Promise<QAReport> {
     const frozen = [...res.stderr.matchAll(/freeze_start:\s*([\d.]+)/g)].map((m) => Number(m[1]));
     add('video.frozen', 'video', frozen.length ? 'WARN' : 'PASS', frozen.length ? `frozen picture from ${frozen.map((f) => f.toFixed(1)).join(', ')}s` : 'no frozen segments >= 2s');
   });
+
+  // Frame content of the produced video at every shot midpoint (catches artifacts that reach the render).
+  await guard('video.frameDefects', 'video', async () => {
+    const box = analysisBox(OUTPUT.width, OUTPUT.height);
+    const shots = timeline.shots?.length
+      ? timeline.shots
+      : timeline.scenes.map((s) => ({
+          sceneNumber: s.sceneNumber,
+          shotIndex: 0,
+          start: s.start,
+          end: s.end,
+        }));
+    const times = shots.map((s) => (s.start + s.end) / 2);
+    const rgb = await extractRgbFrames(input.videoPath, times, box.w, box.h);
+    const metrics = rgb.map((b, i) => analyzeFrame(b, box.w, box.h, times[i]));
+    // Each shot is judged on its own frame; the static check does not apply across different shots.
+    const bad = metrics.flatMap((m, i) => frameDefects([m], [rgb[i]], false).map((d) => `shot ${shots[i].sceneNumber}.${shots[i].shotIndex}: ${d}`));
+    add('video.frameDefects', 'video', bad.length ? 'FAIL' : 'PASS', bad.length ? bad.join('; ') : `${metrics.length} shot frames free of black/blank/chroma-key/letterbox defects`);
+  });
+
+  // Full-bleed framing and upscale limits (from the framing decisions the renderer applied).
+  if (input.framing && input.framing.length > 0) {
+    const fr = input.framing;
+    const boxed = fr.filter((f) => f.mode === 'letterbox');
+    const ratio = (fr.length - boxed.length) / fr.length;
+    const min = limits.fullBleedMinRatio ?? 0.9;
+    checks.push({
+      id: 'video.fullBleed',
+      category: 'video',
+      status: ratio >= min ? 'PASS' : 'WARN',
+      blocking: false,
+      reviewRequired: ratio < min,
+      message: boxed.length
+        ? `${Math.round(ratio * 100)}% of shots fill the frame; letterboxed: ${boxed.map((b) => `${b.label} (${b.reason})`).join('; ')}`
+        : `all ${fr.length} shots fill the 9:16 frame`,
+      measured: Math.round(ratio * 1000) / 1000,
+      expected: `>= ${min}`,
+    });
+    const maxUp = limits.maxUpscale ?? 2;
+    const over = fr.filter((f) => f.mode !== 'letterbox' && f.upscale > maxUp + 1e-6);
+    add(
+      'video.upscale',
+      'video',
+      over.length ? 'FAIL' : 'PASS',
+      over.length ? `over-upscaled: ${over.map((o) => `${o.label} ${o.upscale}×`).join(', ')}` : `max upscale ${Math.max(...fr.map((f) => f.upscale)).toFixed(2)}×`,
+      { expected: `<= ${maxUp}×` }
+    );
+  }
+
+  // Title card: inside its safe area while shown, gone afterwards (never covers the whole video).
+  if (fs.existsSync(path.join(input.renderDir, 'title.ass'))) {
+    await guard('titleCard.layout', 'captions', async () => {
+      const boxes = await measureAssBoxes(input.renderDir, 'title.ass', [1.0, Math.min(timeline.totalDurationSeconds - 0.05, 3.0)], timeline.fps, timeline.totalDurationSeconds);
+      const z = TITLE_CARD_LAYOUT.safeZone;
+      const shown = boxes[0];
+      const after = boxes[1];
+      const inside = Boolean(shown && shown.x1 >= z.left && shown.x2 <= z.right && shown.y1 >= z.top && shown.y2 <= z.bottom);
+      add(
+        'titleCard.layout',
+        'captions',
+        inside && !after ? 'PASS' : 'FAIL',
+        !shown
+          ? 'title card rendered no pixels'
+          : !inside
+            ? `title card outside its safe area: ${JSON.stringify(shown)}`
+            : after
+              ? 'title card still visible after 3 s'
+              : `title card inside ${JSON.stringify(z)} and gone by 3 s`,
+        { measured: shown, expected: z }
+      );
+    });
+  }
 
   // ---- Captions ----------------------------------------------------------------------------------
   {

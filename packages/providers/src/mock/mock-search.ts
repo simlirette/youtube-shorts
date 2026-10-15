@@ -40,6 +40,8 @@ export class MockSearchProvider implements SearchProvider {
 
   async search(query: string, opts: SearchOptions): Promise<SearchResultItem[]> {
     if (!query.trim()) return [];
-    return MOCK_DOCUMENTS.slice(0, opts.maxResults).map((d) => ({ ...d, rawContent: opts.includeRawContent ? d.rawContent : undefined }));
+    // Like a real search, the results are about the query: its words are in the page title, so mock
+    // topics pass research's on-topic check (the body text stays the fixed, quotable fixture).
+    return MOCK_DOCUMENTS.slice(0, opts.maxResults).map((d) => ({ ...d, title: `${d.title}: ${query}`, rawContent: opts.includeRawContent ? d.rawContent : undefined }));
   }
 }

@@ -60,6 +60,32 @@ export interface PixabayOptions {
   cacheTtlMs?: number;
   /** Short side a rendition should reach before we prefer it over larger files. */
   targetShortSide?: number;
+  /** Client-side cap on API searches per rolling minute (Pixabay allows 100 per 60 s). Default 90. */
+  requestsPerMinute?: number;
+}
+
+/**
+ * Rolling-minute request window shared by every Pixabay provider in the process (the limit is per
+ * API key). Per-beat footage preflight issues bursts of searches; waiting is cheaper than a 429.
+ */
+const searchWindow: number[] = [];
+export async function pixabayThrottle(limit: number, now: () => number = Date.now, sleep = (ms: number) => new Promise<void>((r) => setTimeout(r, ms))): Promise<number> {
+  let waited = 0;
+  for (;;) {
+    const t = now();
+    while (searchWindow.length && t - searchWindow[0] >= 60_000) searchWindow.shift();
+    if (searchWindow.length < limit) {
+      searchWindow.push(t);
+      return waited;
+    }
+    const ms = 60_000 - (t - searchWindow[0]) + 50;
+    waited += ms;
+    await sleep(ms);
+  }
+}
+/** Test hook: clears the shared window. */
+export function resetPixabayThrottle(): void {
+  searchWindow.length = 0;
 }
 
 function splitTags(tags: string): string[] {
@@ -123,6 +149,8 @@ export class PixabayAssetProvider implements AssetProvider {
     if (cached) return cached;
 
     const url = `${endpoint}?${new URLSearchParams({ key: this.apiKey, ...params }).toString()}`;
+    const waited = await pixabayThrottle(this.opts.requestsPerMinute ?? 90);
+    if (waited > 0) logger.info(`pixabay: waited ${Math.round(waited / 1000)} s for the per-minute search limit`);
     const started = Date.now();
     let raw: unknown;
     let attempts = 1;

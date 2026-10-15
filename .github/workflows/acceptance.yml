@@ -1,0 +1,56 @@
+name: Real-provider acceptance
+
+# Costs money and calls external APIs: manual trigger only, never on pull requests.
+on:
+  workflow_dispatch:
+    inputs:
+      suite:
+        description: 'live = provider + pipeline live tests; campaign = N full live jobs'
+        type: choice
+        options: [live, campaign]
+        default: live
+      jobs:
+        description: 'Number of jobs for the campaign'
+        default: '3'
+
+permissions:
+  contents: read
+
+jobs:
+  acceptance:
+    runs-on: ubuntu-latest
+    timeout-minutes: 240
+    environment: acceptance # gate secrets behind a protected environment
+    env:
+      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+      TAVILY_API_KEY: ${{ secrets.TAVILY_API_KEY }}
+      ELEVENLABS_API_KEY: ${{ secrets.ELEVENLABS_API_KEY }}
+      ELEVENLABS_VOICE_ID: ${{ secrets.ELEVENLABS_VOICE_ID }}
+      PIXABAY_API_KEY: ${{ secrets.PIXABAY_API_KEY }}
+      LOG_LEVEL: info
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: sudo apt-get update && sudo apt-get install -y --no-install-recommends ffmpeg
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm build
+      - name: Live provider + pipeline tests
+        if: inputs.suite == 'live'
+        run: pnpm test:live
+      - name: Live campaign (local export only; never uploads to YouTube)
+        if: inputs.suite == 'campaign'
+        run: pnpm acceptance:campaign --jobs ${{ inputs.jobs }}
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: acceptance-reports
+          path: |
+            output/acceptance/**/*.json
+            output/acceptance/**/*.md
+          if-no-files-found: ignore

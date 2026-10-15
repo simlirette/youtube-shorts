@@ -1,4 +1,5 @@
 export * from './verification.js';
+export * from './source-policy.js';
 export * from './script-validation.js';
 export * from './discovery-agent.js';
 export * from './scoring-agent.js';
@@ -10,3 +11,9 @@ export * from './media-ranker.js';
 export * from './visual-director-agent.js';
 export * from './narration-review.js';
 export * from './content-qa.js';
+export * from './formats.js';
+export * from './gap-discovery.js';
+export * from './performance-analyzer.js';
+export * from './editorial.js';
+export * from './script-editor.js';
+export * from './graphics.js';

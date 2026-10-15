@@ -31,6 +31,10 @@ database/*.sqlite
 *.srt
 *.ass
 !fixtures/**
+# Local music library (licensed audio + its manifest stay on this machine)
+assets/music/*
+!assets/music/README.md
+!assets/music/library.example.json
 
 # Testing and coverage
 coverage/

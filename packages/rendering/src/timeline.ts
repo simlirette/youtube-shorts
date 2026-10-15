@@ -6,6 +6,8 @@ export interface TimelineOptions {
   fps: number;
   /** Longest a single visual may stay on screen before the scene is split into another shot. */
   maxShotSeconds?: number;
+  /** Beats shorter than this are merged with a neighbour (a cut must have time to register). */
+  minShotSeconds?: number;
   /** Silence appended after the last spoken word. */
   tailSeconds: number;
   layout?: CaptionLayout;
@@ -57,18 +59,54 @@ export function buildTimeline(script: ShortScript, narration: VoiceNarration, op
     lastWordIndex: r.last,
   }));
 
-  // Shots: split long scenes into equal, frame-aligned sub-shots.
+  // Shots. Scenes with clause-level beats cut on beat boundaries (merging beats that are too short
+  // to register, splitting ones that hold the screen too long); legacy scenes split into equal parts.
   const maxShot = opts.maxShotSeconds ?? 6;
-  const shots = scenes.flatMap((s) => {
-    const startF = Math.round(s.start * fps);
-    const endF = Math.round(s.end * fps);
+  const minShot = opts.minShotSeconds ?? 1.5;
+  const split = (sceneNumber: number, start: number, end: number, extra: { beatIndex?: number; firstWordIndex?: number; lastWordIndex?: number }) => {
+    const startF = Math.round(start * fps);
+    const endF = Math.round(end * fps);
     const k = Math.max(1, Math.ceil((endF - startF) / (maxShot * fps)));
     return Array.from({ length: k }, (_, i) => ({
-      sceneNumber: s.sceneNumber,
-      shotIndex: i,
+      sceneNumber,
+      shotIndex: 0,
       start: (startF + Math.round(((endF - startF) * i) / k)) / fps,
       end: (startF + Math.round(((endF - startF) * (i + 1)) / k)) / fps,
+      ...extra,
     }));
+  };
+  const shots = scenes.flatMap((s, si) => {
+    const beats = script.scenes[si].beats ?? [];
+    let out: Array<{ sceneNumber: number; shotIndex: number; start: number; end: number; beatIndex?: number; firstWordIndex?: number; lastWordIndex?: number }>;
+    if (beats.length === 0) out = split(s.sceneNumber, s.start, s.end, {});
+    else {
+      // Word range of each beat inside the scene (beats are exact token slices, validated upstream).
+      let w = s.firstWordIndex;
+      const ranges = beats.map((b, bi) => {
+        const n = tokenizeWords(b.text).length;
+        const r = { beatIndex: bi, first: w, last: w + n - 1 };
+        w += n;
+        return r;
+      });
+      if (w - 1 !== s.lastWordIndex) throw new InternalError(`Scene ${s.sceneNumber} beats cover ${w - s.firstWordIndex} words, narration has ${s.lastWordIndex - s.firstWordIndex + 1}`);
+      // Cut between beats midway through the pause, frame-aligned, inside the scene's interval.
+      const bounds = ranges.map((r, i) => (i === 0 ? s.start : q((words[ranges[i - 1].last].end + words[r.first].start) / 2)));
+      let units = ranges.map((r, i) => ({ ...r, start: bounds[i], end: i + 1 < bounds.length ? bounds[i + 1] : s.end }));
+      // Merge beats too short to register into a neighbour (the earlier beat keeps its subject).
+      let merged = true;
+      while (merged && units.length > 1) {
+        merged = false;
+        const i = units.findIndex((u) => u.end - u.start < minShot);
+        if (i === -1) break;
+        const j = i + 1 < units.length ? i + 1 : i - 1;
+        const [a, b] = j > i ? [units[i], units[j]] : [units[j], units[i]];
+        const joined = { beatIndex: a.beatIndex, first: a.first, last: b.last, start: a.start, end: b.end };
+        units = [...units.slice(0, Math.min(i, j)), joined, ...units.slice(Math.max(i, j) + 1)];
+        merged = true;
+      }
+      out = units.flatMap((u) => split(s.sceneNumber, u.start, u.end, { beatIndex: u.beatIndex, firstWordIndex: u.first, lastWordIndex: u.last }));
+    }
+    return out.map((x, i) => ({ ...x, shotIndex: i }));
   });
 
   // Caption cues: short groups of words, broken at punctuation, timed by real word timestamps.

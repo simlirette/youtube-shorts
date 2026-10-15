@@ -1,0 +1,251 @@
+﻿QUERY: YouTube Shorts algorithm 2026 what changed viewed vs swiped away metric
+Title: New YouTube Shorts Metric - Viewed vs Swiped Away
+URL: https://www.youtube.com/watch?v=15zBy8hbPeI
+Published: 2023-10-10T01:52:14.588Z
+Author: N/A
+Highlights:
+New YouTube Shorts Metric - Viewed vs Swiped Away - YouTube
+...
+New YouTube Shorts Metric - Viewed vs Swiped Away - YouTube
+
+---
+
+Title: How the YouTube Shorts Algorithm Works in 2026, in YouTube's Words | OutlierKit Resources
+URL: https://outlierkit.com/resources/youtube-shorts-algorithm/
+Published: 2026-10-03T18:13:01.000Z
+Author: Aditi
+Highlights:
+The Shorts algorithm shows each Short to a small seed audience, then widens or narrows its reach based on whether those viewers watch or swipe away.
+
+That comes from Todd Sherman, the product lead for YouTube Shorts, who answered creators' questions on camera in August 2023. Most of what he said still holds. A few things have changed since, and one ranking change landed on October 1, 2026. This page puts his answers next to what is true in October 2026. For every dated change across YouTube, see our log of YouTube algorithm updates.
+...
+- Each Short is tested on a seed audience. Reach grows if they watch and tapers if they swipe.
+- There is no ideal length, posting time or daily quota. YouTube's Shorts lead said so directly.
+- Deleting and reposting a Short risks being read as spam.
+- Since October 1, 2026, original Shorts rank higher and re-uploads get less reach.
+- The number to compare in Studio is "How many chose to view".
+...
+| | Long-form | Shorts |
+| --- | --- | --- |
+| How viewers choose | They click or tap a thumbnail | They swipe through a feed |
+| The choice YouTube reads | Click-through rate | Viewed versus swiped away |
+| What the viewer sees first | Title and thumbnail | The first seconds of the video |
+| Variety | Ten or twenty videos on a page | Hundreds of videos in a session, so the feed mixes more |
+...
+A Shorts view now counts the moment the Short starts to play. This is the part of the 2023 Q&A that no longer holds. In 2023, Sherman said a view had to show intent:
+...
+YouTube dropped that threshold for Shorts in March 2025 and for every format on August 24, 2026. The old idea lives on under a new name. YouTube's blog defines an engaged view as “clicking to watch or watching past the initial seconds”, and says that is still how you qualify to earn.
+
+The full breakdown is in views versus engaged views after the 2026 change.
+...
+A Short stops when its seed audience did not respond well enough to widen it. The first few hundred or few thousand views are the test, not the result. The host, Rene Ritchie, said those views feel “more like impression than traditional views”. Sherman agreed and called the early views of a new creator “exploratory”.
+
+So a Short that stalls at 800 views was shown to about 800 people in a test, and most of them swiped on. The fix is the next Short, not the same one again.
+...
+Seven changes since the Q&A affect how Shorts are counted, shown or paid. Only one of them, on October 1, 2026, changes ranking.
+
+| Date | Change | More |
+| --- | --- | --- |
+| October 15, 2024 | Square or vertical videos up to three minutes count as Shorts. | YouTube Help |
+| March 2025 | Shorts views count from the first play, with no minimum watch time. | TechCrunch |
+| June 25, 2026 | The dislike button left the Shorts player. Viewers tune the feed with Not interested and Don't recommend this channel. | Changelog entry |
+| July 2026 | Custom thumbnail uploads for Shorts. | Changelog entry |
+| September 23, 2026 | Shorts can be grouped into series with seasons and episodes. | Changelog entry |
+| October 1, 2026 | Original Shorts rank higher. Re-uploads with nothing added get less reach. | Full guide |
+| February 1, 2027 | Shorts revenue needs 10 million qualified Shorts views per 90 days. | Full guide |
+
+On the October 1 change, YouTube wrote that it is updating its systems “to further prioritize original content and reduce the reach of content re-uploaded from other creators without adding anything of your own.” The source is its Help community post.
+...
+Read two numbers in the Shorts report: how often the Short was shown, and how often viewers chose to watch it. YouTube's Help page for Shorts analytics defines them:
+
+- Shown in feed: “The number of times that your Shorts showed in the Shorts Feed.”
+- How many chose to view: “Highlights the percentage of times that viewers viewed your Shorts versus swiped away.”
+
+YouTube publishes no target for either. Sherman's advice was to compare the second number across your own Shorts and see which ones grab the audience. A Short far above your usual figure has an opening worth repeating.
+...
+The Shorts algorithm shows a new Short to a small seed audience of people who may enjoy it, then widens or narrows reach based on how they respond. Viewers swipe through a feed, so the main choice it reads is whether a viewer watches or swipes away. YouTube's Shorts lead summed it up in 2023: the audience is the algorithm.
+...
+The goal is the same and the measures differ. Both try to get videos to people who value them. On long-form, viewers choose a video by clicking a thumbnail. On Shorts, viewers swipe through a feed, so YouTube measures watching versus swiping away instead of click-through rate.
+...
+YouTube tests each Short on a seed audience. If those viewers watch, the Short gets more traffic. If they swipe away, traffic tapers off. YouTube's Shorts lead called the early views exploratory: the system is looking for the audience that enjoys the Short.
+...
+### What changed in the Shorts algorithm in 2026?
+
+One ranking change was confirmed: since October 1, 2026, Shorts recommendations favor original content and cut the reach of re-uploads. Other 2026 changes affect the player, thumbnails, series and counting, not ranking.
+
+---
+
+Title: How the YouTube Shorts Algorithm Works | Monitor YT
+URL: https://monitoryt.com/blog/youtube-shorts-algorithm
+Published: 2026-06-21T18:28:45.000Z
+Author: Mehul Mohan
+Highlights:
+Here is the distinction that trips people up. Since March 31, 2025, YouTube counts a "view" each time a Short starts to play or replay, with no minimum watch time. That number is the one you see most prominently, and it is generous on purpose. The older, stricter metric did not disappear, though. It was preserved as "engaged views," which counts only viewers who chose to continue watching past that first moment.
+
+Engaged views are the per-viewer retention signal, and they are what actually drive distribution. A Short can rack up a huge raw view count and still go nowhere if almost everyone swipes away immediately, because the engaged-view rate, the share of people who stuck around, stayed low. When you are reading your own Shorts analytics, the raw view count tells you how many feeds you reached; the engaged views tell you whether you earned the next push.
+...
+"Engaged views ... lot on Shorts, so judge ... video by the second ... , not the first.
+...
+YouTube Studio does give you genuine feed-level data. "Viewed vs Swiped Away" is a real metric: it shows the share of feed impressions that were watched versus scrolled past. It is a useful gut check on whether your opening is working, and it pairs naturally with the hook and loop tactics in Shorts hooks and loops.
+
+What is not real are the specific numeric thresholds that get passed around as gospel. You will read that "a 70% swipe-away rate kills your Short" or that you need to clear some exact retention percentage in the first three seconds. Those figures are SEO-blog fabrications, not anything YouTube has published. Watch your "Viewed vs Swiped Away" trend over time and compare your Shorts against each other, but do not chase a magic number that nobody at YouTube ever stated.
+...
+Treat any precise Shorts threshold ("70% swipe-away is fatal", "you need X% retention by second three") as folklore until YouTube says it. The metrics are real; the cutoffs are invented.
+...
+Since October 15, 2024, the maximum Shorts length is three minutes, up from sixty seconds. Any video up to three minutes with a square or vertical aspect ratio, uploaded on or after that date, is classified as a Short. That gives you more room, but it does not change the core dynamic: a longer Short still has to survive the first second in the feed, and now it has more runway over which to lose people. More length is more rope.
+
+Context for scale: YouTube CEO Neal Mohan has said roughly 70% of YouTube channels now upload Shorts, and in his 2026 letter put Shorts at around 200 billion daily views. The feed is enormous and crowded, which is exactly why the per-swipe retention signal is the one the algorithm leans on hardest.
+...
+- The feed competes for the next swipe, not the click. Your opening second is the whole pitch.
+- Engaged views, not raw views, drive distribution. Judge a Short on who kept watching.
+- Shorts are scored per-video and per-topic. A flop does not hurt your channel or your long-form.
+- "Viewed vs Swiped Away" is a real Studio metric. Specific kill-thresholds are invented.
+- Three-minute Shorts give more runway and more chances to lose the viewer. Earn the length.
+...
+Since March 31, 2025, a "view" counts every time a Short starts to play or replay, with no minimum watch time. "Engaged views" is the older, stricter measure that counts only viewers who chose to keep watching. Engaged views are the per-viewer retention signal that actually drives how widely a Short gets pushed.
+...
+Is it true that a high swipe-away rate kills a Short?
+
+There is no published threshold from YouTube. "Viewed vs Swiped Away" is a real Studio metric, but specific cutoffs like "70% swipe-away is fatal" are SEO-blog fabrications. Track the trend across your own Shorts rather than chasing an invented number.
+
+---
+
+Title: YouTube Shorts Algorithm 2026: What Actually Matters · Everpop
+URL: https://everpop.app/blog/youtube-shorts-algorithm-2026-what-actually-matters
+Published: 2026-07-21T19:18:26.000Z
+Author: N/A
+Highlights:
+YouTube Shorts distribution is driven by viewer satisfaction, not follower count. YouTube shows your Short in feeds and measures whether people watch or swipe away, expanding reach when the response is strong. Since 31 March 2025, a view counts every time a Short starts to play or replay, so raw view numbers rose while "engaged views" now measures who stayed.
+...
+Because the Shorts feed is a swipe test, and most Shorts lose it in the opening moment. YouTube hands you the exact metric in Studio. Its Content tab analytics tips for Shorts label the card "How many chose to view", which creators know as "Viewed (vs. swiped away)", and define it as "the percentage of times that viewers viewed your Shorts versus swiped away." Alongside it is "Shown in feed" — "the number of times that your Shorts showed in the Shorts Feed."
+...
+Yes, and it matters more than the headline suggests. Since 31 March 2025, per YouTube's Shorts help page, "views will count the number of times a Short starts to play or replay, with no minimum watch time requirement." In plain terms: a loop, a replay, or a split-second scroll-by now counts. That is why many channels watched raw view numbers jump without changing anything. YouTube's view-counting help page now goes further: beginning 24 August 2026, views are counted the moment a video starts to play across all formats — Shorts, long-form videos and live streams.
+
+The same Shorts help page says YouTube kept the old, stricter metric and renamed it: "We will keep the existing Shorts view metric, now called 'Engaged views,' in YouTube Analytics so you can see how many viewers chose to continue watching your video." Engaged views are the honest number for comparing one of your Shorts to another.
+...
+creators miss: this does not change your money. YouTube states the change "will not directly impact the YouTube Partner Program (YPP) eligibility and Shorts ad revenue sharing. They will both be based on 'Engaged Shorts views.' So creators' eligibility and earnings will not change." A Short with a huge view count and few engaged views is not the win it looks like. Because an inflated number can flatter a flop, a durable record ... engaged views beats a screenshot — which is exactly why screenshots of view counts lie.
+...
+| Claim | Source |
+| --- | --- |
+| A view counts each time a Short "starts to play or replay, with no minimum watch time requirement" (since 31 March 2025). | https://support.google.com/youtube/answer/10059070?hl=en |
+| YouTube kept the old metric as "Engaged views," showing "how many viewers chose to continue watching your video." | https://support.google.com/youtube/answer/10059070?hl=en |
+...
+| "How many chose to view" (viewed vs. swiped away) = "the percentage of times that viewers viewed your Shorts versus swiped away"; "Shown in feed" = "the number of times that your Shorts showed in the Shorts Feed." | https://support.google.com/youtube/answer/12942217?hl=en-GB&co=YOUTUBE._YTVideoType%3Dshorts |
+...
+Yes. Since 31 March 2025, YouTube counts a view every time a Short "starts to play or replay, with no minimum watch time requirement." A loop or a quick scroll-by now registers, which is why many channels saw raw view numbers rise without changing anything.
+...
+Views count every play or replay. "Engaged views" is YouTube's renamed older metric, showing "how many viewers chose to continue watching your video." It is the better number for comparing one of your Shorts against another.
+...
+"Viewed (vs. swiped away)" — your watch-versus-swipe rate — paired with engaged views. Together they tell you whether your hook holds and whether people actually stayed.
+
+---
+
+Title: YouTube Shorts Analytics: The Metrics That Matter (2026)
+URL: https://1of10.com/blog/youtube-shorts-analytics/
+Published: 2026-09-12T13:00:00.000Z
+Author: Kyle du Randt
+Highlights:
+YouTube Shorts analytics explained: the 5 metrics that decide reach, what viewed vs swiped away tells you, and how to fix a dead Short. Updated for 2026.
+
+YouTube Shorts analytics live in the Content tab of YouTube Studio, filtered by the Shorts chip. Five numbers decide everything: shown in feed, viewed vs swiped away, engaged views, average view duration, and subscribers gained. Viewed vs swiped away is the one that matters most. It tells you whether your first 2 seconds earn the watch or lose it.
+
+Most creators stare at the wrong number. Total views feel good, but since March 31, 2025 a Shorts view counts the moment your Short starts playing, with no minimum watch time. That means raw views measure distribution, not quality. This guide covers where every Shorts metric lives, what each one actually measures, what good numbers look like, and a step-by-step way to diagnose a Short that died.
+
+ Play video
+...
+Five metrics explain nearly every Shorts outcome: shown in feed (distribution), viewed vs swiped away (hook strength), engaged views (real watches), average view duration and retention (payoff quality), and subscribers gained (audience conversion). Everything else, including raw view count, is downstream of these five. Learn to read them in that order.
+...
+### 2. Viewed vs swiped away: THE metric
+
+YouTube Studio reports this as "how many chose to view," and it is the percentage of feed appearances where the viewer stayed instead of swiping past. This is the single strongest signal you control. The Shorts feed is an autoplay environment. Nobody clicks a thumbnail. The viewer's only decision is stay or swipe, and they make it in roughly the first 1 to 2 seconds.
+
+Treat viewed vs swiped away as your hook score. If it is weak, nothing downstream can save the Short, because YouTube throttles distribution to viewers who keep swiping away.
+...
+On March 31, 2025 YouTube changed how Shorts views are counted. A view now registers the instant a Short starts to play or replay, with no minimum watch time. The old, stricter metric still exists and is called engaged views. You will find it in Advanced Mode in YouTube Analytics.
+...
+When the change rolled out, most channels saw raw Shorts views jump 20 to 30 percent overnight with zero change in reach or earnings. If you compare pre-2025 numbers to current ones, compare engaged views to old views, not new views to old views. YouTube announced the change in an official community post.
+...
+Since March 31, 2025, a Shorts view is counted every time your Short starts to play or replay, with no minimum watch time. The previous definition, which required the viewer to choose to keep watching, was renamed engaged views and moved to Advanced Mode. Views measure exposure. Engaged views measure attention. Monetization and YPP eligibility run on engaged views.
+...
+YouTube publishes no official benchmarks for viewed vs swiped away, retention, or any other Shorts metric. Any table of targets you see, including this one, comes from creator-reported data, not from YouTube. Use ... community-observed ranges as rough orientation, then beat your own channel averages, which Studio shows you next to every metric.
+
+| Metric | Community-observed "working" range | Community-observed "strong" range |
+| --- | --- | --- |
+| Viewed vs swiped away | 70 to 79 percent | 80 percent and above |
+| Average percentage viewed (under 35s) | 80 to 90 percent | 90 percent and above, looping past 100 |
+| Average percentage viewed (60s+) | 60 to 75 percent | 75 percent and above |
+| Likes per view | 3 to 5 percent | 5 percent and above |
+...
+Shorts live or die in the first 2 seconds. That is the swipe decision window, and it is why viewed vs swiped away is the master metric. In long-form, the thumbnail and title do the selling before playback starts. In Shorts, frame one is the thumbnail, the hook, and the promise all at once.
+...
+Shorts analytics and long-form analytics measure different games. Long-form is a click economy: impressions, CTR, then watch time. Shorts is a swipe economy: feed appearances, stay-or-swipe, then loops. The metrics rename accordingly, and CTR, the king of long-form, barely matters for Shorts because feed viewers never see a thumbnail before playback.
+
+| Long-form metric | Shorts equivalent | What changed |
+| --- | --- | --- |
+| Impressions | Shown in feed | Same idea, different surface |
+| Thumbnail CTR | Viewed vs swiped away | Click decision becomes a swipe decision |
+| Views (30s threshold historically) | Views (any play since Mar 2025) plus engaged views | Split into exposure and attention |
+| Average view duration | Average percentage viewed, can pass 100 | Loops count and matter |
+| End screens and cards | Related video link | Weaker, but improving |
+
+Why CTR barely matters for Shorts: thumbnails on Shorts only appear on your channel page, in search results, and in a few browse surfaces. The overwhelming majority of Shorts traffic comes from the Shorts feed, where playback starts automatically. Your "CTR" is the viewed vs swiped away rate. If you are used to optimizing packaging for clicks, that instinct still pays, it just moves from the thumbnail to frame one. For long-form, CTR remains decisive, and our breakdown of what a good click-through rate on YouTube looks like covers those numbers.
+...
+YouTube publishes no official benchmark. Community-reported numbers suggest 70 percent or more choosing to view (30 percent or less swiping away) is workable, and 80 percent viewed or better is strong. The more reliable target is your own baseline: Studio shows each Short against your typical performance, and beating that is what earns more distribution.
+...
+### What is the difference between views and engaged views?
+
+Since March 31, 2025, a view counts the instant a Short plays or replays, with no minimum watch time. An engaged view uses the old, stricter standard where the viewer chooses to keep watching. Engaged views live in Advanced Mode, and they are what count for YouTube Partner Program eligibility and Shorts revenue sharing.
+...
+Open YouTube Studio, go to Analytics, select the Content tab, and click the Shorts chip. The card labeled "how many chose to view" shows the percentage of feed appearances where viewers watched instead of swiping. Per-Short numbers are in each video's individual analytics under the Reach section.
+
+---
+
+Title: How the YouTube Shorts algorithm works in 2026: a complete guide | Gyre
+URL: https://gyre.pro/blog/understanding-the-youtube-shorts-algorithm-a--guide
+Published: 2026-08-23T06:33:19.000Z
+Author: Alina Lavrova
+Highlights:
+Two Shorts from the same channel, cut the same way, can finish ten thousand views apart. The difference is rarely the topic. It comes down to a handful of signals the Shorts feed reads in the first seconds, plus a definition of “view” that YouTube rewrote twice between 2025 and 2026.
+...
+- Completion rate is the signal that decides how far a Short travels. It means the share of the Short a viewer watches before leaving, and it shows up in YouTube Studio as average percentage viewed.
+- Swipe-away rate is the mirror of that number. Studio reports it as “How many chose to view,” the percentage of times viewers watched instead of swiping past.
+- Since March 31, 2025, a Shorts view counts the moment the video starts to play or replay, with no minimum watch time. The stricter old definition survives in Analytics as engaged views.
+- Since August 24, 2026, YouTube counts views at play start across every format, including long-form and live. Partner Program earnings still run on engaged views and engaged watch hours; eligibility runs on qualified views.
+...
+It works by measuring what viewers do in the seconds after your Short appears, then deciding whether to widen distribution. YouTube runs several ranking systems rather than one: the systems behind long-form video lean on click-through rate and watch time, while the Shorts feed reads watch-through behavior on a video the viewer never chose to open. The exact weighting is not published, but the inputs are visible in YouTube Studio’s own Shorts metrics, and that is the closest thing to a source list creators have.
+...
+tells the algorithm ... whatever made them ... distribution widens from there. This is why
+...
+These two metrics sit next to each other in Studio under Content → Shorts, and they answer different questions. “Shown in feed” counts how many times your Shorts appeared in the Shorts feed at all. “How many chose to view” reports the percentage of those times that viewers watched rather than swiped away.
+
+Reading them as a pair is what makes them useful. High feed impressions with a low view percentage points at the opening frame, not the topic. Low feed impressions in ... first place means the video never got enough of a test to say anything about the hook.
+
+A common trap: treating a rising total view count as proof the hook improved. Total views now include passive scroll-bys, so they can climb while swipe-away rate gets worse. Check both numbers before changing anything about the format.
+...
+| Signal | What it means | How to improve it |
+| --- | --- | --- |
+| Completion rate | The share of the Short viewers watch before leaving, shown in Studio as average percentage viewed | Cut dead air, keep the pace tight, and write an ending that flows back into the opening so the loop counts twice |
+| Viewed vs. swiped away | The percentage of feed appearances where viewers watched instead of scrolling past | Rebuild the first one or two seconds around a concrete promise or a visible payoff |
+| Shown in feed | How many times your Shorts appeared in the Shorts feed | Compare against views: low numbers here mean the video never got a real test, not that the hook failed |
+| Engaged ... rather than any play start | ... this in Advanced Mode instead of the headline view counter, and use it for anything that crosses March ... 025 |
+...
+Because the view counter stopped telling watchers apart from passers-by. On March 31, 2025, YouTube redefined a Shorts view as any play or replay with no minimum watch time. Almost any scroll registers now, so distribution decisions moved onto the number that still measures attention: how much of the Short people actually watch.
+
+The old definition did not disappear. YouTube kept it in Analytics under the name engaged views, and its Shorts documentation confirms that both Partner Program eligibility and Shorts ad revenue sharing still run on that stricter metric, with the Shorts path requiring 1,000 subscribers and 10 million qualified Shorts views in 90 days. If you want the full breakdown of how the numbers moved afterward, we covered it in the guide to the Shorts view count update and what to do about it.
+
+Newer change worth knowing: beginning August 24, 2026, YouTube counts a view the moment a video starts to play across all formats, including long-form and live streams, not just Shorts. Partner Program earnings stay based on engaged views and engaged watch hours, and eligibility stays based on qualified views. The practical effect is that view counts across your whole channel now measure reach, and retention metrics carry the weight they used to share.
+
+For anyone comparing performance across those dates, engaged views are the only metric that maps cleanly onto both sides.
+...
+- Open your Shorts analytics and compare “Shown in feed” against “How many chose to view” before you change anything else. That pair tells you whether the problem is reach or the hook.
+- Switch your reporting baseline to engaged views. Total views are a reach number in 2026, and any comparison that crosses March 31, 2025 or August 24, 2026 will mislead you otherwise.
+- Test the first two seconds as its own asset. Publish two cuts of the same Short with different openings and read the swipe-away numbers rather than the view counts.
+...
+Shorts are ranked for the Shorts feed, where the main signals are completion rate and swipe-away rate. Long-form videos are ranked for Browse and Suggested, which lean on click-through rate and watch time. Both draw on the same profile of a viewer’s interests, so the systems are separate at the surface, not underneath.
+...
+Most often it comes down to a weak opening, a low completion rate, or a high swipe-away rate. Distribution stops quickly once viewers start scrolling past. Check “Shown in feed” first: if that number is healthy and the view percentage is not, the hook is the problem.
+...
+### What counts as a Shorts view in ... 026?
+
+Every start and every replay, however briefly the viewer stays. Shorts moved to that definition on March 31, 2025, and YouTube extended it to long-form and live on August 24, 2026. Engaged views remain the stricter metric behind monetization.
+

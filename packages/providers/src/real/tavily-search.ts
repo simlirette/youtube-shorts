@@ -1,4 +1,4 @@
-import { ConfigurationError, InvalidResponseError, httpJson } from '@shorts/core';
+import { ConfigurationError, InvalidResponseError, UsageBudget, httpJson } from '@shorts/core';
 import type { ProviderContext, SearchOptions, SearchProvider, SearchResultItem } from '../interfaces.js';
 
 interface TavilyResponse {
@@ -10,16 +10,29 @@ export class TavilySearchProvider implements SearchProvider {
 
   constructor(
     private readonly apiKey: string,
-    private readonly opts: { timeoutMs: number; maxAttempts: number; searchDepth: 'basic' | 'advanced'; usdPerCredit: number },
+    private readonly opts: {
+      timeoutMs: number;
+      maxAttempts: number;
+      searchDepth: 'basic' | 'advanced';
+      usdPerCredit: number;
+      /** Free plan: credits per calendar month (UTC) this machine may use; refuses beyond it. */
+      monthlyCredits?: { limit: number; budgetFile: string };
+    },
     private readonly ctx: ProviderContext = {}
   ) {
     if (!apiKey) throw new ConfigurationError('TAVILY_API_KEY is required for the Tavily provider');
+    if (opts.monthlyCredits && opts.monthlyCredits.limit > 0) {
+      this.budget = new UsageBudget({ file: opts.monthlyCredits.budgetFile, provider: 'tavily', limit: opts.monthlyCredits.limit, period: 'month', timeZone: 'UTC', unit: 'credits' });
+    }
   }
+
+  private readonly budget?: UsageBudget;
 
   async search(query: string, o: SearchOptions): Promise<SearchResultItem[]> {
     if (!query.trim()) throw new InvalidResponseError(this.name, 'empty search query');
     const started = Date.now();
     const credits = this.opts.searchDepth === 'advanced' ? 2 : 1;
+    this.budget?.reserve(credits);
     try {
       const res = await httpJson<TavilyResponse>(
         'https://api.tavily.com/search',

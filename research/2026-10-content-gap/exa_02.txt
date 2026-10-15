@@ -1,0 +1,235 @@
+﻿QUERY: YouTube Shorts optimal length retention data study 2026 swipe away rate
+Title: Ideal YouTube Shorts Length: What the Data Says for More Views (2026)
+URL: https://ytshark.com/ideal-youtube-shorts-length/
+Published: 2026-03-24T19:54:25.000Z
+Author: Daniel Whitmore
+Highlights:
+YouTube expanded Shorts ... a maximum of 3 minutes in October ... 024. Any vertical video under 3 minutes now qualifies as a Short, according to YouTube’s official creator updates. That’s a big jump from the original 60-second cap that launched the format back in 2020.
+...
+One quick note worth knowing: as of March 2025, each replay or loop of a Short counts as a separate view. That changes how raw view counts look for shorter Shorts that loop more frequently.
+...
+Here’s what most creators get wrong: the Shorts algorithm doesn’t penalize longer videos. It penalizes early drop-offs. If viewers swipe away in the first few seconds, your Short is dead regardless of whether it’s 15 seconds or 2 minutes long.
+
+The algorithm cares about whether people enjoyed your Short. That’s measured through replays, likes, completion rate, and survey responses. Understanding how the YouTube algorithm works at a broader level helps here, but the Shorts feed has its own specific signals.
+...
+So YouTube audience retention isn’t just about raw watch time anymore. A 20-second Short watched to 90% completion crushes a 2-minute Short watched to 20%. The completion percentage is what matters most.
+...
+50–
+...
+An Inflow Network study of 5,400 Shorts found that videos in the 50–60 second range earned nearly 22x more views than clips under 10 seconds. That’s not a typo. Twenty-two times more.
+...
+### Retention Rate: Where 15–30 Second Shorts Win
+
+On the flip side, 15–30 second Shorts consistently hit 80%+ retention rates. That’s according to OpusClip’s data-backed Shorts length research, and it aligns with what I’ve seen across dozens of channels.
+
+Shorts under 25 seconds account for 68% of total Shorts views consumed. They’re the most-watched format by sheer volume. People love content they can consume in a single breath.
+
+### The Real Sweet Spot: 30–60 Seconds
+
+When you balance raw views against retention, the sweet spot lands between 30 and 60 seconds for most creators. Here’s the breakdown:
+
+- 50–60 seconds: ~76% average completion rate with the highest raw view counts
+- 30–45 seconds: Strong retention with solid value delivery time
+- 60–120 seconds: Completion drops to 40–60% — risky unless content is gripping
+- Over 2 minutes: Only 25–40% completion — reserved for exceptional storytelling
+...
+Here’s something that trumps every length recommendation in this article: 50–60% of Shorts drop-offs happen in the first 3 seconds. If you lose viewers before they even know what your Short is about, length is irrelevant.
+...
+1. Week 1: Post the same
+...
+3. Week ... Same concept at
+...
+After 3 weeks, check YouTube Analytics for average view duration % and subscriber conversion per Short. The length that drives the highest retention AND subscriber conversion is your sweet spot.
+
+While you’re at it, look at your existing top-performing ... . What’s their average length? There’s probably a ... hiding in your analytics already. Focus on turning Shorts viewers into subscribers, because that’s ... metric that actually grows your channel.
+...
+The best YouTube Shorts duration isn’t a single number. It’s the length where your content delivers maximum value with zero waste. For most creators, that lands between 30 and 60 seconds. But your niche, your content type, and your audience’s behavior are what ultimately decide.
+
+Start with the data-backed ranges in this article. Test with your own audience using the 3-week framework. Then let your analytics guide you forward.
+
+---
+
+Title: YouTube Shorts Metrics Explained + Benchmarks | Retensis
+URL: https://retensis.com/blog/youtube-shorts-analytics-metrics-explained
+Published: 2026-04-07T09:00:00.000Z
+Author: Retensis Team
+Highlights:
+For quick reference: the two metrics that most directly influence how broadly YouTube distributes a Short are average view duration and swipe-away rate. Views, impressions, likes, and subscribers are largely outcomes that follow from those two. Fix retention and swipe-away first and the rest tends to move on its own.
+...
+## Average View Duration and Swipe-Away Rate
+
+Average view duration is the most important number in Shorts analytics. It reports the average seconds watched before viewers left or the Short ended. To turn it into a percentage, divide it by the total length: a 20-second Short averaging 17 seconds watched is at 85%.
+
+That percentage only means something next to the runtime, so the targets are banded by length. Aim for above 60% on Shorts under 15 seconds, above 50% between 15 and 30 seconds, and above 40% between 30 and 60 seconds. Above 75%, above 65% and above 55% respectively are strong. The retention benchmarks guide sets these out alongside TikTok and Reels.
+
+Swipe-away rate is the inverse signal: the share of viewers who actively swiped on before the Short finished. A high rate concentrated in the first three seconds is a hook problem. A spike at a particular mid-video second identifies the exact moment losing people, which you can go back and watch. Studio overlays this on the retention graph, so you get both where and how badly.
+
+As a working target, keep swipe-away in the first three seconds below 25% on Shorts under 30 seconds, and below 35% on Shorts between 30 and 60 seconds. Treat those as lines to aim at rather than thresholds that unlock anything: no platform publishes a cutoff, and the useful comparison is against your own recent videos of similar length.
+...
+The retention graph is the most diagnostic thing in your analytics. Average view duration gives you one summary number; the graph gives you the second-by-second story of where viewers left, where they stayed, and whether anything generated a rewatch.
+
+Find it under the Engagement tab for any Short and look for the sharpest drops first. A steep fall in the first three seconds is a hook problem. A sudden drop at a specific second identifies a moment worth rewatching to diagnose. A relatively flat line through the middle means the pacing is doing its job.
+...
+your last ten to fifteen Shorts rather ... reading them one
+...
+## YouTube Shorts Metrics Target Reference (2026)
+
+Use this as a quick check on the metrics that do ... depend on video length. These are ... we tell creators to aim at, ... platform averages, and a number below a target is a
+...
+Average view duration and completion rate are deliberately absent from the table, because both move with runtime and any single band for them would be wrong at one end of the range or the other. Their length-banded targets are in the retention benchmarks guide and the Shorts completion rate guide.
+
+Swipe-away rate in the first three seconds: below 15% is exceptional, 15% to 25% is healthy, 25% to 35% points at a hook worth diagnosing, and above 35% is a hook that is not working. The opening frame, the opening audio, or the first spoken line is the place to look.
+...
+Retensis's YouTube Shorts analytics tool
+...
+| Metric | Needs work | Workable | Strong | Exceptional |
+| --- | --- | --- | --- | --- |
+| Swipe-Away Rate (0 to 3s) | Above 35% | 25 to 35% | 15 to 25% | Below 15% |
+| Impressions CTR | Below 3% | 3 to 6% | 6 to 8% | Above 8% |
+| Subscriber Conversion | Below 0.3% | 0.3 to 0.8% | 0.8 to 1.5% | Above 2% |
+| Like Rate | Below 1% | 1 to 3% | 3 to 6% | Above 6% |
+| Share Rate | Below 0.2% | 0.2 to 0.5% | 0.5 to 1% | Above 1% |
+...
+YouTube Studio reports views, impressions, impressions click-through rate, average view duration, swipe-away rate, the audience retention graph, watch time, subscribers gained, likes, comments, shares, and reach broken down by traffic source. The two that most directly influence how far a Short travels are average view duration and swipe-away rate; the rest are largely outcomes of those two.
+...
+What is a good average view duration for YouTube Shorts?
+
+It depends on length, and a single figure across all lengths is not usable. Aim for above 60% on Shorts under 15 seconds, above 50% between 15 and 30 seconds, and above 40% between 30 and 60 seconds, treating above 75%, above 65% and above 55% respectively as strong.
+
+---
+
+Title: YouTube Shorts Length in 2026: Max, Ideal Time & Aspect…
+URL: https://www.facelessgenie.ai/blog/youtube-shorts-length-2026
+Published: 2026-06-04T20:18:03.000Z
+Author: FacelessGenie
+Highlights:
+Shorts can now run up to 3 minutes, but our data from 1,100 channels shows most niches still peak at 35-58 seconds — pad past that and retention collapses.
+...
+YouTube capped Shorts at 60 seconds until October 2024 — then tripled it to 3 minutes overnight, and most creators are still shooting for the old limit. The channels pulling ahead right now post 90-second Shorts in the exact niches where a 30-second cut used to win.
+...
+Shorts in 2026: max 3 minutes (was 60s in 2023), 9:16 vertical, 1080×1920 ideal. Sweet spot for most niches is 35-58 seconds. Best posting windows are 6am-9am and 7pm-10pm viewer-local. Shorts are monetized via revenue share since Feb 2023. Cross-post to Reels + TikTok with one autopublish workflow.
+...
+- Maximum length tripled. October 2024 raised the cap from 60 seconds to 3 minutes. The algorithm immediately started rewarding longer Shorts in dense narrative niches (history, finance, drama). 90-second Shorts now outperform 30-second Shorts in those niches.
+...
+- Algorithm shifted to retention. The 2026 Shorts ranker leans on average watch time + completion rate. Click-through rate matters less than it did in 2023. Cinematic 60-90 second narrative Shorts now outperform fast-cut 15-second meme Shorts on RPM.
+...
+The 3-minute maximum is a cap, not a target. The actual sweet spot varies more by niche than any other factor in our data. We pulled retention curves for 1,100 active faceless Shorts channels across 12 niches in April-May 2026. Here is what the curves actually say.
+
+| Niche | Sweet-spot length | What kills the curve |
+| --- | --- | --- |
+| Talking objects / character drama | 38-58s | Past 70s the dialogue exchanges start feeling forced |
+| Finance explainer | 55-85s | Audience tolerates length when the takeaway is concrete ("3 steps", "5% number") |
+| Dark history / cold case | 75-150s | Highest-tolerance niche. Dense narration buys retention. |
+| Motivation / philosophy | 20-35s | Re-watch loops drive the entire game. Brevity > depth. |
+| AI life hacks | 15-30s | Audience scrolls fast. Single tip per Short. |
+| Gameplay + storytime | 45-75s | Visual loop holds eyes; story has 4 beats. |
+| True crime briefing | 60-90s | Same as history; respectful tone caps it before 100s |
+| Product reviews | 30-45s | Quick verdict format wins; "one thing I love, one thing I hate" |
+| Recipe (single ingredient) | 20-35s | Save rate, not watch time, is the metric. Short = saveable |
+| Travel itineraries | 60-90s | B-roll density covers the length. 60s is the safe target |
+
+Most creators we coach hit this wrong on their first 30 Shorts. They pick the length they think they should hit based on a tutorial, then pad or rush the script to fill it. The cleaner approach is to write the story first, then let the natural length emerge. A 28-second Short that finishes its arc beats a 60-second Short with 20 seconds of filler every single time.
+...
+Short-Shorts (<15s) used to dominate the Shorts feed in 2022-2023. They no longer do. The algorithm in 2026 surfaces longer Shorts because they generate more watch time per impression. If you are stuck under 15 seconds, you are competing in the most saturated, lowest-RPM bucket on YouTube.
+...
+108 ... YouTube does accept taller ratios (e.g. 1080×2400) but will letterbox or crop ... We have not seen a meaningful retention difference between 9:16 and taller ratios in our data — stick to 9:16 unless you have a specific creative reason.
+...
+We pulled posting timestamps and 30-day view counts for 1,100 faceless Shorts channels across April-May 2026, normalized by audience timezone. Two posting windows dominate the data across every niche, with weekend variance worth noting.
+
+- Weekday morning: 6:00am - 9:00am viewer-local ... The 7- ... am bucket is the single highest ... of the day, driven by ... scrollers and morning-coffee browsers
+...
+- Weekday evening: 7:00pm - 10:00pm viewer-local. 8-9pm is peak. This window outperforms morning for narrative niches (history, drama, storytelling) and slightly underperforms it for finance/explainer.
+...
+single highest-
+...
+pattern still holds
+...
+established ones. YouTube ... s recommendation system has more confidence with established ... accounts in the
+...
+Same dataset of 1,100 channels. Roughly 75% of the channels that stalled before 1K subscribers made at least two of the five mistakes below. Almost none of the channels that crossed 10K subscribers made more than one.
+
+1. 1 Padding to hit a length. The classic version: writing a 28-second story and stretching it to 60s because a 2023 tutorial said "60 seconds is the sweet spot". Watch-through collapses. Fix: trust the natural length.
+...
+3. 3 Burying the hook past second 3. Audiences swipe at 2 seconds if the hook is not clear. Fix: the first sentence must telegraph the topic. "He has your cousin's eyes" beats "Today we're going to talk about a family secret".
+...
+The maximum is 3 minutes (180 seconds) as of October 2024 — raised from 60 seconds. The minimum is 1 second, but the algorithm penalizes anything under 7 seconds in most niches. The sweet spot for most faceless niches is 35-58 seconds, with longer formats (75-150s) winning in dense narration niches like dark history or true crime.
+
+---
+
+Title: Cracking the YouTube Shorts Algorithm: A Study of 3.3 ...
+URL: https://medium.com/@antoinelacombled/cracking-the-youtube-shorts-algorithm-a-study-of-3-3-billion-views-4711fdf7931b
+Published: 2023-11-23T09:28:47.000Z
+Author: Antoine Lacombled
+Highlights:
+What makes a YouTube Short go viral? How profitable are they? And do they contribute to channel growth? Today, I’ll unravel these mysteries based on a detailed study of 3.3 billion views across 5,400 shorts from 33 diverse YouTube channels. As your YouTube Wizard, I’ll provide an in-depth analysis of our findings. To keep updated on all things YouTube, don’t forget to subscribe to my newsletter.
+...
+Our study indicated that most creators make shorts between 20 and 40 seconds, but longer shorts performed better on average. Shorts with an average view duration of more than 50 seconds generated an average of 4.1 million views. Thus, the trick is not just to make longer shorts, but to hold the viewer’s attention as long as possible.
+...
+YouTube’s Shorts algorithm seems to favor longer videos that sustain viewer duration. However, we found outliers at all lengths, indicating you need not stick to a particular length to gain views.
+
+## Viewed vs Swiped Away Ratio
+
+YouTube recently added a new metric — the percentage of shorts viewed vs swiped away (VVSA). Our study showed that shorts with less than 60% VVSA performed poorly, while those between 70 and 90% VVSA did better. However, a high VVSA score doesn’t guarantee success, much like the click-through rate (CTR) for long-form videos. So, take this metric into consideration, but don’t obsess over it.
+
+---
+
+Title: YouTube Shorts Statistics 2026: 35+ Benchmarks | Retensis
+URL: https://retensis.com/blog/youtube-shorts-statistics-2026
+Published: 2026-04-20T09:00:00.000Z
+Author: Retensis
+Highlights:
+YouTube Shorts statistics 2026: average view duration targets by length, above 60% under 15s and above 40% at 30-60s, plus completion and views.
+...
+Average view duration is the most important number in Shorts analytics, and it is only interpretable next to the length of the video it describes. These are the targets to aim at in 2026, banded by length.
+
+On Shorts under 15 seconds, aim for above 60%. Above 75% for Shorts under 15 seconds is strong, and above 85% usually indicates replays. If you sit well under the target at this length, the opening frame or the opening audio is the problem, because there is not enough video for anything else to be.
+
+On Shorts between 15 and 30 seconds, aim for above 50%. Above 65% for Shorts between 15 and 30 seconds is strong. This length gives you room for a setup and a payoff without much slack, which is why it rewards tight editing more than any other.
+
+On Shorts between 30 and 60 seconds, aim for above 40%. Above 55% for Shorts between 30 and 60 seconds is strong. The usual failure point here is the middle: videos that opened well lose momentum somewhere before the payoff arrives.
+...
+## Completion Rate and Swipe-Away Targets
+
+Completion rate is the share of viewers who reach the final second. It measures something different from average view duration: a viewer who watched 95% of a 30-second Short and left just before the end counts as a near-miss on one metric and a failure on the other, and the gap between the two is where ending problems show up.
+
+Aim for above 40% completion on Shorts under 15 seconds, above 30% between 15 and 30 seconds, and above 25% between 30 and 60 seconds. Above 55%, above 45% and above 40% respectively are strong. The Shorts completion rate guide covers what to do when the number falls short.
+
+Swipe-away rate is the inverse signal: the share of viewers who actively moved on before the video finished. Concentrated in the first three seconds it is a hook problem, and keeping it below 25% there is a reasonable target. A spike in the middle is a momentum problem, and it identifies the exact second worth rewatching.
+
+Completion and subscriber conversion move together, because the reason to subscribe usually lives at the end of the video. Improving the ending tends to show up in both numbers at once, which makes it better value than working on either in isolation.
+...
+Targets are most useful for setting expectations you can actually meet. Consistent posting with retention above the target for your usual length compounds, because each video that performs well makes the next one easier to place, and that effect takes months rather than weeks to show up.
+...
+Track your own baseline: average view duration and completion across your last 20 Shorts. Aim to add a few percentage points at a time. If your baseline is 42%, target 47% next, not 70%. Incremental targets survive contact with reality; large ones usually end with abandoning whatever was already working.
+
+Retensis tracks these patterns automatically through Creative DNA, identifying which creative choices line up with your better-performing Shorts. Retensis's YouTube Shorts analytics tool scores each Short against the target for its own length and shows where retention, completion, and engagement actually stand.
+...
+What is the average view duration for YouTube Shorts in 2026?
+
+Average view duration moves with video length, so Retensis benchmarks it per band rather than as one figure across every length. Aim for above 60% on Shorts under 15 seconds, above 50% between 15 and 30 seconds, and above 40% between 30 and 60 seconds. Above 75%, above 65% and above 55% respectively are strong, and above 85% on a very short video usually means it is being replayed rather than merely finished.
+
+---
+
+Title: What Is a Good YouTube Shorts Retention Rate? | Retensis
+URL: https://retensis.com/blog/good-youtube-shorts-retention-rate
+Published: 2026-03-15T10:00:00.000Z
+Author: Retensis
+Highlights:
+YouTube Shorts retention rates follow different patterns than TikTok or long-form YouTube content. The Shorts algorithm specifically tracks swipe-away rate (viewers who swipe to the next Short), completion rate, and replay rate. All three are influenced by your content's retention curve.
+
+For Shorts under 30 seconds, aim for 60%+ average retention. Top performers in this length range often achieve 70-80%. For Shorts between 30-60 seconds, 45-55% average retention is competitive, with top creators hitting 60%+. These benchmarks vary by niche; entertainment content typically retains differently than educational content.
+...
+to a small ... determines the next
+...
+The algorithm especially values the first 3 seconds and the final 3 seconds. The opening determines swipe-away rate, the percentage of viewers who leave immediately. The ending determines completion and replay rates. Both moments deserve disproportionate creative attention.
+...
+Test different lengths for your content type. Not every video needs to be 60 seconds. Sometimes a tight 20-second Short with 80% retention will outperform a padded 50-second Short with 40% retention. Let the content determine the length, not the other way around.
+...
+Use YouTube Studio to check your real retention curves after publishing. Pay attention to the curve shape, not just the average number. A 50% average retention with a smooth gradual decline is healthier than 50% average with a cliff at 10 seconds.
+
+For pre-publish analysis, AI tools like Retensis can predict your retention curve before your Short faces the algorithm. Compare predicted retention against actual retention to calibrate your understanding of what works and build intuition for retention-friendly content.
+...
+For YouTube Shorts, aim for above 60% on videos under 15 seconds, above 50% between 15 and 30 seconds, and above 40% between 30 and 60 seconds. The strongest Shorts clear the strong band for their length rather than one universal figure. The Shorts algorithm weighs completion and replay behavior alongside watch time.
+...
+YouTube Shorts generally see slightly higher retention rates than equivalent TikTok videos because the Shorts feed behavior differs. YouTube's swipe-up navigation creates slightly higher commitment than TikTok's infinite scroll. However, the competitive bar for retention is also high.
+

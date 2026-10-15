@@ -66,7 +66,7 @@ export class MockLLMProvider extends StructuredLLMBase {
         for (const [, ref, body] of blocks) {
           const sentences = body.split(/(?<=\.)\s+/).map((s) => s.trim()).filter((s) => /\d/.test(s) && s.length > 30);
           for (const s of sentences.slice(0, 3)) {
-            claims.push({ text: s, entity: 'Millennium Bridge', sourceRef: ref, evidenceQuote: s, isKeyFact: true });
+            claims.push({ text: s, entity: 'Millennium Bridge', evidence: [{ sourceRef: ref, quote: s }], isKeyFact: true });
           }
         }
         return {
@@ -103,43 +103,96 @@ export class MockLLMProvider extends StructuredLLMBase {
         const max = Number(prompt.match(/between (\d+) and (\d+) words/)?.[2] ?? 130);
         const min = Number(prompt.match(/between (\d+) and (\d+) words/)?.[1] ?? 100);
         const pick = (i: number) => claimLines[i % Math.max(1, claimLines.length)];
+        // Format-aware: scene count and (for question formats) the viewer question come from the prompt.
+        const sceneCount = Number(prompt.match(/Scenes 2-(\d+) have/)?.[1] ?? 5);
+        const question = prompt.match(/asks the viewer's question, ending with "\?": "([^"]+)"/)?.[1] ?? prompt.match(/Topic question: "([^"]+)"/)?.[1];
+        // Micro-explainer (beats format): statement hook built from the first claim, so it is backed.
+        const micro = prompt.includes('micro-explainer');
+        const statementHook = micro && !question && pick(0) ? `${words(pick(0).text).slice(0, 12).join(' ').replace(/[.,;:!?]+$/, '')}.` : null;
+        const hook = statementHook ?? (question ? `${question.replace(/\?+$/, '').split(/\s+/).slice(0, 13).join(' ')}?` : HOOKS[seed % HOOKS.length]);
+        const offset = micro ? 1 : 0;
         const scenes = [
-          { narration: HOOKS[seed % HOOKS.length], claimRefs: [] as string[] },
-          { narration: pick(0)?.text ?? '', claimRefs: pick(0) ? [pick(0).ref] : [] },
-          { narration: pick(1)?.text ?? '', claimRefs: pick(1) ? [pick(1).ref] : [] },
-          { narration: pick(2)?.text ?? '', claimRefs: pick(2) ? [pick(2).ref] : [] },
-          { narration: pick(3)?.text ?? '', claimRefs: pick(3) ? [pick(3).ref] : [] },
+          { narration: hook, claimRefs: statementHook ? [pick(0).ref] : ([] as string[]) },
+          ...Array.from({ length: sceneCount - 1 }, (_, i) => ({ narration: pick(i + offset)?.text ?? '', claimRefs: pick(i + offset) ? [pick(i + offset).ref] : [] })),
         ];
+        const last = sceneCount - 1;
+        const prev = Math.max(1, sceneCount - 2);
         // Pad deterministically into the required word range.
         let total = scenes.reduce((n, s) => n + words(s.narration).length, 0);
         const filler = words(FILLER);
         let fi = 0;
-        let target = 3;
+        let target = prev;
         while (total < min + 5 && fi < filler.length * 4) {
           scenes[target].narration += ' ' + filler[fi % filler.length];
           fi++;
           total++;
-          if (fi % 12 === 0) target = target === 3 ? 4 : 3;
+          if (fi % 12 === 0) target = target === prev ? last : prev;
         }
         for (const s of scenes) if (!/[.!?]$/.test(s.narration)) s.narration += '.';
         while (total > max) {
-          const w = words(scenes[4].narration);
+          // Trim the longest body scene so no scene (in particular the payoff) becomes too short.
+          let longest = last;
+          for (let k = 1; k < scenes.length; k++) if (words(scenes[k].narration).length > words(scenes[longest].narration).length) longest = k;
+          const w = words(scenes[longest].narration);
+          if (w.length <= 5) break;
           w.pop();
-          scenes[4].narration = w.join(' ') + '.';
+          scenes[longest].narration = w.join(' ').replace(/[,;:]$/, '') + '.';
           total--;
         }
         return {
-          title: `Inside ${topicName}`.slice(0, 90),
+          title: (question ? question.replace(/^./, (c) => c.toUpperCase()) : `Inside ${topicName}`).slice(0, 90),
+          titleCard: 'The bridge that swayed',
           description: 'How synchronized footsteps closed London’s Millennium Bridge two days after opening.',
           scenes: scenes.map((s, i) => ({
             narration: s.narration,
             visualObjective: 'Pedestrians crossing a modern footbridge over a river',
+            visualSubject: i % 2 === 0 ? 'footbridge over river' : 'crowd walking across bridge',
             assetKeywords: i % 2 === 0 ? ['bridge', 'river', 'city'] : ['people walking', 'crowd', 'footsteps'],
+            visualExclusions: ['cartoon'],
             textOverlay: '',
             claimRefs: s.claimRefs,
+
           })),
         };
       }
+      case 'script_beats': {
+        // Beats on the frozen narration: 8-word clauses, rotating literal subjects.
+        const narrations = [...prompt.matchAll(/^SCENE \d+: (.+)$/gm)].map((m) => m[1].trim());
+        const subjects = ['footbridge over river', 'crowd walking', 'steel cables', 'city skyline', 'river water', 'engineers working'];
+        let beatNo = 0;
+        // With graphics allowed, the first clause that speaks a number becomes a "stat" card.
+        let graphicUsed = !prompt.includes('GRAPHICS:');
+        return {
+          scenes: narrations.map((n) => {
+            const toks = words(n);
+            const chunks: string[][] = [];
+            for (let k = 0; k < toks.length; k += 8) chunks.push(toks.slice(k, k + 8));
+            if (chunks.length > 1 && chunks[chunks.length - 1].length < 3) chunks[chunks.length - 2].push(...chunks.pop()!);
+            return {
+              beats: chunks.map((c) => {
+                const subject = subjects[beatNo++ % subjects.length];
+                const text = c.join(' ');
+                const num = text.match(/\d[\d,]*(?:\.\d+)?/)?.[0];
+                const graphic = !graphicUsed && num && c.length >= 5 ? { template: 'stat' as const, value: num, label: '' } : null;
+                if (graphic) graphicUsed = true;
+                return { text, visualIntent: 'show the subject of this clause', visualSubject: graphic ? 'number card' : subject, assetKeywords: [graphic ? 'number' : subject], visualExclusions: [] as string[], graphic };
+              }),
+            };
+          }),
+        };
+      }
+      case 'script_editor':
+        return { scores: { hook: 4, specificity: 4, causalFlow: 4, payoff: 4 }, notes: [] };
+      case 'source_credibility': {
+        const refs = [...prompt.matchAll(/\[(S\d+)\]/g)].map((m) => m[1]);
+        return { sources: [...new Set(refs)].map((ref) => ({ ref, category: 'specialist_publication', conflictOfInterest: false, reason: 'mock assessment' })) };
+      }
+      case 'gap_triage': {
+        const refs = [...prompt.matchAll(/\[(Q\d+)\] (.+)/g)].map((m) => ({ ref: m[1], q: m[2] }));
+        return { items: refs.map(({ ref, q }) => ({ ref, keep: !/celebrity|news/.test(q), reason: 'mock triage', pillar: 'ENGINEERING', angle: `Explains ${q.replace(/\?$/, '')}.` })) };
+      }
+      case 'media_vision':
+        return { verdict: 'ACCEPT', showsSubject: true, issues: [], reason: 'mock vision check' };
       case 'media_fit': {
         const ids = [...prompt.matchAll(/\[(M\d+)\]/g)].map((m) => m[1]);
         return { fit: ids, unfit: [] };

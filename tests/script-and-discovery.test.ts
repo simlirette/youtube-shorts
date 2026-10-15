@@ -6,7 +6,8 @@ import { ValidationError } from '@shorts/core';
 import type { ResearchPacket, StoryOutline } from '@shorts/schemas';
 import { memoryRepo, testConfig } from './helpers.js';
 
-const rules = { minWords: 100, maxWords: 130, hookMaxWords: 7, sceneCount: 5, minClaimRefs: 2 };
+// Same bounds as the production defaults (SCRIPT_MAX_WORDS is derived from the voice's slowest pace).
+const rules = { minWords: 100, maxWords: 118, hookMaxWords: 7, sceneCount: 5, minClaimRefs: 2 };
 const claims = new Map([['C1', 'The bridge opened on 10 June 2000.'], ['C2', 'It closed two days later.']]);
 const words = (n: number) => Array.from({ length: n }, (_, i) => ['river', 'bridge', 'people', 'walked', 'across'][i % 5]).join(' ');
 
@@ -14,18 +15,39 @@ function draft(bodyWords: number[], hook = 'Why did it sway?'): ScriptDraft {
   return {
     title: 'The Bridge That Swayed Too Much',
     description: 'How a new footbridge closed within days of opening.',
-    scenes: [hook, ...bodyWords.map(words)].map((n, i) => ({ narration: n, visualObjective: 'A bridge', assetKeywords: ['bridge', 'river'], claimRefs: i === 1 ? ['C1'] : i === 2 ? ['C2'] : [] })),
+    scenes: [hook, ...bodyWords.map(words)].map((n, i) => ({ narration: n, visualObjective: 'A bridge', visualSubject: 'steel footbridge over river', visualExclusions: ['cartoon'], assetKeywords: ['bridge', 'river'], claimRefs: i === 1 ? ['C1'] : i === 2 ? ['C2'] : [] })),
   };
 }
 
 describe('script contract (regression 9: word count is enforced, not hoped for)', () => {
-  it('accepts exactly the boundaries 100 and 130', () => {
+  it('accepts exactly the boundaries 100 and 118', () => {
     expect(validateScriptDraft(draft([24, 24, 24, 24]), { rules, claims })).toEqual([]); // 4 + 96 = 100
-    expect(validateScriptDraft(draft([31, 31, 32, 32]), { rules, claims })).toEqual([]); // 4 + 126 = 130
+    expect(validateScriptDraft(draft([28, 28, 29, 29]), { rules, claims })).toEqual([]); // 4 + 114 = 118
   });
-  it('rejects 99 and 131 words', () => {
+  it('rejects 99 and 119 words', () => {
     expect(validateScriptDraft(draft([24, 24, 24, 23]), { rules, claims }).join()).toMatch(/got 99/);
-    expect(validateScriptDraft(draft([31, 32, 32, 32]), { rules, claims }).join()).toMatch(/got 131/);
+    expect(validateScriptDraft(draft([28, 29, 29, 29]), { rules, claims }).join()).toMatch(/got 119/);
+  });
+  it('requires a concrete visual subject per scene and bounds exclusions', () => {
+    const d = draft([24, 24, 24, 24]);
+    d.scenes[1].visualSubject = 'bridge';
+    d.scenes[2].visualSubject = 'the 2000 opening';
+    d.scenes[3].visualExclusions = ['a', 'b', 'c', 'd', 'e'];
+    const v = validateScriptDraft(d, { rules, claims }).join(' | ');
+    expect(v).toMatch(/scene 2 visualSubject/);
+    expect(v).toMatch(/scene 3 visualSubject/);
+    expect(v).toMatch(/scene 4 .*exclusions/i);
+  });
+  it('rejects visual subjects stock footage cannot provide (regression: "animated map of Siberia" failed live sourcing)', () => {
+    const d = draft([24, 24, 24, 24]);
+    d.scenes[1].visualSubject = 'animated map of siberia';
+    d.scenes[2].visualSubject = 'diagram of the explosion';
+    const v = validateScriptDraft(d, { rules, claims }).join(' | ');
+    expect(v).toMatch(/scene 2 visualSubject .* stock footage does not provide/);
+    expect(v).toMatch(/scene 3 visualSubject .* stock footage does not provide/);
+    d.scenes[1].visualSubject = 'dense taiga forest';
+    d.scenes[2].visualSubject = 'fallen trees in forest';
+    expect(validateScriptDraft(d, { rules, claims })).toEqual([]);
   });
   it('rejects long hooks, unknown claims, and unsupported numbers', () => {
     const d = draft([24, 24, 24, 24], 'This hook is far too long to be a hook');
@@ -74,6 +96,22 @@ describe('ScriptwriterAgent', () => {
     expect(prompts[1]).toMatch(/YOUR PREVIOUS RESPONSE/);
     expect(s.scenes[1].claimIds).toEqual([research.claims[0].id]);
     expect(s.scenes[0].claimIds).toEqual([]); // no claim #0 back-fill
+  });
+
+  it('re-sends every statement the fact-checker rejected earlier, so retries converge instead of oscillating', async () => {
+    const prompts: string[] = [];
+    const llm = new MockLLMProvider({}, { script: (p) => (prompts.push(p), draftToRaw(draft([25, 25, 25, 25]))) });
+    let n = 0;
+    const flaggedPerCall = ['Travel time was cut in half.', 'It remains a mystery.', ''];
+    const reviewer = new MockLLMProvider({}, {
+      content_review: () => {
+        const st = flaggedPerCall[n++];
+        return { findings: st ? [{ statement: st, severity: 'material', reason: 'not in facts' }] : [] };
+      },
+    });
+    await new ScriptwriterAgent(llm, { rules, maxAttempts: 3 }, reviewer).writeScript(story, research, { previousTitles: [], previousHooks: [] });
+    expect(prompts[2]).toMatch(/It remains a mystery/);
+    expect(prompts[2]).toMatch(/do not reintroduce statements rejected in earlier attempts: "Travel time was cut in half\."/);
   });
 
   it('rejects drafts the reviewer finds material unsupported facts in', async () => {

@@ -63,6 +63,8 @@ export interface StructuredRequest<T> {
   temperature?: number;
   maxTokens?: number;
   model?: string;
+  /** Optional images (vision). Providers without vision support must throw rather than ignore them. */
+  images?: Array<{ mimeType: 'image/jpeg' | 'image/png'; data: Buffer }>;
 }
 
 export interface LLMProvider {
@@ -117,6 +119,8 @@ export interface PageRetriever {
 export interface TTSRequest {
   text: string;
   voiceId?: string;
+  /** Speaking speed for this request (provider range; ElevenLabs 0.7-1.2). */
+  speed?: number;
 }
 
 export interface CharacterAlignment {
@@ -143,6 +147,10 @@ export interface TTSProvider {
   /** Identifies voice settings that change the audio (part of the TTS cache key). */
   readonly settingsKey: string;
   synthesize(req: TTSRequest): Promise<TTSResult>;
+  /** Account credits a synthesis of `text` will consume (provider pricing model). */
+  creditsFor?(text: string): number;
+  /** Remaining account credits, or null when the account does not expose them to this key. */
+  remainingCredits?(): Promise<{ remaining: number; limit: number; resetsAt?: string } | null>;
 }
 
 // =============================================================================
@@ -196,6 +204,30 @@ export interface Publisher {
 // BUNDLE
 // =============================================================================
 
+// =============================================================================
+// AUDIENCE SIGNALS (topic gap discovery)
+// =============================================================================
+
+/** One search result as YouTube reports it (no estimates). */
+export interface VideoSignal {
+  id: string;
+  title: string;
+  views: number | null;
+  durationSeconds: number | null;
+  channel: string | null;
+}
+
+/** Public audience-demand signals: what viewers type, and what already answers it. */
+export interface SignalsProvider {
+  readonly name: string;
+  /** YouTube search autocomplete for a prefix, most popular first. */
+  suggest(prefix: string): Promise<string[]>;
+  /** Top YouTube search results for a query. */
+  searchVideos(query: string, limit: number): Promise<VideoSignal[]>;
+  /** Public counters for specific videos (views/likes/comments), for analytics without OAuth. */
+  videoStats(ids: string[]): Promise<Array<{ id: string; views: number | null; likes: number | null; comments: number | null }>>;
+}
+
 export interface ProviderBundle {
   mode: PipelineMode;
   llm: LLMProvider;
@@ -206,4 +238,5 @@ export interface ProviderBundle {
   tts: TTSProvider;
   assets: AssetProvider;
   publisher: Publisher;
+  signals: SignalsProvider;
 }

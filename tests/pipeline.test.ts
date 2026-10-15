@@ -108,8 +108,8 @@ describe('pipeline lifecycle (mock providers, real media)', () => {
 describe('QA gates block publication (regression 6)', () => {
   it('a blocking WARN makes a report non-eligible', () => {
     const r = summarize('MEDIA', [
-      { id: 'a', category: 'x', status: 'PASS', blocking: false, message: '' },
-      { id: 'audio.loudness', category: 'audio', status: 'WARN', blocking: true, message: '-20 LUFS' },
+      { id: 'a', category: 'x', status: 'PASS', blocking: false, reviewRequired: false, message: '' },
+      { id: 'audio.loudness', category: 'audio', status: 'WARN', blocking: true, reviewRequired: false, message: '-20 LUFS' },
     ]);
     expect(r.overallStatus).toBe('WARN');
     expect(r.publishEligible).toBe(false);

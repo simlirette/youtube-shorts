@@ -15,12 +15,14 @@ export interface RunOptions {
   cwd?: string;
   timeoutMs?: number;
   description?: string;
+  /** Environment for the child (default: this process's). */
+  env?: NodeJS.ProcessEnv;
 }
 
 export function runProcess(bin: string, args: string[], opts: RunOptions = {}): Promise<ProcessResult> {
   const timeoutMs = opts.timeoutMs ?? getConfig().FFMPEG_TIMEOUT_MS;
   return new Promise((resolve, reject) => {
-    const child = spawn(bin, args, { cwd: opts.cwd, stdio: ['ignore', 'pipe', 'pipe'], windowsHide: true });
+    const child = spawn(bin, args, { cwd: opts.cwd, env: opts.env, stdio: ['ignore', 'pipe', 'pipe'], windowsHide: true });
     let stdout = '';
     let stderr = '';
     let timedOut = false;
@@ -55,7 +57,7 @@ export function runProcess(bin: string, args: string[], opts: RunOptions = {}): 
 export function runProcessBuffer(bin: string, args: string[], opts: RunOptions = {}): Promise<{ code: number; stdout: Buffer; stderr: string }> {
   const timeoutMs = opts.timeoutMs ?? getConfig().FFMPEG_TIMEOUT_MS;
   return new Promise((resolve, reject) => {
-    const child = spawn(bin, args, { cwd: opts.cwd, stdio: ['ignore', 'pipe', 'pipe'], windowsHide: true });
+    const child = spawn(bin, args, { cwd: opts.cwd, env: opts.env, stdio: ['ignore', 'pipe', 'pipe'], windowsHide: true });
     const chunks: Buffer[] = [];
     let stderr = '';
     let timedOut = false;
@@ -77,6 +79,42 @@ export function runProcessBuffer(bin: string, args: string[], opts: RunOptions =
       if (timedOut) return reject(new TimeoutError(bin, `${opts.description ?? 'process'} exceeded ${timeoutMs} ms`));
       resolve({ code: code ?? -1, stdout: Buffer.concat(chunks), stderr });
     });
+  });
+}
+
+/**
+ * Extracts frames at the given timestamps as raw RGB24 buffers of exactly width×height
+ * (aspect preserved inside the box would hide letterboxing, so frames are scaled to the box as-is).
+ */
+export async function extractRgbFrames(filePath: string, times: number[], width: number, height: number): Promise<Buffer[]> {
+  const cfg = getConfig();
+  const out: Buffer[] = [];
+  for (const t of times) {
+    const res = await runProcessBuffer(
+      cfg.FFMPEG_PATH,
+      ['-hide_banner', '-nostdin', '-v', 'error', ...(t > 0 ? ['-ss', t.toFixed(3)] : []), '-i', filePath, '-map', '0:v:0', '-frames:v', '1',
+        '-vf', `scale=${width}:${height}:flags=area,format=rgb24`, '-f', 'rawvideo', '-'],
+      { description: 'frame sampling', timeoutMs: 60_000 }
+    );
+    if (res.code !== 0 || res.stdout.length !== width * height * 3) {
+      throw new InternalError(`frame sampling failed for ${filePath} at ${t.toFixed(2)}s (${res.stdout.length} bytes): ${stderrTail(res.stderr, 3)}`);
+    }
+    out.push(res.stdout);
+  }
+  return out;
+}
+
+/**
+ * Writes a JPEG contact sheet (frames side by side, each `height` px tall) for visual review.
+ * `crops[i]` (optional FFmpeg filter, e.g. a 9:16 crop) is applied to frame i first, so the sheet
+ * shows what the viewer will see.
+ */
+export async function writeContactSheet(filePath: string, times: number[], height: number, outJpg: string, crops: Array<string | null> = []): Promise<void> {
+  const inputs = times.flatMap((t) => [...(t > 0 ? ['-ss', t.toFixed(3)] : []), '-i', filePath]);
+  const scaled = times.map((_, i) => `[${i}:v]${crops[i] ? `${crops[i]},` : ''}scale=-2:${height},setsar=1[f${i}]`).join(';');
+  const stack = times.length > 1 ? `${times.map((_, i) => `[f${i}]`).join('')}hstack=inputs=${times.length}[out]` : `[f0]null[out]`;
+  await runFfmpeg(['-y', ...inputs, '-filter_complex', `${scaled};${stack}`, '-map', '[out]', '-frames:v', '1', '-q:v', '5', outJpg], {
+    description: 'contact sheet',
   });
 }
 

@@ -43,9 +43,20 @@ export abstract class StructuredLLMBase implements LLMProvider {
   abstract readonly name: string;
   abstract readonly model: string;
 
+  /** Calls on a free plan are recorded at $0 (tokens are still recorded). */
+  protected freeTier = false;
+
   constructor(protected readonly ctx: ProviderContext = {}) {}
 
-  protected abstract complete(system: string, user: string, opts: { temperature: number; maxTokens: number; model: string; task: string }): Promise<RawCompletion>;
+  private cost(model: string, inTok: number, outTok: number): { usd: number; known: boolean } {
+    return this.freeTier ? { usd: 0, known: true } : estimateLlmCost(model, inTok, outTok);
+  }
+
+  protected abstract complete(
+    system: string,
+    user: string,
+    opts: { temperature: number; maxTokens: number; model: string; task: string; images?: StructuredRequest<unknown>['images'] }
+  ): Promise<RawCompletion>;
 
   async generateStructured<T>(req: StructuredRequest<T>): Promise<LLMResponse<T>> {
     const maxAttempts = Math.max(1, req.maxValidationAttempts ?? 2);
@@ -63,7 +74,7 @@ export abstract class StructuredLLMBase implements LLMProvider {
     for (let attempt = 1; attempt <= maxAttempts; attempt++) {
       let raw: RawCompletion;
       try {
-        raw = await this.complete(system, prompt, { temperature: req.temperature ?? 0.4, maxTokens: req.maxTokens ?? 3000, model, task: req.task });
+        raw = await this.complete(system, prompt, { temperature: req.temperature ?? 0.4, maxTokens: req.maxTokens ?? 3000, model, task: req.task, images: req.images });
       } catch (err) {
         this.report(req.task, model, 'ERROR', httpAttempts + 1, Date.now() - started, inputTokens, outputTokens, err);
         throw err;
@@ -95,7 +106,7 @@ export abstract class StructuredLLMBase implements LLMProvider {
       }
 
       if (violations.length === 0 && value !== undefined) {
-        const cost = estimateLlmCost(raw.model, inputTokens, outputTokens);
+        const cost = this.cost(raw.model, inputTokens, outputTokens);
         this.report(req.task, raw.model, 'OK', httpAttempts, Date.now() - started, inputTokens, outputTokens);
         if (!cost.known) logger.warn(`No pricing entry for model ${raw.model}; cost recorded as 0`, { provider: this.name });
         return {
@@ -131,7 +142,7 @@ export abstract class StructuredLLMBase implements LLMProvider {
       status,
       attempts,
       durationMs,
-      costUsd: estimateLlmCost(model, inTok, outTok).usd,
+      costUsd: this.cost(model, inTok, outTok).usd,
       units: { inputTokens: inTok, outputTokens: outTok },
       error: err === undefined ? undefined : err instanceof Error ? err.message : String(err),
     });

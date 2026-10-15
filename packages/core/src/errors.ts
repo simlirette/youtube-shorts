@@ -36,6 +36,13 @@ export class AuthenticationError extends PipelineError {
   }
 }
 
+/** Account credits/quota exhausted: not transient, not an auth problem. Resume manually after topping up. */
+export class QuotaExceededError extends PipelineError {
+  constructor(provider: string, message: string) {
+    super('QUOTA_EXCEEDED', `${provider}: ${message}`, { retryable: false, provider });
+  }
+}
+
 export class RateLimitError extends PipelineError {
   readonly retryAfterMs?: number;
   constructor(provider: string, message: string, retryAfterMs?: number) {
@@ -77,6 +84,25 @@ export class QAFailedError extends PipelineError {
   constructor(message: string, blockingReasons: string[]) {
     super('QA_FAILED', `${message}: ${blockingReasons.join('; ')}`, { retryable: false });
     this.blockingReasons = blockingReasons;
+  }
+}
+
+/**
+ * Publication failure. `uploadStarted` is true whenever bytes may have reached the target; such
+ * failures are never retried automatically (a retry could create a duplicate public video).
+ */
+export class PublishError extends PipelineError {
+  readonly uploadStarted: boolean;
+  constructor(provider: string, message: string, uploadStarted: boolean, cause?: unknown) {
+    super(cause instanceof PipelineError ? cause.kind : 'PROVIDER_UNAVAILABLE', `${provider}: ${message}`, { retryable: !uploadStarted, provider, cause });
+    this.uploadStarted = uploadStarted;
+  }
+}
+
+/** Persistence layer unreachable or misconfigured. */
+export class DatabaseUnavailableError extends PipelineError {
+  constructor(message: string, cause?: unknown) {
+    super('PROVIDER_UNAVAILABLE', `database: ${message}`, { retryable: true, provider: 'database', cause });
   }
 }
 

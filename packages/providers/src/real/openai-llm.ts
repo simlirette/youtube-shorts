@@ -21,7 +21,18 @@ export class OpenAILLMProvider extends StructuredLLMBase {
     if (!apiKey) throw new ConfigurationError('OPENAI_API_KEY is required for the OpenAI provider');
   }
 
-  protected async complete(system: string, user: string, o: { temperature: number; maxTokens: number; model: string; task: string }): Promise<RawCompletion> {
+  protected async complete(
+    system: string,
+    user: string,
+    o: { temperature: number; maxTokens: number; model: string; task: string; images?: Array<{ mimeType: string; data: Buffer }> }
+  ): Promise<RawCompletion> {
+    // Images are sent at low detail (fixed ~85 tokens each) to keep vision checks cheap.
+    const userContent = o.images?.length
+      ? [
+          { type: 'text', text: user },
+          ...o.images.map((img) => ({ type: 'image_url', image_url: { url: `data:${img.mimeType};base64,${img.data.toString('base64')}`, detail: 'low' } })),
+        ]
+      : user;
     const res = await httpJson<ChatCompletionResponse>(
       'https://api.openai.com/v1/chat/completions',
       {
@@ -31,7 +42,7 @@ export class OpenAILLMProvider extends StructuredLLMBase {
           model: o.model,
           messages: [
             { role: 'system', content: system },
-            { role: 'user', content: user },
+            { role: 'user', content: userContent },
           ],
           temperature: o.temperature,
           max_tokens: o.maxTokens,

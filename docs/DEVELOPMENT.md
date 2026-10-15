@@ -3,13 +3,20 @@
 ## Commands
 
 ```bash
-pnpm typecheck        # tsc -b over all project references (packages, apps, tests)
+pnpm typecheck        # tsc -b over packages/apps + tsc over tests/
 pnpm build            # same build graph; emits dist/ (gitignored)
 pnpm test             # offline suite: unit + integration with real FFmpeg and mock providers
+TEST_DATABASE_URL=<postgres url> pnpm test   # also runs the PostgreSQL suite (own schema per run)
 pnpm test:live        # real-provider acceptance (tests/live/*.live.ts) — costs money
+pnpm acceptance:campaign --jobs 10   # N full live jobs, unattended policy, local export only — costs money
 ```
 
 The offline suite never reads `.env` (`SHORTS_SKIP_DOTENV=1`) and uses temp directories + in-memory SQLite.
+
+## CI
+
+- `.github/workflows/ci.yml` (push/PR): Node 24, pnpm, apt FFmpeg, a throwaway PostgreSQL 16 service; typecheck (incl. tests), build, `pnpm cli --help` boot smoke, full offline suite. All provider keys are blanked, so no paid API can be reached. An empty source file, a broken import or a module that fails to load fails typecheck, the boot smoke and `tests/hardening.test.ts` (source hygiene).
+- `.github/workflows/acceptance.yml` (manual `workflow_dispatch` only, protected `acceptance` environment secrets): live tests or a live campaign; uploads JSON/Markdown reports. Never runs on pull requests and never uploads to YouTube.
 
 ## Adding a provider
 

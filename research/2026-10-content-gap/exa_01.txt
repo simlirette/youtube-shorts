@@ -1,0 +1,318 @@
+﻿QUERY: YouTube Partner Program inauthentic content mass-produced repetitive policy AI voiceover Shorts monetization
+Title: YouTube channel monetization policies - YouTube Help
+URL: https://support.google.com/youtube/answer/1311392
+Published: N/A
+Author: N/A
+Highlights:
+July 15, 2025: We’re making a minor update to our “repetitious content” policy to better clarify this includes content that is repetitive or mass-produced. We are also renaming this policy from “repetitious content” to “inauthentic content.” This type of content has always been ineligible for monetization under our existing policies, where creators are rewarded for original and authentic content. There is no change to our reused content policy which reviews content like commentary, clips, compilations, and reaction videos.
+...
+These policies apply to anyone in, or looking to apply to, the YouTube Partner Program. The YouTube Shorts monetization policies also apply if you’re monetizing Shorts on YouTube.
+...
+Keep in mind that when we use the term video on this page, it refers to Shorts, long-form videos, and live streaming. These policies apply wherever videos are viewed including the Watch Page (pages within YouTube, YouTube Music, or YouTube Kids), the YouTube Video Player (player that embeds YouTube content on other sites), and the YouTube Shorts Player (player that makes Shorts available).
+...
+If you’re making money on YouTube, your content should be original and "authentic." This means that we expect your content to:
+
+- Be your original creation. If you borrow content from someone else, you need to change it significantly to make it your own.
+- Not be mass-produced, generic, repetitive, or manipulative. It should be made for the enjoyment or education of viewers, rather than for the sole purpose of getting views.
+...
+### Generic or Repetitive Content
+
+Generic or repetitive content includes content that looks like it’s made with a template, or that may feel repetitive to viewers after watching several videos in a row from the same channel.
+
+Monetizing through the YouTube Partner Program requires that your channel be in compliance with all YouTube policies. If your channel is found to be violative of any other policies, you will not be able to access monetization through the YouTube Partner Program.
+...
+When a channel’s content consists of highly repetitive content, it can disappoint viewers who come to YouTube for appealing and interesting videos. That means channels where content feels interchangeable from video to video are not allowed to monetize. In other words, your channel shouldn’t have content that appears to be produced using a template or where each video doesn’t deliver creative, educational, or other value to the viewer.
+...
+- Similar or repetitive content with low educational value, commentary, narratives, or minimal variation across videos
+- Videos where characters are put in the same situation over and over again with the same outcome (i.e., using a highly similar storyline template across multiple videos)
+- Image slideshows, templated storylines, or scrolling text with minimal or no narrative, commentary, or educational value
+- AI-generated content made with generic or unoriginal templates giving the impression of mass production without adding the creator’s original, authentic insights or perspective
+...
+We want to reward creators for original and "authentic" content that adds value to viewers. If you put a funny or thoughtful spin on content you didn’t originally create (in line with our guidelines below), you’ve transformed the content in some way. It’s fine to have this type of content on your channel, but individual videos may be subject to other policies like copyright. In other words, we allow reused content if viewers can tell that there’s a meaningful difference between the original video and your video.
+...
+- Using clips for a critical review
+- A scene from a movie where you’ve rewritten the dialog and changed the voiceover
+- Replays of a sports tournament where you explain the moves a competitor did to succeed
+- Reaction videos where you comment on the original video
+- Edited footage from other creators where you add a storyline and commentary
+- Edits to remixed content on Shorts like adding original content to a song from our library, or adding the original audio or video segment from other videos to your content
+- Content that primarily features the uploading creator in the video
+- Reused content from other online sources where the creator is either visible in the content or explains how the creator added to the content
+- Edited footage with audio and visual effects on top of the video’s reused content that demonstrates substantive editing and shows it’s unique to your channel
+...
+be a violation of this guideline. If we cannot tell that the content is yours, it may be subject to our reused content policy. This policy applies even if you have
+...
+- Clips of moments from your favorite show edited together with little or no narrative
+- Short videos you compiled from other social media websites
+- Collections of songs from different artists (even if you have their permission)
+...
+- Promotion of other people’s content (even if you have permission)
+- Content downloaded or copied from another online source without any substantive modifications
+- Content that gets views from mostly non-verbal reactions to your videos without added voice commentary
+...
+Unsatisfying or off-putting content refers to content that relies heavily on emotionally manipulative formulas, mimics existing formats or stories to a degree that the videos feel interchangeable, or appears designed to shock or surprise viewers for the sole purpose of getting views. This content may feel unsatisfying or off-putting to viewers who come to YouTube looking for content with unique, original substance.
+...
+What's important is that the substance of the video feels original and provides a satisfying experience for the viewer. If you use automated tools or templates to help create your content, the final product must still demonstrate your creative vision and provide educational or entertainment value.
+...
+- Content with a cohesive storyline that doesn’t rely solely on shock value to generate views
+- Content that showcases your authentic perspective when building on a popular video format or theme, like a Short that puts your own personalized spin on a trend
+- Content that expresses your unique creative voice, like using AI to visualize a unique character and narrative you invented
+- Content that utilizes creative tools to assist in delivering a unique, well-researched, or creative narrative, like using AI to edit your video scripts or generate a unique background visual for your content
+...
+, satisfying content. Channels that do not meet that bar will not be eligible for the YouTube Partner Program.
+...
+- Content that repeatedly uses disturbing themes (such as violence or loss) without building a cohesive narrative
+- Channels that heavily rely on generic templates or emotionally manipulative themes, like a series showing repetitive scenarios of animals in exaggerated distress or peril
+- Content that lacks a clear narrative arc or logical progression, such as videos that stitch together unrelated or inconsistent AI clips to surprise or shock viewers
+- Content that uses deceptive or misleading imagery or narratives, such as realistic visuals tricking viewers into believing a fake celebrity death or natural disaster has occurred
+...
+This policy refers to channels that use AI-generated personas to deliver information on sensitive topics. This includes any content that presents itself as a human expert providing advice to viewers on topics such as health, legal issues, finances, or politics. To protect viewers who may be confused or otherwise negatively impacted by this content, channels uploading this content will not be allowed to monetize.
+...
+- An AI “doctor” providing medical diagnoses, health advice, or wellness remedies
+- AI-generated podcast hosts offering financial guidance, investment tips, or wealth management advice
+- AI personas giving legal advice or interpreting laws
+...
+your videos are
+
+---
+
+Title: YouTube clarifies policies around AI slop and upsetting videos | TechCrunch
+URL: https://techcrunch.com/2026/07/20/youtube-clarifies-policies-around-ai-slop-and-upsetting-videos/
+Published: 2026-07-20T15:23:06.000Z
+Author: Sarah Perez
+Highlights:
+A recent change sees YouTube further cracking down on AI slop by clarifying its policies around how content on its platform can be monetized. To discourage creators from using AI and other tools to make low-quality content, YouTube’s policy now explains that there are three types of videos under the broader category of “inauthentic content” that cannot be monetized.
+
+YouTube already had policies around AI content. Last year, the company announced it was stemming creators’ ability to generate revenue from what it called “inauthentic content,” including mass-produced videos and other types of repetitive content that have become easier to generate with the help of AI technology.
+...
+The updated guidelines break down inauthentic content into three categories, including generic, repetitive, or template-based content, followed by off-putting or distressing content, and then any content where AI personas are used to discuss sensitive topics, like health and finance. 
+
+While AI slop, much like adult content, is something of a “you’ll know it when you see it” situation for many, YouTube’s policies are meant to more specifically spell out when AI’s use in content creation is allowed or is not permitted for videos being monetized through its YouTube Partner Program (YPP).
+
+The program, which allows creators to earn money through advertising and subscriptions, is YouTube’s lifeblood; allowing it to fill up with AI slop or other low-quality fare would not be in the company’s financial interests. This is especially important given that YouTube is in close competition with TV and other streamers for TV ad dollars. Google’s video platform now generates more ad revenue than rival streamers and has overtaken Netflix in average daily views worldwide.
+
+As YouTube’s trust and safety chief Matt Halprin explained in a Creator Insider video last week, the company’s goal with its policy revision is to cut down on content farming efforts — a reference to low-quality videos that exist solely to generate revenue.
+...
+enables stuff that’ ... , and that’ ... to have in YPP
+...
+The first category, he said, includes repetitive content, such as material that can be easily made with AI, computer-generated imagery (CGI), or templates, with little variation from video to video. This fills a channel with cookie-cutter videos. Halprin notes that tutorial videos could also fall under this policy if they’re reproducing content that’s already prevalent on the platform, instead of being original.
+...
+Channels dedicated to this content will be removed from YPP, regardless of whether the content is AI-generated or not. 
+
+The third bucket more directly targets the use of AI personas — representations of real people made with AI. YouTube says it doesn’t want to incentivize creators using AI personas to discuss more sensitive topics, like finance, legal issues, healthcare, and medical issues.
+
+Any YouTube channel that has too much of any of these three types of content will not be able to monetize, Halprin said. The policy clarifications were rolled out on July 16 and impact all YouTube Partner Program members.
+
+---
+
+Title: YouTube clarifies that creators can't monetize "generic or repetitive content," content that's "unsatisfying or off-putting," or content with fake AI "experts" - Tubefilter
+URL: https://www.tubefilter.com/2026/07/13/youtube-inauthentic-content-monetization-policy-update/
+Published: 2026-07-14T02:04:42.000Z
+Author: James Hale
+Highlights:
+YouTube clarifies that creators can't monetize "generic or repetitive content," content that's "unsatisfying or off-putting," or content with fake AI "experts" - Tubefilter
+...
+YouTube is renaming one of its content policies and clarifying three kinds of videos will get creators’ channels demonetized.
+...
+Gen AI has contributed significantly to our current era of slop content; social platforms are plagued by repetitive, minimal-effort videos that are formulated to keep people watching. (Raise your hand if you’ve been personally victimized by scrolling TikTok, or Shorts, or Reels, and coming across a clip from a movie with an AI voiceover saying something like, “THE BOY WAS ON THE VERGE OF DYING. HE LAID ON THE ROAD AND WISHED FOR HIS MOTHER’S FACE.”)
+
+### To address some of those issues, YouTube has reworked the guidance under its inauthentic content policy, breaking out three specific categories of video that will get creators’ channels demonetized.
+...
+The three categories of videos that are not allowed to be monetized under this policy are:
+
+1. Generic or Repetitive Content
+2. Unsatisfying or Off-putting Content
+3. and AI Personas Related to Sensitive Topics
+
+Generic or repetitive content is “content that looks like it’s made with a template, or that may feel repetitive to viewers after watching several videos in a row from the same channel,” YouTube explains.
+
+Examples of violative content includes content with low educational value, little commentary, and minimal variation across numerous videos on the same channel; “videos where characters are put in the same situation over and over again with the same outcome”; image slideshows and templated storylines, and “AI-generated content made with generic or unoriginal templates giving the impression of mass production without adding the creator’s original, authentic insights or perspective.”
+...
+As for “Unsatisfying or Off-putting Content,” this is a brand-new category (though again, this content was already not allowed to be monetized).
+
+YouTube describes this content as “content that relies heavily on emotionally manipulative formulas, mimics existing formats or stories to a degree that the videos feel interchangeable, or appears designed to shock or surprise viewers for the sole purpose of getting views.”
+...
+- Content that repeatedly uses disturbing themes (such as violence or loss) without building a cohesive narrative
+- Channels that heavily rely on generic templates or emotionally manipulative themes, like a series showing repetitive scenarios of animals in exaggerated distress or peril
+- Content that lacks a clear narrative arc or logical progression, such as videos that stitch together unrelated or inconsistent AI clips to surprise or shock viewers
+- Content that uses deceptive or misleading imagery or narratives, such as realistic visuals tricking viewers into believing a fake celebrity death or natural disaster has occurred
+
+The third and last category pinpoints AI. YouTube is obviously cool with creators putting AI people in their videos– especially if those creators use Google’s own tools to do it–but says issues arise when creators are using AI to speak on “sensitive topics” that can have real-world consequences.
+
+“This includes any content that presents itself as a human expert providing advice to viewers on topics such as health, legal issues, finances, or politics,” YouTube explains. “To protect viewers who may be confused or otherwise negatively impacted by this content, channels uploading this content will not be allowed to monetize.”
+
+As you probably expect, grounds for demonetization are things like videos where an AI “doctor” talks up supposed wellness remedies, an AI “podcast host” giving out financial tips, and an AI “lawyer” giving legal advice.
+
+---
+
+Title: YouTube Shorts for AI-Generated Content - Rules, Monetization, and What Gets Flagged · Instavar
+URL: https://instavar.com/playbooks/distribution/youtube-shorts-ai-content-rules-monetization-2026
+Published: 2026-03-28T00:00:00.000Z
+Author: N/A
+Highlights:
+> TL;DR YouTube's AI content policies are less restrictive than most creators assume. Disclosure is only required for content that could be mistaken for real people or real events. The real risk for automated pipelines isn't the AI label - it's the "repetitious content" policy. Understand the distinction before you build.
+...
+guides to YouTube Shorts assume ... recording with a ... , synthetic voice
+...
+1. Disclosure - when YouTube requires you to label content as AI-generated
+2. Content ID - when audio or video gets claimed or blocked
+3. Monetization eligibility - what disqualifies AI content from the Shorts revenue share
+4. Suppression patterns - what algorithmic behaviour looks like when YouTube doesn't like your upload cadence
+...
+YouTube requires creators to disclose when they use AI to create content that is "realistic" and could be mistaken for real people, real voices, or real events. The requirement is enforced at upload via the "Altered or synthetic content" checkbox in YouTube Studio.
+...
+- Realistic AI-generated faces of real people (deepfake-style)
+- AI voices that impersonate a specific real person's voice
+- Synthetic depictions of real events that never happened (e.g. a fabricated news clip)
+- AI-generated footage of real people saying things they didn't say
+...
+- AI-assisted editing (color grading, auto-captions, noise removal)
+- AI voiceover using a generic synthetic voice (not impersonating anyone specific)
+- AI-generated graphics, animations, or motion compositions
+- Text-to-speech narration with a named TTS model voice
+- AI-written scripts read by a human or a non-impersonation TTS voice
+- AI-generated background music that doesn't replicate a real artist
+
+The practical implication for most Remotion-based or narration-over-composition Shorts: you are almost certainly not in the mandatory disclosure zone. A synthetic voice reading factual content over an animated chart is not "realistic content that could be mistaken for real."
+
+One important caveat: YouTube may apply its own AI label regardless of creator disclosure, particularly for politically sensitive topics, news-adjacent content, or content featuring public figures. If YouTube applies the label unilaterally, it does not affect monetization, but it does add a visible notice to the video.
+...
+AI-generated content is eligible for YouTube's Shorts revenue share under the Partner Program, provided it meets community guidelines. The eligibility criteria are the same as for human-created content:
+
+- Threshold: 1,000 subscribers + either 4,000 public watch hours (for long-form) or 10 million Shorts views in the last 90 days
+- Revenue model: Shorts Feed revenue share - YouTube pools ad revenue from the Shorts Feed and distributes it based on watch share, not per-view CPM
+...
+YouTube has shifted Shorts monetization weighting toward completion rate and sustained watch time, not raw view counts. A Short that gets 10,000 views at 15% completion rate generates less revenue than a Short with 3,000 views at 80% completion. This matters for AI pipelines because auto-generated content tends to vary more in quality and therefore in completion behaviour.
+
+The "inauthentic content" policy is the real risk:
+
+Starting July 15, 2025, YouTube renamed its "repetitious content" policy to "inauthentic content" and explicitly targets mass-produced, template-based AI videos. The key distinction YouTube has articulated: AI as a tool is allowed and encouraged; AI as the entire creative process - with no human creativity, commentary, or original analysis - is not monetizable.
+
+Channels that upload large volumes of nearly identical AI-generated content risk having their channel demonetized. The enforcement pattern is consistent: if your Shorts are structurally identical (same narration template, same visual template, same topic format) at high upload velocity, you are in the suppression zone.
+
+The test is not "is this AI-generated" but "does each piece add distinct value." A pipeline that generates 50 identical tip-list narration Shorts will perform differently from one that generates 10 topic-specific compositions with real data and differentiated framing.
+...
+- Failure to disclose realistic AI content: policy strikes, potential demonetization
+- "Inauthentic content" flag: channel-level demonetization review
+- As of mid-July 2025, Content ID has been enhanced with AI-powered detection systems that are better at identifying reused, derivative, or AI-generated content that closely resembles existing copyrighted material
+...
+- Mass-upload patterns (10+ structurally similar Shorts per day from one channel)
+- AI-generated depictions of real people in false contexts
+- AI narration over generic stock footage with no original value added
+- Channels with no human-created content mixed in (pure-automation signals)
+- Low-resolution or watermarked AI outputs (platform quality signals)
+...
+- AI narration over original programmatic compositions (Remotion, Motion Canvas, etc.)
+- AI-scripted content with data, research, or original analysis
+- Shorts that use AI tools as part of a production workflow, not as the entirety of it
+- TTS narration with synthetic voice not impersonating a real person
+
+The key differentiator YouTube has articulated publicly: does the content provide "original educational value, commentary, or analysis," or is it filler generated at scale? This is a judgment call, not a binary test, and appeals do exist if content is incorrectly actioned.
+
+## 6 The "repetitious content" trap for automated pipelines
+
+This is the failure mode that catches most automated pipelines. The trap has three stages:
+
+Stage 1 - Initial growth. High-volume upload works early because YouTube's algorithm surfaces novel content. Metrics look good.
+
+Stage 2 - Algorithmic suppression. YouTube's systems detect the structural similarity pattern. Impressions drop, not because of any individual policy violation, but because the recommendation system deprioritises low-differentiation content.
+
+Stage 3 - Demonetization review. If suppression is accompanied by a community guidelines review, the "repetitious content" flag can result in demonetization at the channel level.
+...
+- Build variation into the pipeline at the template level, not just the content level
+- Use different visual treatments, pacing, and framing across upload batches
+- Limit high-velocity uploads to proven formats; test new formats before scaling
+- Mix in longer-form or non-Shorts content to signal channel breadth
+- Monitor Shorts analytics for sudden drop-offs in impressions, which often precede a suppression event
+...
+No. AI disclosure is specifically for content that could be "mistaken for real" - primarily realistic depictions of real people. A synthetic TTS voice reading original content does not trigger the disclosure requirement under current YouTube policy, provided the voice isn't impersonating a specific real person's voice.
+
+Can an AI-generated Shorts channel be monetized?
+
+Yes. AI-generated content is eligible for monetization under YouTube's Partner Program provided it meets community guidelines. The "repetitious content" policy is the most common disqualifier, not the AI origin of the content.
+...
+A YouTube-applied AI label adds a visible notice ("Altered or synthetic content") to the video. As of March 2026, this does not affect monetization or reach for most content. The exception is election-related and sensitive topic categories, where YouTube may apply additional restrictions.
+...
+There is no official YouTube guidance on upload caps. Enforcement patterns suggest that channels uploading 10+ structurally similar Shorts daily attract suppression. A conservative starting point is 3–5 Shorts per day per channel, with meaningful variation across each batch. Scaling upload velocity should follow demonstrated performance improvement, not be the default starting point.
+
+---
+
+Title: Detailed Clarification About AI-Generated Content and Monetization ...
+URL: https://support.google.com/youtube/thread/413713611/detailed-clarification-about-ai-generated-content-and-monetization-eligibility?hl=en
+Published: N/A
+Author: N/A
+Highlights:
+Detailed Clarification About AI-Generated Content and Monetization Eligibility - YouTube Community
+
+---
+
+Title: YouTube channel monetization policies - YouTube Studio App Help Center
+URL: https://support.google.com/youtubecreatorstudio/answer/1311392?hl=en
+Published: N/A
+Author: N/A
+Highlights:
+July 15, 2025: We’re making a minor update to our “repetitious content” policy to better clarify this includes content that is repetitive or mass-produced. We are also renaming this policy from “repetitious content” to “inauthentic content.” This type of content has always been ineligible for monetization under our existing policies, where creators are rewarded for original and authentic content. There is no change to our reused content policy which reviews content like commentary, clips, compilations, and reaction videos.
+...
+These policies apply to anyone in, or looking to apply to, the YouTube Partner Program. The YouTube Shorts monetization policies also apply if you’re monetizing Shorts on YouTube.
+...
+Keep in mind that when we use the term video on this page, it refers to Shorts, long-form videos, and live streaming. These policies apply wherever videos are viewed including the Watch Page (pages within YouTube, YouTube Music, or YouTube Kids), the YouTube Video Player (player that embeds YouTube content on other sites), and the YouTube Shorts Player (player that makes Shorts available).
+...
+If you’re making money on YouTube, your content should be original and "authentic." This means that we expect your content to:
+
+- Be your original creation. If you borrow content from someone else, you need to change it significantly to make it your own.
+- Not be mass-produced, generic, repetitive, or manipulative. It should be made for the enjoyment or education of viewers, rather than for the sole purpose of getting views.
+...
+### Generic or Repetitive Content
+
+Generic or repetitive content includes content that looks like it’s made with a template, or that may feel repetitive to viewers after watching several videos in a row from the same channel.
+
+Monetizing through the YouTube Partner Program requires that your channel be in compliance with all YouTube policies. If your channel is found to be violative of any other policies, you will not be able to access monetization through the YouTube Partner Program.
+...
+When a channel’s content consists of highly repetitive content, it can disappoint viewers who come to YouTube for appealing and interesting videos. That means channels where content feels interchangeable from video to video are not allowed to monetize. In other words, your channel shouldn’t have content that appears to be produced using a template or where each video doesn’t deliver creative, educational, or other value to the viewer.
+...
+- Similar or repetitive content with low educational value, commentary, narratives, or minimal variation across videos
+- Videos where characters are put in the same situation over and over again with the same outcome (i.e., using a highly similar storyline template across multiple videos)
+- Image slideshows, templated storylines, or scrolling text with minimal or no narrative, commentary, or educational value
+- AI-generated content made with generic or unoriginal templates giving the impression of mass production without adding the creator’s original, authentic insights or perspective
+...
+We want to reward creators for original and "authentic" content that adds value to viewers. If you put a funny or thoughtful spin on content you didn’t originally create (in line with our guidelines below), you’ve transformed the content in some way. It’s fine to have this type of content on your channel, but individual videos may be subject to other policies like copyright. In other words, we allow reused content if viewers can tell that there’s a meaningful difference between the original video and your video.
+...
+- Using clips for a critical review
+- A scene from a movie where you’ve rewritten the dialog and changed the voiceover
+- Replays of a sports tournament where you explain the moves a competitor did to succeed
+- Reaction videos where you comment on the original video
+- Edited footage from other creators where you add a storyline and commentary
+- Edits to remixed content on Shorts like adding original content to a song from our library, or adding the original audio or video segment from other videos to your content
+- Content that primarily features the uploading creator in the video
+- Reused content from other online sources where the creator is either visible in the content or explains how the creator added to the content
+- Edited footage with audio and visual effects on top of the video’s reused content that demonstrates substantive editing and shows it’s unique to your channel
+...
+be a violation of this guideline. If we cannot tell that the content is yours, it may be subject to our reused content policy. This policy applies even if you have permission from the original creator. Reused content is separate from YouTube’s Copyright enforcement, which means it’s not based on copyright, permission, or fair use. This guideline means sometimes, you may not get claims against your content, but your channel may still
+...
+- Clips of moments from your favorite show edited together with little or no narrative
+- Short videos you compiled from other social media websites
+- Collections of songs from different artists (even if you have their permission)
+- Content uploaded many times by other creators
+- Promotion of other people’s content (even if you have permission)
+- Content downloaded or copied from another online source without any substantive modifications
+- Content that gets views from mostly non-verbal reactions to your videos without added voice commentary
+...
+Unsatisfying or off-putting content refers to content that relies heavily on emotionally manipulative formulas, mimics existing formats or stories to a degree that the videos feel interchangeable, or appears designed to shock or surprise viewers for the sole purpose of getting views. This content may feel unsatisfying or off-putting to viewers who come to YouTube looking for content with unique, original substance.
+...
+What's important is that the substance of the video feels original and provides a satisfying experience for the viewer. If you use automated tools or templates to help create your content, the final product must still demonstrate your creative vision and provide educational or entertainment value.
+...
+- Content with a cohesive storyline that doesn’t rely solely on shock value to generate views
+- Content that showcases your authentic perspective when building on a popular video format or theme, like a Short that puts your own personalized spin on a trend
+- Content that expresses your unique creative voice, like using AI to visualize a unique character and narrative you invented
+- Content that utilizes creative tools to assist in delivering a unique, well-researched, or creative narrative, like using AI to edit your video scripts or generate a unique background visual for your content
+...
+- Content that repeatedly uses disturbing themes (such as violence or loss) without building a cohesive narrative
+- Channels that heavily rely on generic templates or emotionally manipulative themes, like a series showing repetitive scenarios of animals in exaggerated distress or peril
+- Content that lacks a clear narrative arc or logical progression, such as videos that stitch together unrelated or inconsistent AI clips to surprise or shock viewers
+...
+This policy refers to channels that use AI-generated personas to deliver information on sensitive topics. This includes any content that presents itself as a human expert providing advice to viewers on topics such as health, legal issues, finances, or politics. To protect viewers who may be confused or otherwise negatively impacted by this content, channels uploading this content will not be allowed to monetize.
+...
+- An AI “doctor” providing medical diagnoses, health advice, or wellness remedies
+- AI-generated podcast hosts offering financial guidance, investment tips, or wealth management advice
+- AI personas giving legal advice or interpreting laws
+

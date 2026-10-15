@@ -48,7 +48,8 @@ const FORWARD: Record<JobState, JobState[]> = {
   SOURCING_MEDIA: ['RENDERING'],
   RENDERING: ['QA'],
   QA: ['AWAITING_FINAL_APPROVAL', 'READY_TO_PUBLISH'],
-  AWAITING_FINAL_APPROVAL: ['READY_TO_PUBLISH', 'REJECTED'],
+  // A reviewer may send the footage back (re-source without re-paying for narration).
+  AWAITING_FINAL_APPROVAL: ['READY_TO_PUBLISH', 'REJECTED', 'SOURCING_MEDIA'],
   READY_TO_PUBLISH: ['PUBLISHING', 'REJECTED'],
   PUBLISHING: ['PUBLISHED'],
   PUBLISHED: [],

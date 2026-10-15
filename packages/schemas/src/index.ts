@@ -55,6 +55,72 @@ const isoDate = z.string().datetime();
 // 1. TOPIC DISCOVERY & SCORING
 // =============================================================================
 
+/**
+ * Measured demand/supply evidence for a viewer question (gap discovery). Every number is observed
+ * from YouTube (autocomplete rank, search results); nothing is estimated by a model.
+ */
+export const GapEvidenceSchema = z.object({
+  /** The question as viewers type it into YouTube search. */
+  question: z.string().min(5),
+  seed: z.string(),
+  cluster: z.string(),
+  /** Position in the autocomplete list for the prefix that surfaced it (0 = first). */
+  suggestRank: z.number().int().nonnegative(),
+  /** Most-viewed long-form answer in the top search results (proven demand). */
+  longformTopViews: z.number().int().nonnegative(),
+  /** Shorts (<= 65 s) among the top results, and how many of them have >= 10k views (supply). */
+  shortsInResults: z.number().int().nonnegative(),
+  shortsAbove10k: z.number().int().nonnegative(),
+  bestShortViews: z.number().int().nonnegative(),
+  /** 0-100, deterministic: high demand and missing Shorts supply score high. */
+  score: z.number().min(0).max(100),
+  measuredAt: isoDate,
+});
+export type GapEvidence = z.infer<typeof GapEvidenceSchema>;
+
+/** Script structures. Rotated so a channel does not look template-made (YouTube "inauthentic content"). */
+export const ShortFormatSchema = z.enum(['MICRO_EXPLAINER', 'STORY', 'QUESTION_ANSWER', 'THREE_REASONS']);
+export type ShortFormat = z.infer<typeof ShortFormatSchema>;
+
+/**
+ * How the first spoken sentence opens: a concrete claim ("statement"), an action already happening
+ * ("scene"), or the viewer's question ("question", kept for controlled experiments).
+ */
+export const HookTypeSchema = z.enum(['statement', 'scene', 'question']);
+export type HookType = z.infer<typeof HookTypeSchema>;
+
+/** Target length band: standard 30-45 s, short 25-35 s (experimental). */
+export const DurationBandSchema = z.enum(['standard', 'short']);
+export type DurationBand = z.infer<typeof DurationBandSchema>;
+
+export const CaptionStyleSchema = z.enum(['plain', 'highlight']);
+export type CaptionStyle = z.infer<typeof CaptionStyleSchema>;
+
+/**
+ * Every production choice for one Short, frozen when the job is created so that a retry or resume
+ * can never change what was tested. `experimentId`/`arm` are set only for controlled experiments.
+ */
+export const ProductionVariantSchema = z.object({
+  experimentId: z.string().nullable(),
+  /** Factor varied by the experiment, and this job's value for it. */
+  factor: z.string().nullable(),
+  arm: z.string().nullable(),
+  /** How the arm was chosen (auditable), e.g. "round-robin #7 of hook-test-1". */
+  assignment: z.string(),
+  hookType: HookTypeSchema,
+  /** Fixed format, or "auto" for rotation among SHORT_FORMATS. */
+  format: z.union([ShortFormatSchema, z.literal('auto')]),
+  durationBand: DurationBandSchema,
+  captionStyle: CaptionStyleSchema,
+  titleCard: z.boolean(),
+  music: z.boolean(),
+  voiceId: z.string(),
+  voiceSpeed: z.number().min(0.7).max(1.2),
+  cta: z.boolean(),
+  assignedAt: isoDate,
+});
+export type ProductionVariant = z.infer<typeof ProductionVariantSchema>;
+
 export const TopicCandidateSchema = z.object({
   id: z.string().uuid(),
   title: z.string().min(5).max(140),
@@ -67,6 +133,8 @@ export const TopicCandidateSchema = z.object({
   status: TopicStatusSchema.default('DISCOVERED'),
   /** Normalized, order-independent key of significant title tokens used for deduplication. */
   dedupeKey: z.string().optional(),
+  /** Present for topics found by gap discovery (a real viewer question with measured demand). */
+  gap: GapEvidenceSchema.optional(),
 });
 export type TopicCandidate = z.infer<typeof TopicCandidateSchema>;
 
@@ -111,6 +179,42 @@ export const CredibilityTierSchema = z.enum([
 ]);
 export type CredibilityTier = z.infer<typeof CredibilityTierSchema>;
 
+/**
+ * Publication suitability of a source, independent of whether it supports a claim.
+ * HIGH/ACCEPTABLE may be cited; QUESTIONABLE requires human review; REJECTED is never used.
+ */
+export const SourceCredibilitySchema = z.enum(['HIGH', 'ACCEPTABLE', 'QUESTIONABLE', 'REJECTED']);
+export type SourceCredibility = z.infer<typeof SourceCredibilitySchema>;
+
+export const SourceCategorySchema = z.enum([
+  'government',
+  'intergovernmental',
+  'academic',
+  'scientific_organization',
+  'museum_archive',
+  'established_news',
+  'reference',
+  'specialist_publication',
+  'commercial',
+  'blog_personal',
+  'advocacy',
+  'religious_advocacy',
+  'user_generated',
+  'content_farm',
+  'unknown',
+]);
+export type SourceCategory = z.infer<typeof SourceCategorySchema>;
+
+export const SourceAssessmentSchema = z.object({
+  tier: SourceCredibilitySchema,
+  category: SourceCategorySchema,
+  /** 'rule' = curated domain policy; 'assessed' = LLM category judgment mapped by fixed policy. */
+  method: z.enum(['rule', 'assessed']),
+  conflictOfInterest: z.boolean().default(false),
+  reason: z.string(),
+});
+export type SourceAssessment = z.infer<typeof SourceAssessmentSchema>;
+
 export const SourceReferenceSchema = z.object({
   id: z.string().uuid(),
   url: z.string().url(),
@@ -123,6 +227,8 @@ export const SourceReferenceSchema = z.object({
   contentChars: z.number().int().nonnegative(),
   contentSha256: z.string().length(64),
   archiveUrl: z.string().url().optional(),
+  /** Missing on legacy artifacts; treated as QUESTIONABLE (fail safe). */
+  credibility: SourceAssessmentSchema.optional(),
 });
 export type SourceReference = z.infer<typeof SourceReferenceSchema>;
 
@@ -191,7 +297,7 @@ export const StoryOutlineSchema = z.object({
     twist: z.string().min(1),
     payoff: z.string().min(1),
   }),
-  targetDurationSeconds: z.number().min(30).max(60).default(45),
+  targetDurationSeconds: z.number().min(15).max(60).default(45),
   createdAt: isoDate,
 });
 export type StoryOutline = z.infer<typeof StoryOutlineSchema>;
@@ -208,6 +314,39 @@ export const MediaFormatSchema = z.enum([
 ]);
 export type MediaFormat = z.infer<typeof MediaFormatSchema>;
 
+/**
+ * A clause-level visual beat: an exact contiguous slice of the scene narration with the literal
+ * thing that must be on screen while it is spoken.
+ */
+/**
+ * A locally rendered motion graphic (Blender) for a clause stock footage cannot show: a number, a
+ * comparison, a short process, or a key term. Its text may only repeat the narration (validated).
+ */
+export const GraphicSpecSchema = z.discriminatedUnion('template', [
+  z.object({ template: z.literal('stat'), value: z.string().min(1).max(14), label: z.string().max(40).default('') }),
+  z.object({
+    template: z.literal('compare'),
+    items: z
+      .array(z.object({ label: z.string().min(1).max(18), value: z.number().positive(), display: z.string().min(1).max(12) }))
+      .min(2)
+      .max(3),
+  }),
+  z.object({ template: z.literal('process'), steps: z.array(z.string().min(1).max(24)).min(2).max(4) }),
+  z.object({ template: z.literal('keyword'), text: z.string().min(1).max(28) }),
+]);
+export type GraphicSpec = z.infer<typeof GraphicSpecSchema>;
+
+export const VisualBeatSchema = z.object({
+  text: z.string().min(1),
+  visualIntent: z.string().default(''),
+  visualSubject: z.string().min(2),
+  assetKeywords: z.array(z.string().min(2)).min(1),
+  visualExclusions: z.array(z.string()).default([]),
+  /** Present when this beat is shown as a generated graphic instead of stock footage. */
+  graphic: GraphicSpecSchema.optional(),
+});
+export type VisualBeat = z.infer<typeof VisualBeatSchema>;
+
 export const SceneSchema = z.object({
   sceneNumber: z.number().int().positive(),
   narration: z.string().min(1),
@@ -215,11 +354,17 @@ export const SceneSchema = z.object({
   mediaFormat: MediaFormatSchema.default('LICENSED_STOCK'),
   /** Generic, stock-searchable visual terms (no names or dates). */
   assetKeywords: z.array(z.string().min(2)).min(1),
+  /** The concrete thing the viewer must see (used for semantic media checks). */
+  visualSubject: z.string().default(''),
+  /** Things that must not appear (e.g. "celebration", "cartoon"). */
+  visualExclusions: z.array(z.string()).default([]),
   visualPrompt: z.string().optional(),
   textOverlay: z.string().optional(),
   transitionIntent: z.enum(['CUT', 'FADE', 'ZOOM_IN', 'PAN_LEFT', 'PAN_RIGHT']).default('CUT'),
   /** Verified claim IDs asserted by this scene. Never back-filled. */
   claimIds: z.array(z.string().uuid()).default([]),
+  /** Clause-level beats (empty on legacy scripts: the scene is then one visual unit). */
+  beats: z.array(VisualBeatSchema).default([]),
 });
 export type Scene = z.infer<typeof SceneSchema>;
 
@@ -230,13 +375,42 @@ export const ShortScriptSchema = z.object({
   title: z.string().min(5).max(100),
   description: z.string().max(5000).default(''),
   hookText: z.string().min(5),
-  targetDurationSeconds: z.number().min(30).max(60),
+  format: ShortFormatSchema.default('STORY'),
+  hookType: HookTypeSchema.optional(),
+  /** On-screen topic shown during the opening (2-6 words); absent when not generated. */
+  titleCard: z.string().max(60).optional(),
+  targetDurationSeconds: z.number().min(15).max(60),
   scenes: z.array(SceneSchema).min(3),
   totalWords: z.number().int().positive(),
   generationAttempts: z.number().int().positive().default(1),
   createdAt: isoDate,
 });
 export type ShortScript = z.infer<typeof ShortScriptSchema>;
+
+/** Editorial scores (0-5) from the script editor, which is separate from the writer. */
+export const EditorialScoresSchema = z.object({
+  hook: z.number().min(0).max(5),
+  specificity: z.number().min(0).max(5),
+  causalFlow: z.number().min(0).max(5),
+  payoff: z.number().min(0).max(5),
+});
+export type EditorialScores = z.infer<typeof EditorialScoresSchema>;
+
+export const ScriptReviewSchema = z.object({
+  id: z.string().uuid(),
+  scriptId: z.string().uuid(),
+  /** 0 = first draft; n = n-th revision requested by the editor. */
+  revision: z.number().int().nonnegative(),
+  scores: EditorialScoresSchema,
+  total: z.number().min(0).max(20),
+  passed: z.boolean(),
+  /** Specific, actionable notes (empty when passed). */
+  notes: z.array(z.string()),
+  thresholds: z.object({ minTotal: z.number(), minHook: z.number(), minPayoff: z.number() }),
+  model: z.string(),
+  reviewedAt: isoDate,
+});
+export type ScriptReview = z.infer<typeof ScriptReviewSchema>;
 
 // =============================================================================
 // 4. VOICE NARRATION & TIMELINE
@@ -270,6 +444,18 @@ export const VoiceNarrationSchema = z.object({
   sha256: z.string().length(64),
   cacheKey: z.string().length(64),
   synthesizedAt: isoDate,
+  /** Gap tightening applied after synthesis (timestamps above are already realigned). */
+  processing: z
+    .object({
+      leadingTrimmedSeconds: z.number().nonnegative(),
+      gapsTightened: z.number().int().nonnegative(),
+      secondsRemoved: z.number().nonnegative(),
+      maxGapAfterSeconds: z.number().nonnegative(),
+      measuredWordsPerSecond: z.number().nonnegative(),
+    })
+    .optional(),
+  /** Speed requested from the provider for this narration (variant), when supported. */
+  speed: z.number().optional(),
 });
 export type VoiceNarration = z.infer<typeof VoiceNarrationSchema>;
 
@@ -300,6 +486,11 @@ export const TimelineShotSchema = z.object({
   shotIndex: z.number().int().nonnegative(),
   start: z.number().min(0),
   end: z.number().positive(),
+  /** Beat (within the scene) this shot illustrates; absent for legacy scene-level shots. */
+  beatIndex: z.number().int().nonnegative().optional(),
+  /** Narration words covered by the shot (absent on legacy timelines). */
+  firstWordIndex: z.number().int().nonnegative().optional(),
+  lastWordIndex: z.number().int().nonnegative().optional(),
 });
 export type TimelineShot = z.infer<typeof TimelineShotSchema>;
 
@@ -386,6 +577,47 @@ export const AssetDescriptorSchema = z.object({
   shotIndex: z.number().int().nonnegative().default(0),
   probe: MediaProbeSchema,
   ranking: AssetRankingSchema,
+  /** Frame-level and semantic validation. Missing on legacy artifacts (content QA fails them). */
+  visualValidation: z
+    .object({
+      frames: z.array(
+        z.object({
+          t: z.number(),
+          meanLuma: z.number(),
+          stdLuma: z.number(),
+          greenFraction: z.number(),
+          barFraction: z.number(),
+        })
+      ),
+      defects: z.array(z.string()),
+      semantic: z
+        .object({
+          verdict: z.enum(['ACCEPT', 'REJECT', 'UNSURE']),
+          showsSubject: z.boolean(),
+          issues: z.array(z.string()),
+          reason: z.string(),
+          model: z.string(),
+        })
+        .nullable(),
+      decision: z.enum(['ACCEPTED', 'NEEDS_REVIEW']),
+    })
+    .optional(),
+  /**
+   * How the asset fills the 9:16 frame, decided deterministically from its dimensions and decoded
+   * frames. Centers are horizontal positions (0-1) of the crop window at the start/end of the shot.
+   */
+  framing: z
+    .object({
+      mode: z.enum(['cover', 'crop_pan', 'letterbox']),
+      centerStart: z.number().min(0).max(1),
+      centerEnd: z.number().min(0).max(1),
+      /** Scale factor from source pixels to output pixels (> 1 = upscaling). */
+      upscale: z.number().positive(),
+      reason: z.string(),
+    })
+    .optional(),
+  /** Set for assets generated locally (no third-party content); their text is re-verified by content QA. */
+  generated: z.object({ tool: z.literal('blender'), version: z.string(), spec: GraphicSpecSchema, beatText: z.string() }).optional(),
   retrievedAt: isoDate,
   metadata: z.record(z.unknown()).default({}),
 });
@@ -418,6 +650,23 @@ export const RenderJobSchema = z.object({
   renderedAt: isoDate,
   status: z.enum(['COMPLETED', 'FAILED']),
   error: z.string().optional(),
+  /** Background music actually mixed (null = none; reason recorded). */
+  music: z
+    .object({
+      trackId: z.string(),
+      title: z.string(),
+      source: z.string(),
+      licence: z.string(),
+      bedLu: z.number(),
+      /** Applied gain and the track's measured loudness (the bed's level is set by this recipe). */
+      gainDb: z.number().optional(),
+      trackLufs: z.number().optional(),
+    })
+    .nullable()
+    .optional(),
+  musicDisabledReason: z.string().optional(),
+  titleCard: z.string().nullable().optional(),
+  captionStyle: CaptionStyleSchema.optional(),
 });
 export type RenderJob = z.infer<typeof RenderJobSchema>;
 
@@ -434,6 +683,8 @@ export const QACheckSchema = z.object({
   status: QAStatusSchema,
   /** A blocking WARN or any FAIL prevents publication. */
   blocking: z.boolean(),
+  /** Not a defect, but automatic approval is not allowed: a human must review. */
+  reviewRequired: z.boolean().default(false),
   message: z.string(),
   measured: z.unknown().optional(),
   expected: z.unknown().optional(),
@@ -446,6 +697,8 @@ export const QAReportSchema = z.object({
   overallStatus: QAStatusSchema,
   publishEligible: z.boolean(),
   blockingReasons: z.array(z.string()),
+  requiresHumanReview: z.boolean().default(false),
+  reviewReasons: z.array(z.string()).default([]),
 });
 export type QAReport = z.infer<typeof QAReportSchema>;
 
@@ -460,6 +713,9 @@ export const QAResultSchema = z.object({
   overallStatus: QAStatusSchema,
   publishEligible: z.boolean(),
   blockingReasons: z.array(z.string()),
+  /** Eligible but must not be approved by policy: a human has to look (questionable source, uncertain visuals). */
+  requiresHumanReview: z.boolean().default(false),
+  reviewReasons: z.array(z.string()).default([]),
   evaluatedAt: isoDate,
 });
 export type QAResult = z.infer<typeof QAResultSchema>;
@@ -496,6 +752,12 @@ export const YouTubeMetadataSchema = z.object({
   description: z.string().max(5000),
   tags: z.array(z.string().min(1).max(100)).refine((t) => t.join(',').length <= 500, 'tags exceed 500 characters'),
   privacyStatus: z.enum(['private', 'unlisted', 'public']),
+  categoryId: z.string().regex(/^\d+$/).default('27'),
+  /** Altered/synthetic content disclosure (status.containsSyntheticMedia). */
+  containsSyntheticMedia: z.boolean().default(true),
+  defaultLanguage: z.string().default('en'),
+  /** Scheduled public release; only honoured for private uploads from an audited API project. */
+  publishAt: isoDate.optional(),
 });
 export type YouTubeMetadata = z.infer<typeof YouTubeMetadataSchema>;
 
@@ -512,6 +774,10 @@ export const PublishJobSchema = z.object({
   startedAt: isoDate,
   publishedAt: isoDate.optional(),
   error: z.string().optional(),
+  /** Whether bytes may have reached the target. Unknown is treated as true (no automatic retry). */
+  uploadAttempted: z.boolean().default(true),
+  /** Scheduled public release (YouTube `publishAt`), when the upload was scheduled. */
+  scheduledFor: isoDate.optional(),
 });
 export type PublishJob = z.infer<typeof PublishJobSchema>;
 
@@ -523,6 +789,7 @@ export const JobErrorKindSchema = z.enum([
   'CONFIGURATION',
   'AUTHENTICATION',
   'RATE_LIMIT',
+  'QUOTA_EXCEEDED',
   'TIMEOUT',
   'PROVIDER_UNAVAILABLE',
   'INVALID_RESPONSE',
@@ -545,6 +812,12 @@ export const JobArtifactsSchema = z.object({
   renderId: z.string().uuid().optional(),
   qaId: z.string().uuid().optional(),
   publishId: z.string().uuid().optional(),
+  /** Stock clips a reviewer rejected for this job ("provider:id"); never selected again. */
+  excludedMediaKeys: z.array(z.string()).optional(),
+  /** Production choices frozen at job creation (see ProductionVariantSchema). */
+  variant: ProductionVariantSchema.optional(),
+  /** Latest script-editor review for the current script. */
+  scriptReviewId: z.string().uuid().optional(),
 });
 export type JobArtifacts = z.infer<typeof JobArtifactsSchema>;
 
@@ -568,8 +841,32 @@ export const JobSchema = z.object({
 export type Job = z.infer<typeof JobSchema>;
 
 // =============================================================================
-// 11. ANALYTICS (not yet implemented against a real API)
+// 11. ANALYTICS
 // =============================================================================
+
+/**
+ * One measurement of a published Short. `source` says where the numbers came from: the YouTube
+ * Analytics API (owner metrics incl. engaged views and retention) or public counters only.
+ */
+export const VideoMetricsSchema = z.object({
+  id: z.string().uuid(),
+  publishId: z.string().uuid(),
+  jobId: z.string().uuid(),
+  youtubeVideoId: z.string().min(1),
+  source: z.enum(['analytics_api', 'data_api', 'public']),
+  capturedAt: isoDate,
+  /** Hours between publication and capture (normalizes views for age). */
+  ageHours: z.number().nonnegative(),
+  views: z.number().int().nonnegative(),
+  engagedViews: z.number().int().nonnegative().optional(),
+  likes: z.number().int().nonnegative().optional(),
+  comments: z.number().int().nonnegative().optional(),
+  shares: z.number().int().nonnegative().optional(),
+  subscribersGained: z.number().int().optional(),
+  averageViewDurationSeconds: z.number().nonnegative().optional(),
+  averageViewPercentage: z.number().nonnegative().optional(),
+});
+export type VideoMetrics = z.infer<typeof VideoMetricsSchema>;
 
 export const AnalyticsRecordSchema = z.object({
   id: z.string().uuid(),

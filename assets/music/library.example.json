@@ -1,0 +1,16 @@
+{
+  "tracks": [
+    {
+      "id": "example-track",
+      "file": "example-track.mp3",
+      "title": "REPLACE with the title as listed by the source",
+      "artist": "REPLACE",
+      "source": "youtube_audio_library",
+      "licence": "REPLACE with the licence text as listed by the source",
+      "licenceEvidence": "REPLACE with where and when the licence was verified",
+      "attributionRequired": false,
+      "attributionText": "",
+      "approved": false
+    }
+  ]
+}

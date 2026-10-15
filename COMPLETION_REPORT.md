@@ -212,3 +212,191 @@ Recommended next steps, in order:
 4. Enforce a source credibility policy.
 5. Add CI (`pnpm typecheck && pnpm test`) and upgrade vitest.
 6. Commit the work in reviewable units.
+
+
+---
+
+## 8. FINAL PRODUCTION HARDENING (2026-10-06)
+
+Scope: targeted hardening on branch `feat/production-pipeline`. No rebuild, no broad rewrite. Everything below is uncommitted working-tree changes.
+
+### 8.1 Changes
+
+| Area | Change | Where |
+|---|---|---|
+| Source credibility | 4 tiers (HIGH/ACCEPTABLE/QUESTIONABLE/REJECTED). Deterministic domain rules apply first; unknown domains get one batched LLM *publisher-category* call (it can never yield HIGH). REJECTED sources are dropped before extraction and logged to `research/rejected-sources.json`. Claim support (`verificationStatus`) is kept separate from publishability (`claimSourceStatus`). | `packages/agents/src/source-policy.ts`, `research-agent.ts` |
+| Description sources | Lists only HIGH/ACCEPTABLE sources behind the claims actually used. At least one is required. | `scriptwriter-agent.ts` (`citableSourceUrls`) |
+| Scene visual requirements | Every scene gets `visualSubject` (2–6 words, no numbers, nothing stock footage cannot show) and up to 4 `visualExclusions`, used by the ranker, the text judge and the vision check. | `script-validation.ts`, `media-ranker.ts` |
+| Frame checks | Five decoded frames per candidate, checked for black, blank, chroma-key green, letterbox and static (frozen) frames. The final video is re-checked at every shot midpoint. | `packages/core/src/frame-analysis.ts`, `visual-director-agent.ts`, `rendering/src/media-qa.ts` |
+| Vision check | Finalists only, at most 3 per shot. One 3-frame contact sheet at low detail returns ACCEPT, REJECT or UNSURE. The stored result is the frame metrics plus the categorical verdict, issues and reason. **No confidence number is fabricated.** | `visual-director-agent.ts`, `runner.ts` (`media_vision`) |
+| Human-review channel | QA checks can be `reviewRequired`, which sets `requiresHumanReview` and `reviewReasons`. `auto_after_qa` never auto-approves such a job. | `content-qa.ts`, `media-qa.ts`, `runner.ts` |
+| Publish-gate invariants | Enforced in code: referenced claims VERIFIED and not backed only by REJECTED sources; description URLs ⊆ HIGH/ACCEPTABLE sources (at least one); narration file present and its sha256 unchanged; every asset visually validated with no defects and no REJECT; review-required or NEEDS_REVIEW requires `decided_by=human`; script and topic must be the job's own. | `packages/pipeline/src/publish-gate.ts` |
+| YouTube boundary | `PublishError.uploadStarted`. Failures before any byte is sent (metadata, file, OAuth, session) are safe to retry. Failures after the PUT starts (or unclassified failures) are never retried. Upload records persist `uploadAttempted`. New `shorts publish <job> --retry` clears the failed record and re-arms the job in one transaction. | `youtube-official.ts`, `local-export.ts`, `runner.ts` (`retryPublish`), CLI |
+| Bug fixed | **A publish failure left the job stuck in `PUBLISHING`.** The failure handler did a compare-and-set against the stale pre-stage state, so it threw "Concurrent modification" instead of recording FAILED. Found by the new retry tests. | `runner.ts` (`fail`) |
+| PostgreSQL | Real transactions on a dedicated client (AsyncLocalStorage). Job create + event, CAS + event, and topic claim are atomic. Schema init runs under an advisory lock. Connection failures raise `DatabaseUnavailableError` (retryable, clear message); `DB_CONNECT_TIMEOUT_MS` sets the connection timeout. In SQLite mode, transactions are serialized in-process. | `packages/core/src/database/db.ts`, `repository.ts` |
+| Voice constraint | `SCRIPT_MAX_WORDS` is now 118 (was 130), derived from the slowest measured pace (~2.0 words/s). Config validation rejects any budget where `max/VOICE_MIN_WORDS_PER_SECOND + 0.6 > SHORT_MAX_SECONDS − 0.4`. | `config.ts`, `.env.example` |
+| Topic threshold | Still 65 and still configurable. Documented as an editorial selectivity knob, not an objective quality line. | `config.ts`, `docs/WORKFLOW.md`, ADR-006 |
+| Error taxonomy | New `QUOTA_EXCEEDED`. ElevenLabs reports exhausted credits as HTTP 401, which was misreported as AUTHENTICATION during the live campaign. It is now non-retryable and also propagates out of media sourcing. | `errors.ts`, `elevenlabs-tts.ts` |
+| Script convergence | The writer now receives every statement the fact-checker rejected in earlier attempts, plus an explicit "no rounding / generalizing / unsupported conclusions" rule. Visual subjects that stock footage cannot provide (maps, animations, diagrams, …) are rejected. Both changes respond to live failures (§8.4). | `scriptwriter-agent.ts`, `script-validation.ts` |
+| CI | `.github/workflows/ci.yml`: Node 24, pnpm, apt FFmpeg, PostgreSQL 16 service, typecheck (now including `tests/`), build, CLI boot smoke, full suite, all provider keys blank. `acceptance.yml` is `workflow_dispatch` only, with secrets in a protected environment. The empty-provider failure class is caught by typecheck, boot smoke and a source-hygiene test. | `.github/workflows/` |
+| Campaign tooling | `pnpm acceptance:campaign --jobs N [--stop-at STATE]`: isolated DB/output, unattended policy, local export only. Records per-job JSON, `first_pass_success_rate` and `failure_rate_by_stage`, and resumes once only on retryable errors (recorded separately). | `scripts/acceptance-campaign.ts` |
+
+### 8.2 Tests
+
+**Last complete run: 143/143 passed** (13 files, including the real-PostgreSQL suite against Docker `postgres:16`; `pnpm typecheck` clean). New coverage:
+
+- Source policy: acceptable, rejected (deny-listed and model-classified), all-rejected fails closed, questionable-only (supported but not citable, so review), mixed (best tier decides; only citable URLs listed), supported-but-failing-policy, missing assessment treated as QUESTIONABLE.
+- Frame defects on real FFmpeg-generated clips: normal (no defect), green screen, black, blank, letterbox, frozen still, corrupt file.
+- YouTube transport: missing credentials, token failure, session failure, mid-upload HTTP and socket failures (exactly one PUT, `uploadStarted=true`), 200 without an id, no secrets in error text.
+- Publish gate: policy approval refused for review-required jobs, human approval accepted, then blocked again by defects, missing validation, rejected sources and modified narration.
+- Retry safety: pre-upload failure → `--retry` publishes exactly once; mid-upload failure → retry and resume both refused.
+- PostgreSQL: unavailable server, concurrent schema init, rollback, CAS race, lease exclusivity, uniqueness, atomic topic claim, and a full job that is interrupted, resumed from a new pool, and published once.
+- Invalid LLM output: non-JSON, truncated JSON, wrong type, out-of-range value; bounded re-prompts.
+- Voice and length: 100/118 boundaries, 119 rejected, unachievable config rejected.
+- Quota classification, unsourceable visual subjects, convergence of fact-checker feedback, source hygiene.
+
+**Not re-run after the final edits:** a final full-suite run was **killed by the host for low memory**. Edits made after the last green full run: script convergence, unsourceable-subject rule, quota classification, gate script/topic identity check, campaign `stopAt`. Each has its own targeted tests, which passed (script suite 14/14, quota test), and `pnpm typecheck` passes. **A full `pnpm test` must be re-run before merging.**
+
+### 8.3 Positions on the brief's specific questions
+
+- **YouTube: NOT VERIFIED.** No OAuth credentials exist in this environment, and none were invented. The boundary is tested with an injected transport only. No upload to any real channel was attempted.
+- **PostgreSQL:** verified against a real server (Docker locally; service container in CI). Supported modes: SQLite = single process; PostgreSQL = multiple workers.
+- **Topic threshold 65:** a selectivity knob. The data (20 topics, 61.8–74.2) does not show that 65 separates good topics from bad ones. Every downstream gate still applies.
+- **Cost:** measured per live call. Vision ≈ $0.0011/call (5 calls in the media-stage job), source assessment ≈ $0.005/job, research + scripting $0.08–0.11/job. Projected full Short ≈ $0.24–0.26 (ElevenLabs ≈ $0.15–0.165 dominates), within the $0.23–0.27 target. **This is a projection, not a measured full-campaign average** (see 8.4).
+
+### 8.4 Live acceptance campaign: results, including failures
+
+The 10-job full campaign **could not be completed**:
+
+1. After 2 full jobs, ElevenLabs returned `quota_exceeded` (457 of 10,000 credits left; ~700 needed per Short). No further Short can be voiced until credits are added.
+2. A second, partial campaign (stopping before voice) was **stopped by the host for low memory** after 3 jobs. Its orphaned process was then killed manually, so it did not keep spending.
+
+**Run A: full pipeline, unattended policy, pre-fix code** (1 smoke job + `output/acceptance/campaign-2026-10-06T08-44-49-406Z`):
+
+| # | Topic | First pass | Failed stage | Cause → action |
+|---|---|---|---|---|
+| smoke | The Mysterious Tunguska Event | FAILED | SCRIPTING | Fact-checker caught added conclusions ("remains unsolved") on attempt 4/4 → cumulative feedback + precision rule |
+| 1 | Tunguska event (new discovery) | FAILED | SOURCING_MEDIA | Script requested "animated map of Siberia"; vision correctly REJECTed landscapes and explosions → unsourceable-subject rule |
+| 2 | (topic stored, voice failed) | FAILED | SYNTHESIZING_VOICE | ElevenLabs quota exhausted, misreported as AUTHENTICATION → `QUOTA_EXCEEDED` |
+| 3 | The Invention of the Bullet Train | FAILED | SCRIPTING | Writer rounded "two hours and twenty minutes" to "just over two hours"; fact-checker blocked it 4 times → cumulative feedback + precision rule |
+
+- first_pass_success_rate: **0/4 (0%)**
+- failure_rate_by_stage: SCRIPTING 2/4, SOURCING_MEDIA 1/4, SYNTHESIZING_VOICE 1/4 (quota)
+- Spend: $0.58
+
+**Run B: post-fix code, `--stop-at SYNTHESIZING_VOICE`** (`output/acceptance/campaign-2026-10-06T08-50-57-418Z`):
+
+| # | Topic | Result | Words | Source tiers | Cost |
+|---|---|---|---|---|---|
+| 1 | The Discovery of Penicillin | research + script first pass ✔ | 107 | 5× HIGH | $0.102 |
+| 2 | The Great Emu War | first pass ✔ | 115 | 3× ACCEPTABLE, 1× QUESTIONABLE | $0.081 |
+| 3 | The Miracle on the Hudson | first pass ✔ | 108 | 2× HIGH, 2× ACCEPTABLE | $0.109 |
+
+- first_pass_success_rate **through scripting**: 3/3
+- All scripts were inside the 100–118 word band.
+- Spend: $0.29
+
+Three jobs are far too few to infer a rate, and Run B says nothing about voice, media, render or QA.
+
+**Total live spend this phase: ≈ $0.87.** No Short completed end to end on the hardened code. The vision check ran live only inside run A, job 1: 1 ACCEPT and several correct REJECTs.
+
+### 8.5 Limitations
+
+- YouTube publishing is unverified against a real channel.
+- There is no measured end-to-end yield on the hardened pipeline. The 0% first-pass rate in run A is pre-fix; the 3/3 in run B covers only pre-voice stages.
+- Frame-defect thresholds (`FRAME_THRESHOLDS`) are validated on synthetic clips, not on a corpus of real stock footage. Very dark legitimate footage (night, space) may be rejected as "black": a false positive that fails closed.
+- The vision check uses `detail:low` on 240 px frames. It can miss small watermarks and text, and its verdicts were observed live on only a handful of candidates.
+- The domain tables in the source policy are editorial and finite. Unknown domains rely on an LLM publisher classification (bounded to ≤ ACCEPTABLE). Subdomains inherit their parent's tier (e.g. `graphics8.nytimes.com` → HIGH).
+- SQLite mode is single-process by design.
+- The final full test run after the last edits was not completed (host memory). Targeted tests and typecheck passed.
+
+### 8.6 Final verdict
+
+## NOT READY FOR UNATTENDED PUBLICATION
+
+**Blocking reasons, by evidence:**
+
+1. **No end-to-end evidence on the hardened code.** The required ~10-job live campaign could not run: ElevenLabs credits are exhausted (457 of 10,000 left, ~700 needed per Short). The last measured full-pipeline first-pass rate is 0/4 (pre-fix). The post-fix improvement is shown only for research and scripting (3/3).
+2. **YouTube upload is NOT VERIFIED.** No OAuth credentials exist; only the transport is tested. An unattended system whose publish step has never run cannot be called ready.
+3. **Visual validation has not been calibrated on real footage at scale** (frame thresholds and vision verdicts were observed on a handful of live candidates).
+
+What *is* in place: every brief invariant is enforced in code, so the pipeline fails closed rather than publishing bad output. That makes it suitable for **supervised operation** (`APPROVAL_FINAL=manual`, local export or private upload).
+
+**To move toward READY:**
+
+1. Top up ElevenLabs and run `pnpm acceptance:campaign --jobs 10`, then 20–30. Require a stable first-pass rate and review every `requiresHumanReview` reason.
+2. Configure YouTube OAuth and run one **private** upload plus one forced pre-upload failure followed by `publish --retry`.
+3. Calibrate the frame thresholds and vision verdicts on the campaign's real candidates.
+4. Re-run the full `pnpm test` (with `TEST_DATABASE_URL`) and let CI run on push.
+
+
+---
+
+## 9. GROWTH SYSTEM (2026-10-10)
+
+Goal: turn the validated renderer into a system for growing a Shorts channel. It covers what to make, how to make it cheaply, how to publish it, and how to learn from results. The operating manual is `docs/PLAYBOOK.md`; the research data is in `research/2026-10-content-gap/`.
+
+### 9.1 Research that drove the design
+- Generic science/history fact Shorts are the most saturated cluster: this year's search results are flooded with uploads getting 5–30 views.
+- Real search questions about planes, ships, trains and infrastructure have multi-million-view long-form answers and almost no Shorts. Example: "why do planes turn after takeoff" has a 6.8M-view long-form answer and no Short in the top 20 results.
+- In July 2026 YouTube clarified that "generic or repetitive content … made with a template" cannot be monetized. Shorts pay roughly $0.03–0.20 per 1,000 views.
+- Uploads from unaudited Google API projects are locked to private.
+- ElevenLabs Flash/Turbo models cost 0.5 credit per character through the API (Multilingual v2 costs 1).
+
+### 9.2 What was built
+
+| Component | Where |
+|---|---|
+| Free audience signals (YouTube autocomplete + yt-dlp search and counters) | `providers/real/youtube-signals.ts`, mock |
+| Gap discovery: autocomplete expansion → filters → batched triage → demand/supply measurement (relevance-filtered) → deterministic gap score | `agents/gap-discovery.ts`, `shorts gaps` |
+| Rotated formats: QUESTION_ANSWER (55–85 words), THREE_REASONS (65–95), STORY (100–118); question hooks; no format three times in a row; analytics nudges | `agents/formats.ts` |
+| Footage preflight before voice (strict subject match) | `visualPreflight` |
+| ElevenLabs credit preflight; credits per model; `QUOTA_EXCEEDED` | `voice-agent.ts`, `elevenlabs-tts.ts` |
+| Media fallbacks: subject follows refinement; broad b-roll; main-subject b-roll, judged in context and flagged for review | `visual-director-agent.ts` |
+| Footage rework from final review without new voice cost (`approve FINAL_VIDEO --revise --notes "scenes: 4"`) | runner, state machine |
+| YouTube: OAuth loopback + PKCE (`shorts youtube auth`, token written to `.env`, never printed), `youtube status`, AI disclosure, category, language, scheduled `publishAt` (audited projects), daily upload cap | `youtube-auth.ts`, `youtube-official.ts`, `schedule.ts` |
+| Analytics: Analytics API owner metrics (engaged views, % viewed, subscribers) with fallbacks; schema v3 `video_metrics` (v2 migrated in place); analyzer by format/cluster/length/release hour with recommendations and bounded format weights | `youtube-analytics.ts`, `performance-analyzer.ts`, `shorts analytics sync\|report` |
+| Daily workflow (`shorts daily`) and reviewer digest (`shorts review`: script, sources, gap evidence, voice-credit cost, video, review reasons) | CLI |
+| Playbook, ADR-012..015, `.env.example`, README, WORKFLOW | docs |
+
+### 9.3 Tests
+**176/176 pass** (14 files, including PostgreSQL), and `pnpm typecheck` is clean. The new `tests/growth.test.ts` covers:
+- gap scoring and its monotonicity, relevance filtering, discovery end to end
+- format rotation and question hooks
+- exclusion validation and the writer re-prompting on missing footage
+- strict preflight and broad-subject choice
+- the credit preflight (refuses before billing)
+- Flash credits, DST-correct release slots, the PKCE URL, the `.env` writer
+- the analytics client fallback and the analyzer
+- the v2→v3 migration
+- a mock end-to-end run (gap topic → question format → publish → analytics) and a footage-rework end-to-end run
+
+### 9.4 Live evidence (real providers, local export only)
+- **Gap discovery (4 runs):**
+  - 1,581 autocomplete suggestions → 276 after filters → 39–46 after triage → 14–16 probed → 7–10 topics per run.
+  - Examples after the relevance fix: "why do ships have flat bottoms" (4.0M long-form views, 0 Shorts), "why do skyscrapers sway" (2.4M, best Short 173 views), "why are bridges important" (10.5M, 0 Shorts).
+  - "Why is it illegal to…" questions measure low (5k–16k) once unrelated results are excluded.
+- **Two live Shorts:**
+  - "Why You Can't Keep a Crow as a Pet": QUESTION_ANSWER, 63 words, 23.7 s, about 355 voice credits.
+  - "Why Planes Seem Slow in the Sky": THREE_REASONS, 72 words, 28.2 s, about 384 voice credits.
+  - Both first failed at media sourcing. Root causes, all fixed and tested:
+    - the footage preflight was too lenient
+    - refinement kept judging clips against the old subject
+    - the writer put shot preferences in exclusions
+    - the broad fallback judged a bare word out of context, which produced a circuit-board shot
+  - Both were then salvaged by resuming, with **zero additional voice credits** (narration cache), and are at `AWAITING_FINAL_APPROVAL` with review flags for their fallback shots.
+  - Videos: `output/acceptance/campaign-2026-10-10T02-30-45-387Z/jobs/{015cce2d…,20f44cf5…}/render/short.mp4`
+- **ElevenLabs:**
+  - The key lacks `user_read`, so the balance check is skipped with a warning (as designed).
+  - Narration used about 740 credits for both Shorts, against about 1,300 for two STORY-format Shorts.
+- **Spend this phase:** about $0.65 (OpenAI/Tavily) plus about 740 ElevenLabs credits.
+
+### 9.5 Not verified / limitations
+- **No real channel upload yet.** YouTube OAuth, upload, scheduling and the Analytics API are tested against an injected transport only. The first real run needs your Google Cloud OAuth client and `shorts youtube auth`.
+- **Views are not known yet.** The gap strategy is a measured hypothesis; only a few weeks of published Shorts and `analytics report` can confirm it.
+- **Stock coverage limits topics.** Lines about laws, permits or documents have no literal footage. The fallbacks avoid wasted credits but produce b-roll that needs human review.
+- **The triage model often omits items on its first attempt,** so re-prompts are needed (small extra cost).
+- **Gap demand uses the top 20 search results,** filtered for relevance by title words. Phrasing differences can still under- or over-count.
+
+### 9.6 Verdict for this phase
+The system is **ready for supervised daily use**: gap topics, script review before voice, automatic production, final review, upload (private until the API audit), then analytics. It is **not yet proven to generate views**; that needs real publishing (see PLAYBOOK §2 and §3).

@@ -1,4 +1,4 @@
-import { ConfigurationError, InvalidResponseError, httpJson } from '@shorts/core';
+import { ConfigurationError, InvalidResponseError, PipelineError, QuotaExceededError, httpJson, logger } from '@shorts/core';
 import type { ProviderContext, TTSProvider, TTSRequest, TTSResult } from '../interfaces.js';
 
 interface ElevenLabsTimestampResponse {
@@ -30,6 +30,38 @@ export class ElevenLabsTTSProvider implements TTSProvider {
     if (!voiceId) throw new ConfigurationError('ELEVENLABS_VOICE_ID is required for the ElevenLabs provider');
   }
 
+  /**
+   * Credits per character: Flash/Turbo models are billed at 0.5 credit per character through the
+   * API, Multilingual/v3 models at 1 (ElevenLabs pricing, verified 2026-10).
+   */
+  get creditMultiplier(): number {
+    return /flash|turbo/i.test(this.modelId) ? 0.5 : 1;
+  }
+
+  creditsFor(text: string): number {
+    return Math.ceil(text.trim().length * this.creditMultiplier);
+  }
+
+  /** Free account lookup. Restricted keys without `user_read` get null (unknown), never a guess. */
+  async remainingCredits(): Promise<{ remaining: number; limit: number; resetsAt?: string } | null> {
+    try {
+      const res = await httpJson<{ character_count?: number; character_limit?: number; next_character_count_reset_unix?: number }>(
+        'https://api.elevenlabs.io/v1/user/subscription',
+        { method: 'GET', headers: { 'xi-api-key': this.apiKey } },
+        { provider: this.name, operation: 'subscription', timeoutMs: this.opts.timeoutMs, maxAttempts: 2, fetchImpl: this.ctx.fetchImpl, sleep: this.ctx.sleep }
+      );
+      const { character_count: used, character_limit: limit, next_character_count_reset_unix: reset } = res.data;
+      if (typeof used !== 'number' || typeof limit !== 'number') return null;
+      return { remaining: Math.max(0, limit - used), limit, resetsAt: reset ? new Date(reset * 1000).toISOString() : undefined };
+    } catch (e) {
+      if (e instanceof PipelineError && e.kind === 'AUTHENTICATION') {
+        logger.warn('ElevenLabs key cannot read subscription (needs user_read permission); credit preflight skipped', { stage: 'VOICE' });
+        return null;
+      }
+      throw e;
+    }
+  }
+
   async synthesize(req: TTSRequest): Promise<TTSResult> {
     const text = req.text.trim();
     if (!text) throw new InvalidResponseError(this.name, 'refusing to synthesize empty text');
@@ -41,9 +73,18 @@ export class ElevenLabsTTSProvider implements TTSProvider {
         {
           method: 'POST',
           headers: { 'xi-api-key': this.apiKey, 'Content-Type': 'application/json' },
-          body: JSON.stringify({ text, model_id: this.modelId, voice_settings: { stability: 0.5, similarity_boost: 0.75, speed: this.opts.speed } }),
+          body: JSON.stringify({ text, model_id: this.modelId, voice_settings: { stability: 0.5, similarity_boost: 0.75, speed: req.speed ?? this.opts.speed } }),
         },
-        { provider: this.name, operation: 'tts.with-timestamps', timeoutMs: this.opts.timeoutMs, maxAttempts: this.opts.maxAttempts, fetchImpl: this.ctx.fetchImpl, sleep: this.ctx.sleep }
+        {
+          provider: this.name,
+          operation: 'tts.with-timestamps',
+          timeoutMs: this.opts.timeoutMs,
+          maxAttempts: this.opts.maxAttempts,
+          fetchImpl: this.ctx.fetchImpl,
+          sleep: this.ctx.sleep,
+          // ElevenLabs reports exhausted credits as HTTP 401 — not a credential problem.
+          classify: (status, body) => (/quota_exceeded/.test(body) ? new QuotaExceededError(this.name, `account credit quota exceeded (HTTP ${status}): ${body.slice(0, 300)}`) : undefined),
+        }
       );
       const data = res.data;
       if (!data.audio_base64) throw new InvalidResponseError(this.name, 'response contained no audio');
@@ -66,8 +107,8 @@ export class ElevenLabsTTSProvider implements TTSProvider {
         status: 'OK',
         attempts: res.attempts,
         durationMs: Date.now() - started,
-        costUsd: (text.length / 1000) * this.opts.usdPer1kChars,
-        units: { characters: text.length },
+        costUsd: (text.length / 1000) * this.opts.usdPer1kChars * this.creditMultiplier,
+        units: { characters: text.length, credits: this.creditsFor(text) },
       });
       return {
         provider: this.name,

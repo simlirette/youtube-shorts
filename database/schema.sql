@@ -1,5 +1,5 @@
 -- =============================================================================
--- YouTube Shorts Engine — schema version 2
+-- YouTube Shorts Engine — schema version 3 (v2 databases are migrated in place: v3 only adds tables)
 -- Portable between SQLite (>= 3.24) and PostgreSQL: TEXT/REAL/INTEGER columns,
 -- JSON documents stored as TEXT, upserts via ON CONFLICT.
 -- =============================================================================
@@ -118,3 +118,15 @@ CREATE TABLE IF NOT EXISTS provider_runs (
   created_at TEXT NOT NULL
 );
 CREATE INDEX IF NOT EXISTS provider_runs_job_idx ON provider_runs (job_id);
+
+-- v3: measurements of published Shorts (YouTube Analytics API, Data API or public counters).
+CREATE TABLE IF NOT EXISTS video_metrics (
+  id TEXT PRIMARY KEY,
+  publish_id TEXT NOT NULL,
+  job_id TEXT NOT NULL,
+  youtube_video_id TEXT NOT NULL,
+  source TEXT NOT NULL,
+  captured_at TEXT NOT NULL,
+  doc TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS video_metrics_video_idx ON video_metrics (youtube_video_id, captured_at);

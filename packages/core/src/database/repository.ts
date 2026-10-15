@@ -10,6 +10,8 @@ import {
   JobState,
   PublishJob,
   PublishJobSchema,
+  VideoMetrics,
+  VideoMetricsSchema,
   TopicCandidate,
   TopicCandidateSchema,
   TopicScore,
@@ -25,6 +27,7 @@ export type ArtifactKind =
   | 'story'
   | 'script'
   | 'script_attempt'
+  | 'script_review'
   | 'narration'
   | 'timeline'
   | 'asset'
@@ -93,6 +96,7 @@ export class ShortsRepository {
   /** Atomically moves a topic from one of `from` into `to`. Returns false if someone else got it. */
   async claimTopicStatus(id: string, from: TopicStatus[], to: TopicStatus): Promise<boolean> {
     const placeholders = from.map(() => '?').join(', ');
+    return this.db.transaction(async () => {
     const res = await this.db.execute(`UPDATE topics SET status = ?, updated_at = ? WHERE id = ? AND status IN (${placeholders})`, [
       to,
       now(),
@@ -104,6 +108,7 @@ export class ShortsRepository {
       if (topic) await this.saveTopic({ ...topic, status: to });
     }
     return res.changes === 1;
+    });
   }
 
   async saveTopicScore(score: TopicScore): Promise<void> {
@@ -145,12 +150,14 @@ export class ShortsRepository {
 
   async createJob(job: Job): Promise<Job> {
     const j = JobSchema.parse(job);
+    await this.db.transaction(async () => {
     await this.db.execute(
       `INSERT INTO jobs (id, mode, state, topic_id, failed_stage, error_kind, error_message, retryable, artifacts, work_dir, attempts, locked_by, locked_at, created_at, updated_at)
        VALUES (?, ?, ?, ?, NULL, NULL, NULL, NULL, ?, ?, ?, NULL, NULL, ?, ?)`,
       [j.id, j.mode, j.state, j.artifacts.topicId ?? null, JSON.stringify(j.artifacts), j.workDir, j.attempts, j.createdAt, j.updatedAt]
     );
     await this.addJobEvent(j.id, null, j.state, 'job created');
+    });
     return j;
   }
 
@@ -178,6 +185,13 @@ export class ShortsRepository {
     return rows.map((r) => this.rowToJob(r));
   }
 
+  /** Jobs already assigned to an experiment (round-robin arm assignment). */
+  async countJobsInExperiment(experimentId: string): Promise<number> {
+    if (!/^[A-Za-z0-9._-]{1,40}$/.test(experimentId)) throw new ValidationError(`invalid experiment id "${experimentId}"`);
+    const rows = await this.db.query<{ n: number }>(`SELECT COUNT(*) AS n FROM jobs WHERE artifacts LIKE ?`, [`%"experimentId":"${experimentId}"%`]);
+    return Number(rows[0]?.n ?? 0);
+  }
+
   async countJobsCreatedSince(isoTime: string): Promise<number> {
     const rows = await this.db.query<{ n: number }>(`SELECT COUNT(*) AS n FROM jobs WHERE created_at >= ?`, [isoTime]);
     return Number(rows[0]?.n ?? 0);
@@ -201,6 +215,7 @@ export class ShortsRepository {
       message?: string;
     }
   ): Promise<Job> {
+    return this.db.transaction(async () => {
     const current = await this.requireJob(id);
     const artifacts = patch.artifacts ?? current.artifacts;
     const res = await this.db.execute(
@@ -226,6 +241,7 @@ export class ShortsRepository {
     }
     await this.addJobEvent(id, expectedState, patch.state, patch.message);
     return this.requireJob(id);
+    });
   }
 
   async updateJobArtifacts(id: string, artifacts: JobArtifacts): Promise<void> {
@@ -351,6 +367,50 @@ export class ShortsRepository {
       `UPDATE publishes SET status = ?, external_id = ?, url = ?, doc = ?, published_at = ?, error = ? WHERE id = ?`,
       [v.status, v.externalId ?? null, v.url ?? null, JSON.stringify(v), v.publishedAt ?? null, v.error ?? null, v.id]
     );
+  }
+
+  async listPublished(target?: string): Promise<PublishJob[]> {
+    const rows = target
+      ? await this.db.query<{ doc: string }>(`SELECT doc FROM publishes WHERE status = 'PUBLISHED' AND target = ? ORDER BY started_at DESC`, [target])
+      : await this.db.query<{ doc: string }>(`SELECT doc FROM publishes WHERE status = 'PUBLISHED' ORDER BY started_at DESC`);
+    return rows.map((r) => PublishJobSchema.parse(JSON.parse(r.doc)));
+  }
+
+  /** Publications started since `isoTime` (any status) — used for the daily upload cap. */
+  async countPublishesSince(isoTime: string, target: string): Promise<number> {
+    const rows = await this.db.query<{ n: number }>(`SELECT COUNT(*) AS n FROM publishes WHERE target = ? AND started_at >= ?`, [target, isoTime]);
+    return Number(rows[0]?.n ?? 0);
+  }
+
+  // ---------------------------------------------------------------------------
+  // Video metrics (analytics)
+  // ---------------------------------------------------------------------------
+
+  async saveVideoMetrics(m: VideoMetrics): Promise<void> {
+    const v = VideoMetricsSchema.parse(m);
+    await this.db.execute(
+      `INSERT INTO video_metrics (id, publish_id, job_id, youtube_video_id, source, captured_at, doc) VALUES (?, ?, ?, ?, ?, ?, ?)`,
+      [v.id, v.publishId, v.jobId, v.youtubeVideoId, v.source, v.capturedAt, JSON.stringify(v)]
+    );
+  }
+
+  /** Latest measurement per published video. */
+  async latestVideoMetrics(): Promise<VideoMetrics[]> {
+    const rows = await this.db.query<{ doc: string; youtube_video_id: string; captured_at: string }>(
+      `SELECT doc, youtube_video_id, captured_at FROM video_metrics ORDER BY captured_at DESC`
+    );
+    const seen = new Set<string>();
+    const out: VideoMetrics[] = [];
+    for (const r of rows) {
+      if (seen.has(r.youtube_video_id)) continue;
+      seen.add(r.youtube_video_id);
+      out.push(VideoMetricsSchema.parse(JSON.parse(r.doc)));
+    }
+    return out;
+  }
+
+  async deletePublish(id: string): Promise<void> {
+    await this.db.execute(`DELETE FROM publishes WHERE id = ? AND status = 'FAILED'`, [id]);
   }
 
   async getPublishForJob(jobId: string): Promise<PublishJob | null> {
