@@ -153,6 +153,15 @@ def cyl(name, radius, depth, loc, rot=(0, 0, 0), mat=None, verts=48):
     return o
 
 
+def torus(name, major, minor, loc, mat):
+    bpy.ops.mesh.primitive_torus_add(major_radius=major, minor_radius=minor, major_segments=48, minor_segments=12, location=loc)
+    o = bpy.context.active_object
+    o.name = name
+    o.data.materials.append(mat)
+    shade_smooth(o)
+    return o
+
+
 def box(name, size, loc, mat=None, bevel=0.0):
     bpy.ops.mesh.primitive_cube_add(size=1, location=(0, 0, 0))
     o = bpy.context.active_object
@@ -191,12 +200,12 @@ def crank_piston():
 
     box("Base", (2.5, 1.2, 0.18), (0, 0, -1.75), dark, bevel=0.04)
     sleeve = cyl("Cylinder", 0.72, 2.4, (0, 0, 1.5), mat=glass)
-    cyl("CylinderRimTop", 0.78, 0.1, (0, 0, 2.72), mat=metal)
-    cyl("CylinderRimBot", 0.78, 0.1, (0, 0, 0.28), mat=metal)
+    torus("CylinderRimTop", 0.75, 0.07, (0, 0, 2.72), metal)
+    torus("CylinderRimBot", 0.75, 0.07, (0, 0, 0.28), metal)
     PARTS["cylinder"] = sleeve
 
     crank = cyl("Crank", 0.78, 0.22, (0, 0, CZ), rot=(math.radians(90), 0, 0), mat=material("CrankM", "#a9b4c4", metallic=0.3, rough=0.45))
-    cyl("Bearing", 0.22, 0.6, (0, 0, CZ), rot=(math.radians(90), 0, 0), mat=dark)
+    cyl("Bearing", 0.22, 0.24, (0, 0, CZ), rot=(math.radians(90), 0, 0), mat=dark)
     pin = cyl("CrankPin", 0.1, 0.5, (R, -0.2, CZ), rot=(math.radians(90), 0, 0), mat=accent, verts=24)
     PARTS["crankshaft"] = crank
 
@@ -328,5 +337,49 @@ def on_frame(scn, *_):
 
 bpy.app.handlers.frame_change_post.clear()
 bpy.app.handlers.frame_change_post.append(on_frame)
+def check_collisions():
+    """Sweep one full revolution; report every pair of parts that interpenetrate unless the pair is meant to touch."""
+    from mathutils.bvhtree import BVHTree
+    allowed = SPEC.get("allowed_contacts") or KIT_CONTACTS.get(kit, [])
+    ok = {frozenset(pair) for pair in allowed}
+    names = [o.name for o in bpy.data.objects if o.type == "MESH" and o.name not in KIT_IGNORE.get(kit, ())]
+    steps, bad = 72, {}
+    for n in range(steps):
+        scene.frame_set(1 + int(n * (60.0 / SPEC.get("rpm", 40)) * FPS / steps))
+        bpy.context.view_layer.update()
+        dg = bpy.context.evaluated_depsgraph_get()
+        trees = {}
+        for nm in names:
+            ev = bpy.data.objects[nm].evaluated_get(dg)
+            me = ev.to_mesh()
+            me.calc_loop_triangles()
+            verts = [ev.matrix_world @ v.co for v in me.vertices]
+            trees[nm] = BVHTree.FromPolygons(verts, [t.vertices[:] for t in me.loop_triangles])
+            ev.to_mesh_clear()
+        for i, a in enumerate(names):
+            for b in names[i + 1:]:
+                if frozenset((a, b)) in ok or (a.rstrip("0123456789"), b.rstrip("0123456789")) in ok_prefix:
+                    continue
+                if trees[a].overlap(trees[b]):
+                    bad.setdefault((a, b), []).append(n)
+    for (a, b), hits in sorted(bad.items()):
+        print(f"COLLISION {a} x {b}: {len(hits)}/{steps} samples")
+    print("COLLISIONS_NONE" if not bad else f"COLLISIONS_FOUND {len(bad)}")
+
+
+# Pairs that are supposed to touch or overlap (shared joints, parts of one assembly). Anything else is a bug.
+KIT_CONTACTS = {
+    "crank_piston": [
+        ("Crank", "CrankPin"), ("Crank", "Bearing"), ("Rod", "CrankPin"), ("Rod", "WristPin"), ("Rod", "Piston"),
+        ("WristPin", "Piston"), ("Piston", "Ring"), ("WristPin", "Ring"), ("Rod", "Ring"),
+    ],
+}
+ok_prefix = {tuple(p) for k in KIT_CONTACTS.values() for p in k}
+ok_prefix |= {(b, a) for a, b in ok_prefix}
+KIT_IGNORE = {"crank_piston": ("Cylinder",)}   # the glass sleeve is a solid mesh standing in for a hollow bore
+
+if SPEC.get("check"):
+    check_collisions()
+    raise SystemExit
 bpy.ops.render.render(animation=True)
 print("MECHANISM_OK")
