@@ -231,7 +231,7 @@ export function buildCaptionAss(cues: CaptionCue[], layout: CaptionLayout = CAPT
   const style = ['Caption', 'Montserrat', 66, '&H00FFFFFF', '&H000000FF', '&H00101010', '&H78000000', -1, 0, 0, 0, 100, 100, 0.5, 0, 1, 3.4, 2.2, 2, 90, 90, 520, 1].join(',');
   const events = cues.map((c) => {
     const flat = c.lines.flatMap((l, li) => l.split(' ').map((w) => ({ w, li })));
-    const k = emphasisIndex(flat.map((x) => x.w));
+    const k = emphasisIndex(flat.map((x) => x.w.toUpperCase())); // emphasisIndex expects capitals
     if (k >= 0) flat[k] = { ...flat[k], w: `{\\c${HIGHLIGHT}}${flat[k].w}{\\c&HFFFFFF&}` };
     const text = c.lines.map((_, li) => flat.filter((x) => x.li === li).map((x) => x.w).join(' ')).join('\\N');
     return `Dialogue: 0,${assTime(c.start)},${assTime(c.end)},Caption,,0,0,0,,{\\fad(60,40)}${text}`;
