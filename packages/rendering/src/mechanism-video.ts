@@ -161,7 +161,7 @@ export function planMechanism(spec: MechanismVideoSpec, words: NarrationWord[], 
     seconds,
     beats,
     hud,
-    blender: { kit: spec.kit, seconds, fps, width: 1080, height: 1920, drive, camera_keys, labels, shift_y: -0.03, samples: opts.samples ?? 16 },
+    blender: { kit: spec.kit, seconds, fps, width: 1080, height: 1920, drive, camera_keys, labels, shift_y: 0.05, samples: opts.samples ?? 16 },
   };
 }
 
@@ -205,7 +205,7 @@ function assTime(t: number): string {
 
 /** Top-of-frame heading (stroke names etc.) on a dark translucent box, inside the platform safe area. */
 export function buildHudAss(events: HudEvent[], layout: CaptionLayout = CAPTION_LAYOUT): string {
-  const style = ['Hud', layout.fontName, 76, '&H00FFFFFF', '&H000000FF', '&HB0301B12', '&HB0301B12', 0, 0, 0, 0, 100, 100, 2, 0, 3, 14, 0, 8, 60, 60, 230, 1].join(',');
+  const style = ['Hud', layout.fontName, 76, '&H00FFFFFF', '&H000000FF', '&HB0301B12', '&HB0301B12', 0, 0, 0, 0, 100, 100, 2, 0, 3, 14, 0, 8, 60, 60, 120, 1].join(',');
   const header = `[Script Info]
 ScriptType: v4.00+
 PlayResX: ${layout.width}

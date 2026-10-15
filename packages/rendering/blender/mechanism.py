@@ -583,7 +583,7 @@ for i, lab in enumerate(SPEC.get("labels", [])):
 
 
 REF = 12.0      # reference distance for screen-space layout (world units)
-DZ = 8.0        # labels float this far in front of the camera, scaled so they look REF-sized
+DZ = 3.5        # labels float this far in front of the camera (always nearer than any shot), scaled so they look REF-sized
 
 
 def place_labels(f):
