@@ -4,7 +4,7 @@ import path from 'node:path';
 import { createHash } from 'node:crypto';
 import { ConfigurationError, InternalError, logger, repoRoot, runFfmpeg, runProcess } from '@shorts/core';
 import type { CaptionCue, MechanismVideoSpec } from '@shorts/schemas';
-import { CAPTION_LAYOUT, layoutLines, type CaptionLayout } from './captions.js';
+import { CAPTION_LAYOUT, emphasisIndex, layoutLines, type CaptionLayout } from './captions.js';
 
 /** The Blender kit script (packages/rendering/blender/mechanism.py). */
 export const MECHANISM_SCRIPT = path.join(repoRoot(), 'packages', 'rendering', 'blender', 'mechanism.py');
@@ -78,6 +78,7 @@ export interface MechanismPlan {
     labels: Array<{ text: string; part: string; t0: number; t1: number }>;
     shift_y: number;
     samples: number;
+    style: 'studio' | 'pastel';
   };
 }
 
@@ -161,7 +162,7 @@ export function planMechanism(spec: MechanismVideoSpec, words: NarrationWord[], 
     seconds,
     beats,
     hud,
-    blender: { kit: spec.kit, seconds, fps, width: 1080, height: 1920, drive, camera_keys, labels, shift_y: 0.05, samples: opts.samples ?? 16 },
+    blender: { kit: spec.kit, seconds, fps, width: 1080, height: 1920, drive, camera_keys, labels, shift_y: 0.05, samples: opts.samples ?? 20, style: 'studio' },
   };
 }
 
@@ -203,29 +204,59 @@ function assTime(t: number): string {
   return `${Math.floor(cs / 360000)}:${String(Math.floor((cs % 360000) / 6000)).padStart(2, '0')}:${String(Math.floor((cs % 6000) / 100)).padStart(2, '0')}.${String(cs % 100).padStart(2, '0')}`;
 }
 
-/** Top-of-frame heading (stroke names etc.) on a dark translucent box, inside the platform safe area. */
-export function buildHudAss(events: HudEvent[], layout: CaptionLayout = CAPTION_LAYOUT): string {
-  const style = ['Hud', layout.fontName, 76, '&H00FFFFFF', '&H000000FF', '&HB0301B12', '&HB0301B12', 0, 0, 0, 0, 100, 100, 2, 0, 3, 14, 0, 8, 60, 60, 120, 1].join(',');
-  const header = `[Script Info]
+const ASS_HEADER = (width: number, height: number, styles: string[]) => `[Script Info]
 ScriptType: v4.00+
-PlayResX: ${layout.width}
-PlayResY: ${layout.height}
+PlayResX: ${width}
+PlayResY: ${height}
 WrapStyle: 2
 ScaledBorderAndShadow: yes
+YCbCr Matrix: TV.709
 
 [V4+ Styles]
 Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding
-Style: ${style}
+${styles.join('\n')}
 
 [Events]
 Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
 `;
-  return header + events.map((e) => `Dialogue: 0,${assTime(e.start)},${assTime(e.end)},Hud,,0,0,0,,{\\fad(180,120)}${e.text.replace(/[{}]/g, '')}`).join('\n') + '\n';
+
+/** Gold highlight (ASS colours are &HBBGGRR&). */
+const HIGHLIGHT = '&H0000C8FF&';
+
+/**
+ * Word-synced captions in a clean bold sans (Montserrat Bold): white, soft outline and shadow, one
+ * keyword per cue in gold, centred in the lower third.
+ */
+export function buildCaptionAss(cues: CaptionCue[], layout: CaptionLayout = CAPTION_LAYOUT): string {
+  const style = ['Caption', 'Montserrat', 66, '&H00FFFFFF', '&H000000FF', '&H00101010', '&H78000000', -1, 0, 0, 0, 100, 100, 0.5, 0, 1, 3.4, 2.2, 2, 90, 90, 520, 1].join(',');
+  const events = cues.map((c) => {
+    const flat = c.lines.flatMap((l, li) => l.split(' ').map((w) => ({ w, li })));
+    const k = emphasisIndex(flat.map((x) => x.w));
+    if (k >= 0) flat[k] = { ...flat[k], w: `{\c${HIGHLIGHT}}${flat[k].w}{\c&HFFFFFF&}` };
+    const text = c.lines.map((_, li) => flat.filter((x) => x.li === li).map((x) => x.w).join(' ')).join('\N');
+    return `Dialogue: 0,${assTime(c.start)},${assTime(c.end)},Caption,,0,0,0,,{\fad(60,40)}${text}`;
+  });
+  return ASS_HEADER(layout.width, layout.height, [`Style: ${style}`]) + events.join('\n') + '\n';
+}
+
+/**
+ * Heading in the top-left safe area: small, letter-spaced capitals with no box, so it labels the
+ * stroke without competing with the subject.
+ */
+export function buildHudAss(events: HudEvent[], layout: CaptionLayout = CAPTION_LAYOUT): string {
+  const style = ['Hud', 'Montserrat SemiBold', 38, '&H00FFFFFF', '&H000000FF', '&H00101010', '&H64000000', 0, 0, 0, 0, 100, 100, 5, 0, 1, 2, 1.5, 7, 96, 96, 150, 1].join(',');
+  return (
+    ASS_HEADER(layout.width, layout.height, [`Style: ${style}`]) +
+    events.map((e) => `Dialogue: 0,${assTime(e.start)},${assTime(e.end)},Hud,,0,0,0,,{\fad(250,200)}${e.text.toUpperCase().replace(/[{}]/g, '')}`).join('\n') +
+    '\n'
+  );
 }
 
 export interface MechanismRendererOptions {
   blenderPath: string;
   fontFile: string;
+  /** Font for the part labels (default: fontFile). */
+  labelFontFile?: string;
   cacheDir: string;
   timeoutMs?: number;
 }
@@ -256,7 +287,7 @@ export class MechanismRenderer {
       try {
         const frames = path.join(work, 'frames');
         const specFile = path.join(work, 'spec.json');
-        fs.writeFileSync(specFile, JSON.stringify({ ...plan.blender, font: this.o.fontFile, outDir: frames }));
+        fs.writeFileSync(specFile, JSON.stringify({ ...plan.blender, font: this.o.fontFile, label_font: this.o.labelFontFile ?? this.o.fontFile, outDir: frames }));
         const started = Date.now();
         const res = await runProcess(this.o.blenderPath, ['-b', '--factory-startup', '-P', MECHANISM_SCRIPT, '--', specFile], {
           timeoutMs: this.o.timeoutMs ?? 4 * 60 * 60_000,
@@ -287,7 +318,7 @@ export async function checkMechanismKit(blenderPath: string, kit: string): Promi
   const work = fs.mkdtempSync(path.join(os.tmpdir(), 'shorts-mechanism-check-'));
   try {
     const specFile = path.join(work, 'spec.json');
-    fs.writeFileSync(specFile, JSON.stringify({ kit, seconds: 1, fps: 30, width: 270, height: 480, outDir: path.join(work, 'frames'), check: true }));
+    fs.writeFileSync(specFile, JSON.stringify({ kit, style: 'studio', seconds: 1, fps: 30, width: 270, height: 480, outDir: path.join(work, 'frames'), check: true }));
     const res = await runProcess(blenderPath, ['-b', '--factory-startup', '-P', MECHANISM_SCRIPT, '--', specFile], { timeoutMs: 10 * 60_000, description: `collision check ${kit}` });
     if (!/COLLISIONS_(NONE|FOUND)/.test(res.stdout)) {
       throw new InternalError(`collision check for ${kit} did not complete (exit ${res.code}): ${(res.stderr || res.stdout).split(/\r?\n/).filter(Boolean).slice(-4).join(' | ')}`);

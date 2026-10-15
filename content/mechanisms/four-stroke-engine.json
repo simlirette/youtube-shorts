@@ -36,7 +36,7 @@
     },
     {
       "text": "Stroke one: intake. The piston drops, and the open intake valve pulls in air and fuel.",
-      "hud": "1 · INTAKE",
+      "hud": "Stroke 1 · Intake",
       "crank": [
         0,
         180
@@ -66,7 +66,7 @@
     },
     {
       "text": "Stroke two: compression. Both valves close, and the piston squeezes the mixture into a tiny space.",
-      "hud": "2 · COMPRESSION",
+      "hud": "Stroke 2 · Compression",
       "crank": [
         180,
         330
@@ -96,7 +96,7 @@
     },
     {
       "text": "Stroke three: power. A spark ignites it, and the explosion shoves the piston down. This is the only stroke that pushes the car.",
-      "hud": "3 · POWER",
+      "hud": "Stroke 3 · Power",
       "crankPath": [
         {
           "at": 0,
@@ -136,7 +136,7 @@
     },
     {
       "text": "Stroke four: exhaust. The exhaust valve opens, and the piston pushes the burnt gas out.",
-      "hud": "4 · EXHAUST",
+      "hud": "Stroke 4 · Exhaust",
       "crank": [
         540,
         720
@@ -166,7 +166,7 @@
     },
     {
       "text": "A camshaft, turning at half the crankshaft's speed, opens each valve at exactly the right moment.",
-      "hud": "VALVE TIMING",
+      "hud": "Valve timing",
       "crank": [
         720,
         1440

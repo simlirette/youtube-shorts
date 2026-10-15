@@ -1,0 +1,77 @@
+{
+  "slug": "style-test",
+  "title": "Style test",
+  "kit": "four_stroke",
+  "beats": [
+    {
+      "text": "Stroke one: intake. The piston drops, and the open intake valve pulls in air and fuel.",
+      "hud": "Stroke 1 · Intake",
+      "crank": [
+        0,
+        180
+      ],
+      "camera": {
+        "look": [
+          0,
+          0,
+          1.9
+        ],
+        "distance": 12.5
+      },
+      "labels": [
+        {
+          "text": "INTAKE VALVE",
+          "part": "intake valve",
+          "from": 0.35,
+          "to": 1
+        },
+        {
+          "text": "PISTON",
+          "part": "piston",
+          "from": 0.55,
+          "to": 1
+        }
+      ]
+    },
+    {
+      "text": "Stroke three: power. A spark ignites it, and the explosion shoves the piston down. This is the only stroke that pushes the car.",
+      "hud": "Stroke 3 · Power",
+      "crankPath": [
+        {
+          "at": 0,
+          "deg": 330
+        },
+        {
+          "at": 0.27,
+          "deg": 360
+        },
+        {
+          "at": 1,
+          "deg": 540
+        }
+      ],
+      "camera": {
+        "look": [
+          0,
+          0,
+          1.9
+        ],
+        "distance": 12.0
+      },
+      "labels": [
+        {
+          "text": "SPARK PLUG",
+          "part": "spark plug",
+          "from": 0.2,
+          "to": 0.6
+        },
+        {
+          "text": "PISTON",
+          "part": "piston",
+          "from": 0.6,
+          "to": 1
+        }
+      ]
+    }
+  ]
+}

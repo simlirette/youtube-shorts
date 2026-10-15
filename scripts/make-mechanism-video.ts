@@ -16,7 +16,7 @@ import { ElevenLabsTTSProvider } from '@shorts/providers';
 import { cacheDir, detectSilence, ensureDir, loadConfig, measureLoudness, repoRoot, runFfmpeg, summarizeMedia, writeContactSheet } from '@shorts/core';
 import {
   MechanismRenderer,
-  buildAss,
+  buildCaptionAss,
   buildHudAss,
   findBlender,
   mechanismCaptionCues,
@@ -113,8 +113,9 @@ async function main(): Promise<void> {
 
   const blender = findBlender(cfg.BLENDER_PATH);
   if (!blender) throw new Error('Blender not found (install it or set BLENDER_PATH)');
-  const fontFile = path.join(repoRoot(), 'assets', 'fonts', 'Anton-Regular.ttf');
-  const renderer = new MechanismRenderer({ blenderPath: blender, fontFile, cacheDir: path.join(cacheDir(cfg.outputDir, 'media'), '..', 'mechanism') });
+  const fontFile = path.join(repoRoot(), 'assets', 'fonts', 'Montserrat-Bold.ttf');
+  const labelFontFile = path.join(repoRoot(), 'assets', 'fonts', 'Montserrat-SemiBold.ttf');
+  const renderer = new MechanismRenderer({ blenderPath: blender, fontFile, labelFontFile, cacheDir: path.join(cacheDir(cfg.outputDir, 'media'), '..', 'mechanism') });
   const silentVideo = path.join(outDir, 'video_silent.mp4');
   console.log('rendering with Blender (about 1 s per frame; a cached render is reused)...');
   if (REMUX && fs.existsSync(silentVideo)) console.log('render: reusing video_silent.mp4 (--remux)');
@@ -126,7 +127,7 @@ async function main(): Promise<void> {
   const work = fs.mkdtempSync(path.join(os.tmpdir(), 'shorts-mech-mux-'));
   try {
     fs.cpSync(path.join(repoRoot(), 'assets', 'fonts'), path.join(work, 'fonts'), { recursive: true });
-    fs.writeFileSync(path.join(work, 'captions.ass'), buildAss(mechanismCaptionCues(words), undefined, 'highlight'));
+    fs.writeFileSync(path.join(work, 'captions.ass'), buildCaptionAss(mechanismCaptionCues(words)));
     fs.writeFileSync(path.join(work, 'hud.ass'), buildHudAss(plan.hud));
     fs.copyFileSync(silentVideo, path.join(work, 'video.mp4'));
     fs.copyFileSync(audioPath, path.join(work, 'narration' + path.extname(audioPath)));
@@ -147,7 +148,7 @@ async function main(): Promise<void> {
     const probe = await summarizeMedia(finalPath);
     const loud = MOCK ? null : await measureLoudness(finalPath);
     const silences = MOCK ? [] : await detectSilence(finalPath, -45, 0.5);
-    const times = [0.5, plan.beats[2].start + 3, plan.beats[3].start + 4, plan.beats[4].start + 6, plan.beats[5].start + 3, plan.beats[6].start + 3, plan.seconds - 1.5];
+    const times = Array.from({ length: 7 }, (_, i) => 0.5 + ((plan.seconds - 2) * i) / 6);
     const sheet = path.join(outDir, 'contact-sheet.jpg');
     await writeContactSheet(finalPath, times, 640, sheet);
     console.log(`\nDONE: ${finalPath}`);
