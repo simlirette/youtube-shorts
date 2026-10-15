@@ -11,6 +11,7 @@
     "test:watch": "vitest",
     "test:live": "vitest run --config vitest.live.config.ts",
     "acceptance:campaign": "tsx scripts/acceptance-campaign.ts",
+    "mechanism": "tsx scripts/make-mechanism-video.ts",
     "cli": "tsx apps/cli/src/index.ts",
     "pipeline:mock": "tsx apps/cli/src/index.ts run --mode mock",
     "pipeline:live": "tsx apps/cli/src/index.ts run --mode live",

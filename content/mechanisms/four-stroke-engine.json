@@ -1,0 +1,213 @@
+{
+  "slug": "four-stroke-engine",
+  "title": "Why your engine only pushes once in four strokes",
+  "kit": "four_stroke",
+  "speed": 1.05,
+  "beats": [
+    {
+      "text": "Your car engine only makes power one stroke out of every four.",
+      "crank": [
+        0,
+        360
+      ],
+      "camera": {
+        "look": [
+          0,
+          0,
+          1.1
+        ],
+        "distance": 16.0
+      }
+    },
+    {
+      "text": "So what is it doing the rest of the time?",
+      "crank": [
+        360,
+        720
+      ],
+      "camera": {
+        "look": [
+          0,
+          0,
+          1.1
+        ],
+        "distance": 15.4
+      }
+    },
+    {
+      "text": "Stroke one: intake. The piston drops, and the open intake valve pulls in air and fuel.",
+      "hud": "1 · INTAKE",
+      "crank": [
+        0,
+        180
+      ],
+      "camera": {
+        "look": [
+          0,
+          0,
+          1.9
+        ],
+        "distance": 12.5
+      },
+      "labels": [
+        {
+          "text": "INTAKE VALVE",
+          "part": "intake valve",
+          "from": 0.35,
+          "to": 1
+        },
+        {
+          "text": "PISTON",
+          "part": "piston",
+          "from": 0.55,
+          "to": 1
+        }
+      ]
+    },
+    {
+      "text": "Stroke two: compression. Both valves close, and the piston squeezes the mixture into a tiny space.",
+      "hud": "2 · COMPRESSION",
+      "crank": [
+        180,
+        330
+      ],
+      "camera": {
+        "look": [
+          0,
+          0,
+          1.9
+        ],
+        "distance": 12.2
+      },
+      "labels": [
+        {
+          "text": "VALVES CLOSED",
+          "part": "intake valve",
+          "from": 0.3,
+          "to": 1
+        },
+        {
+          "text": "PISTON",
+          "part": "piston",
+          "from": 0.55,
+          "to": 1
+        }
+      ]
+    },
+    {
+      "text": "Stroke three: power. A spark ignites it, and the explosion shoves the piston down. This is the only stroke that pushes the car.",
+      "hud": "3 · POWER",
+      "crankPath": [
+        {
+          "at": 0,
+          "deg": 330
+        },
+        {
+          "at": 0.27,
+          "deg": 360
+        },
+        {
+          "at": 1,
+          "deg": 540
+        }
+      ],
+      "camera": {
+        "look": [
+          0,
+          0,
+          1.9
+        ],
+        "distance": 12.0
+      },
+      "labels": [
+        {
+          "text": "SPARK PLUG",
+          "part": "spark plug",
+          "from": 0.2,
+          "to": 0.6
+        },
+        {
+          "text": "PISTON",
+          "part": "piston",
+          "from": 0.6,
+          "to": 1
+        }
+      ]
+    },
+    {
+      "text": "Stroke four: exhaust. The exhaust valve opens, and the piston pushes the burnt gas out.",
+      "hud": "4 · EXHAUST",
+      "crank": [
+        540,
+        720
+      ],
+      "camera": {
+        "look": [
+          0,
+          0,
+          1.9
+        ],
+        "distance": 12.5
+      },
+      "labels": [
+        {
+          "text": "EXHAUST VALVE",
+          "part": "exhaust valve",
+          "from": 0.35,
+          "to": 1
+        },
+        {
+          "text": "PISTON",
+          "part": "piston",
+          "from": 0.55,
+          "to": 1
+        }
+      ]
+    },
+    {
+      "text": "A camshaft, turning at half the crankshaft's speed, opens each valve at exactly the right moment.",
+      "hud": "VALVE TIMING",
+      "crank": [
+        720,
+        1440
+      ],
+      "camera": {
+        "look": [
+          0,
+          0,
+          3.3
+        ],
+        "distance": 7.6
+      },
+      "labels": [
+        {
+          "text": "CAMSHAFT",
+          "part": "intake camshaft",
+          "from": 0.1,
+          "to": 1
+        },
+        {
+          "text": "VALVE SPRING",
+          "part": "exhaust spring",
+          "from": 0.5,
+          "to": 1
+        }
+      ]
+    },
+    {
+      "text": "Four strokes, two full turns of the crankshaft, and just one push.",
+      "crank": [
+        1440,
+        2160
+      ],
+      "camera": {
+        "look": [
+          0,
+          0,
+          1.1
+        ],
+        "distance": 16.0
+      }
+    }
+  ]
+}

@@ -882,3 +882,38 @@ export const AnalyticsRecordSchema = z.object({
   recordedAt: isoDate,
 });
 export type AnalyticsRecord = z.infer<typeof AnalyticsRecordSchema>;
+
+// =============================================================================
+// 3D MECHANISM VIDEOS (Blender kits driven by narration timestamps)
+// =============================================================================
+
+export const MECHANISM_KITS = ['crank_piston', 'four_stroke'] as const;
+export type MechanismKit = (typeof MECHANISM_KITS)[number];
+
+const Vec3Schema = z.tuple([z.number(), z.number(), z.number()]);
+
+export const MechanismBeatSchema = z.object({
+  /** Narration for this beat. Beats are spoken in order and joined with a space. */
+  text: z.string().min(3),
+  /** Crank angle in degrees at the start and end of the beat (the kit's driving motion). */
+  crank: z.tuple([z.number(), z.number()]).optional(),
+  /** Piecewise-linear crank angle within the beat (at = fraction of the beat). Overrides `crank`; use it to land an event, such as the spark, on a spoken word. */
+  crankPath: z.array(z.object({ at: z.number().min(0).max(1), deg: z.number() })).min(2).optional(),
+  /** Camera: look-at point, distance from it, and the viewing direction (default: front, slightly right and above). */
+  camera: z.object({ look: Vec3Schema, distance: z.number().positive(), dir: Vec3Schema.optional() }),
+  /** Short heading shown at the top while the beat plays (e.g. "1 · INTAKE"). */
+  hud: z.string().max(40).optional(),
+  /** Callouts that point at named kit parts; from/to are fractions (0-1) of the beat. */
+  labels: z.array(z.object({ text: z.string().min(1).max(24), part: z.string().min(1), from: z.number().min(0).max(1).default(0), to: z.number().min(0).max(1).default(1) })).default([]),
+});
+export type MechanismBeat = z.infer<typeof MechanismBeatSchema>;
+
+export const MechanismVideoSpecSchema = z.object({
+  slug: z.string().regex(/^[a-z0-9-]+$/),
+  title: z.string().min(3),
+  kit: z.enum(MECHANISM_KITS),
+  /** Voice speed override (ElevenLabs 0.7-1.2); defaults to the configured speed. */
+  speed: z.number().min(0.7).max(1.2).optional(),
+  beats: z.array(MechanismBeatSchema).min(1),
+});
+export type MechanismVideoSpec = z.infer<typeof MechanismVideoSpecSchema>;
