@@ -964,7 +964,7 @@ KIT_IGNORE = {   # glass sleeve = solid stand-in for a hollow bore; the rest are
     "crank_piston": ("Cylinder",),
     "four_stroke": ("Gas", "SparkFlash", "IntakePipe", "ExhaustPipe", "Floor"),
 }
-KIT_PREFIX_IGNORE = ("Pad", "Lbl", "Particle", "Cutter", "Dot")
+KIT_PREFIX_IGNORE = ("Pad", "Lbl", "Particle", "Cutter", "Dot", "Floor")
 
 if SPEC.get("check"):
     check_collisions()
