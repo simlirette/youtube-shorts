@@ -14,6 +14,7 @@ export default defineConfig({
   test: {
     globals: true,
     environment: 'node',
+    pool: 'forks', // render tests spawn ffmpeg/Blender; the threads pool dies with "Worker exited unexpectedly"
     testTimeout: 60_000,
     hookTimeout: 300_000,
     include: ['tests/**/*.test.ts'],
