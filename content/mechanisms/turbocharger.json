@@ -1,0 +1,375 @@
+{
+  "slug": "turbocharger",
+  "title": "How a turbocharger works",
+  "kit": "turbocharger",
+  "steps": [
+    "Exhaust",
+    "Shaft",
+    "Compress",
+    "Power"
+  ],
+  "speed": 1.15,
+  "voice": {
+    "id": "Ddh3PpD0pGS5vi20kePJ",
+    "stability": 0.3,
+    "style": 0.6
+  },
+  "beats": [
+    {
+      "text": "A turbocharger spins at well over a hundred thousand revolutions per minute, powered by nothing but your engine's exhaust!",
+      "camera": {
+        "look": [
+          0,
+          0,
+          -0.2
+        ],
+        "distance": 14.5
+      },
+      "crankPath": [
+        {
+          "at": 0,
+          "deg": 0.0
+        },
+        {
+          "at": 0.1667,
+          "deg": 36.8
+        },
+        {
+          "at": 0.3333,
+          "deg": 80.6
+        },
+        {
+          "at": 0.5,
+          "deg": 131.3
+        },
+        {
+          "at": 0.6667,
+          "deg": 188.9
+        },
+        {
+          "at": 0.8333,
+          "deg": 253.5
+        },
+        {
+          "at": 1.0,
+          "deg": 325.0
+        }
+      ]
+    },
+    {
+      "text": "Hot exhaust gas rushes into the turbine housing, and spins the turbine wheel.",
+      "camera": {
+        "look": [
+          0.5,
+          0,
+          -0.85
+        ],
+        "distance": 9.5
+      },
+      "step": 0,
+      "labels": [
+        {
+          "text": "Exhaust gas",
+          "part": "exhaust inlet",
+          "from": 0.1,
+          "to": 1.0
+        },
+        {
+          "text": "Turbine wheel",
+          "part": "turbine wheel",
+          "from": 0.45,
+          "to": 1.0
+        }
+      ],
+      "crankPath": [
+        {
+          "at": 0,
+          "deg": 325.0
+        },
+        {
+          "at": 0.1667,
+          "deg": 406.9
+        },
+        {
+          "at": 0.3333,
+          "deg": 502.8
+        },
+        {
+          "at": 0.5,
+          "deg": 612.5
+        },
+        {
+          "at": 0.6667,
+          "deg": 736.1
+        },
+        {
+          "at": 0.8333,
+          "deg": 873.6
+        },
+        {
+          "at": 1.0,
+          "deg": 1025.0
+        }
+      ]
+    },
+    {
+      "text": "A shaft connects it to a second wheel on the other side: the compressor.",
+      "camera": {
+        "look": [
+          0,
+          0,
+          0.0
+        ],
+        "distance": 9.0
+      },
+      "step": 1,
+      "labels": [
+        {
+          "text": "Shaft",
+          "part": "shaft",
+          "from": 0.15,
+          "to": 1.0
+        },
+        {
+          "text": "Bearings",
+          "part": "bearing housing",
+          "from": 0.55,
+          "to": 1.0
+        }
+      ],
+      "crankPath": [
+        {
+          "at": 0,
+          "deg": 1025.0
+        },
+        {
+          "at": 0.1667,
+          "deg": 1188.9
+        },
+        {
+          "at": 0.3333,
+          "deg": 1363.9
+        },
+        {
+          "at": 0.5,
+          "deg": 1550.0
+        },
+        {
+          "at": 0.6667,
+          "deg": 1747.2
+        },
+        {
+          "at": 0.8333,
+          "deg": 1955.6
+        },
+        {
+          "at": 1.0,
+          "deg": 2175.0
+        }
+      ]
+    },
+    {
+      "text": "The compressor pulls in fresh air and squeezes it, so more air is pushed into the engine.",
+      "camera": {
+        "look": [
+          -0.4,
+          0,
+          2.2
+        ],
+        "distance": 9.5
+      },
+      "step": 2,
+      "labels": [
+        {
+          "text": "Air inlet",
+          "part": "air inlet",
+          "from": 0.1,
+          "to": 1.0
+        },
+        {
+          "text": "Compressor wheel",
+          "part": "compressor wheel",
+          "from": 0.4,
+          "to": 1.0
+        },
+        {
+          "text": "To the engine",
+          "part": "outlet to engine",
+          "from": 0.7,
+          "to": 1.0
+        }
+      ],
+      "crankPath": [
+        {
+          "at": 0,
+          "deg": 2175.0
+        },
+        {
+          "at": 0.1667,
+          "deg": 2404.9
+        },
+        {
+          "at": 0.3333,
+          "deg": 2644.4
+        },
+        {
+          "at": 0.5,
+          "deg": 2893.8
+        },
+        {
+          "at": 0.6667,
+          "deg": 3152.8
+        },
+        {
+          "at": 0.8333,
+          "deg": 3421.5
+        },
+        {
+          "at": 1.0,
+          "deg": 3700.0
+        }
+      ]
+    },
+    {
+      "text": "More air means more fuel can burn, and more power from the same engine!",
+      "camera": {
+        "look": [
+          0,
+          0,
+          -0.1
+        ],
+        "distance": 14.0
+      },
+      "step": 3,
+      "labels": [
+        {
+          "text": "Boosted air",
+          "part": "outlet to engine",
+          "from": 0.1,
+          "to": 1.0
+        }
+      ],
+      "crankPath": [
+        {
+          "at": 0,
+          "deg": 3700.0
+        },
+        {
+          "at": 0.1667,
+          "deg": 3986.1
+        },
+        {
+          "at": 0.3333,
+          "deg": 4277.8
+        },
+        {
+          "at": 0.5,
+          "deg": 4575.0
+        },
+        {
+          "at": 0.6667,
+          "deg": 4877.8
+        },
+        {
+          "at": 0.8333,
+          "deg": 5186.1
+        },
+        {
+          "at": 1.0,
+          "deg": 5500.0
+        }
+      ]
+    },
+    {
+      "text": "In the animation it is slowed down. Exhaust at the turbine can top nine hundred degrees Celsius, so the metal can glow red-hot.",
+      "camera": {
+        "look": [
+          0.4,
+          0,
+          -0.8
+        ],
+        "distance": 8.0
+      },
+      "hud": "Slow motion",
+      "labels": [
+        {
+          "text": "Turbine wheel",
+          "part": "turbine wheel",
+          "from": 0.5,
+          "to": 1.0
+        }
+      ],
+      "crankPath": [
+        {
+          "at": 0,
+          "deg": 5500.0
+        },
+        {
+          "at": 0.1667,
+          "deg": 5818.1
+        },
+        {
+          "at": 0.3333,
+          "deg": 6138.9
+        },
+        {
+          "at": 0.5,
+          "deg": 6462.5
+        },
+        {
+          "at": 0.6667,
+          "deg": 6788.9
+        },
+        {
+          "at": 0.8333,
+          "deg": 7118.1
+        },
+        {
+          "at": 1.0,
+          "deg": 7450.0
+        }
+      ]
+    },
+    {
+      "text": "Waste exhaust in, extra air out, and a wheel spinning over ten times faster than the engine itself!",
+      "camera": {
+        "look": [
+          0,
+          0,
+          -0.2
+        ],
+        "distance": 15.0
+      },
+      "crankPath": [
+        {
+          "at": 0,
+          "deg": 7450.0
+        },
+        {
+          "at": 0.1667,
+          "deg": 7783.3
+        },
+        {
+          "at": 0.3333,
+          "deg": 8116.7
+        },
+        {
+          "at": 0.5,
+          "deg": 8450.0
+        },
+        {
+          "at": 0.6667,
+          "deg": 8783.3
+        },
+        {
+          "at": 0.8333,
+          "deg": 9116.7
+        },
+        {
+          "at": 1.0,
+          "deg": 9450.0
+        }
+      ]
+    }
+  ]
+}

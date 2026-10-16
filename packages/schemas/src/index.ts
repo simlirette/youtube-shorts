@@ -887,7 +887,7 @@ export type AnalyticsRecord = z.infer<typeof AnalyticsRecordSchema>;
 // 3D MECHANISM VIDEOS (Blender kits driven by narration timestamps)
 // =============================================================================
 
-export const MECHANISM_KITS = ['crank_piston', 'four_stroke'] as const;
+export const MECHANISM_KITS = ['crank_piston', 'four_stroke', 'turbocharger'] as const;
 export type MechanismKit = (typeof MECHANISM_KITS)[number];
 
 const Vec3Schema = z.tuple([z.number(), z.number(), z.number()]);

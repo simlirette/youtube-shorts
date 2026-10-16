@@ -93,6 +93,8 @@ export interface MechanismPlan {
     shift_y: number;
     samples: number;
     style: 'studio' | 'pastel';
+    /** Height of the studio floor (the turbocharger is taller than the engine). */
+    floor_z: number;
   };
 }
 
@@ -187,7 +189,7 @@ export function planMechanism(spec: MechanismVideoSpec, words: NarrationWord[], 
     beats,
     hud,
     stepper,
-    blender: { kit: spec.kit, seconds, fps, width: 1080, height: 1920, drive, camera_keys, labels, shift_y: 0.09, samples: opts.samples ?? 20, style: 'studio' },
+    blender: { kit: spec.kit, seconds, fps, width: 1080, height: 1920, drive, camera_keys, labels, shift_y: 0.09, samples: opts.samples ?? 20, style: 'studio', floor_z: spec.kit === 'turbocharger' ? -3.36 : -1.84 },
   };
 }
 

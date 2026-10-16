@@ -156,6 +156,36 @@ describe('mechanism narration timing', () => {
   });
 });
 
+describe('turbocharger video spec', () => {
+  const file = path.join(repoRoot(), 'content', 'mechanisms', 'turbocharger.json');
+  const turbo = MechanismVideoSpecSchema.parse(JSON.parse(fs.readFileSync(file, 'utf-8')));
+
+  it('is a valid spec with a four-step sequence and only claims the kit shows', () => {
+    expect(turbo.kit).toBe('turbocharger');
+    expect(turbo.steps).toHaveLength(4);
+    const stepBeats = turbo.beats.filter((b) => b.step !== undefined).map((b) => b.step);
+    expect(stepBeats).toEqual([0, 1, 2, 3]);
+    // Every label points at a part the kit defines.
+    const parts = ['exhaust inlet', 'turbine wheel', 'shaft', 'bearing housing', 'air inlet', 'compressor wheel', 'outlet to engine'];
+    for (const b of turbo.beats) for (const l of b.labels) expect(parts).toContain(l.part);
+  });
+
+  it('plans the studio floor below the taller turbocharger and keeps the shaft speed gentle (no wheel strobing)', () => {
+    const text = narrationText(turbo);
+    const a = fakeAlignment(text, 0.058);
+    const p = planMechanism(turbo, wordsFromAlignment(a.characters, a.starts, a.ends), a.ends[a.ends.length - 1]);
+    expect(p.blender.floor_z).toBeLessThan(-3);
+    expect(p.stepper.map((s) => s.index)).toEqual([0, 1, 2, 3]);
+    // Shaft angle per frame stays under half the blade pitch of the 8-blade compressor (45 degrees) in every segment.
+    for (const d of p.blender.drive) {
+      const perFrame = (Math.abs(d.to - d.from) / (d.t1 - d.t0)) / 30;
+      expect(perFrame).toBeLessThan(22);
+    }
+    // The wheel only ever speeds up (spool-up), never reverses.
+    p.blender.drive.forEach((d) => expect(d.to).toBeGreaterThanOrEqual(d.from));
+  });
+});
+
 describe('mechanism captions', () => {
   it('uses short, ordered, non-overlapping cues that cover every word', () => {
     const { words } = plan();
@@ -264,7 +294,7 @@ describe('mechanism captions', () => {
 // (regression: the connecting rod once passed through the cylinder flange and the bearing).
 const blender = findBlender(process.env.BLENDER_PATH);
 describe.skipIf(!blender)('mechanism kits (Blender)', () => {
-  for (const kit of ['crank_piston', 'four_stroke']) {
+  for (const kit of ['crank_piston', 'four_stroke', 'turbocharger']) {
     it(`${kit}: no parts interpenetrate over a full cycle`, async () => {
       const collisions = await checkMechanismKit(blender!, kit);
       expect(collisions).toEqual([]);

@@ -231,7 +231,7 @@ def studio_setup():
     area_light("Fill", (5.0, -12.0, 3.0), (0, 0, 1.2), 10.0, float(SPEC.get("fill_energy", 1100)), (1.0, 1.0, 1.0))
 
     # Floor.
-    bpy.ops.mesh.primitive_plane_add(size=120, location=(0, 0, -1.84))
+    bpy.ops.mesh.primitive_plane_add(size=120, location=(0, 0, float(SPEC.get("floor_z", -1.84))))
     fl = bpy.context.active_object
     fl.name = "Floor"
     fl.data.materials.append(material("FloorM", "#7a7a7d", metallic=0.0, rough=0.3, emit=0.35))
@@ -786,7 +786,178 @@ def four_stroke():
                 o_.scale = (vis, vis, vis)
 
 
-KITS = {"crank_piston": crank_piston, "four_stroke": four_stroke}
+# ---------------------------------------------------------------- kit: turbocharger
+# Vertical turbocharger sectioned open at the front: compressor (cold, blue) on top, turbine (hot, orange) at the
+# bottom, joined by one shaft through the bearing housing. Exhaust enters the turbine from the right and leaves
+# downwards; fresh air enters the compressor from the top and leaves to the left, towards the engine.
+def cone(name, r1, r2, depth, loc, mat, verts=40):
+    bpy.ops.mesh.primitive_cone_add(vertices=verts, radius1=r1, radius2=r2, depth=depth, location=loc)
+    o = bpy.context.active_object
+    o.name = name
+    o.data.materials.append(mat)
+    shade_smooth(o)
+    return o
+
+
+def pipe_x(name, r_in, r_out, x0, x1, z, mat):
+    """Half-pipe (open at the front) running along X from x0 to x1."""
+    ob = tube_shell(name, r_in, r_out, 0.0, abs(x1 - x0), 0.0, math.pi, mat)
+    if x1 >= x0:
+        ob.rotation_euler = (0, math.radians(90), 0)
+        ob.location = (x0, 0, z)
+    else:
+        ob.rotation_euler = (0, math.radians(-90), 0)
+        ob.location = (x0, 0, z)
+    return ob
+
+
+def blade(name, r_in, r_out, height, thick, ang, z, twist_deg, mat, grp):
+    import bmesh
+    bpy.ops.mesh.primitive_cube_add(size=1, location=(0, 0, 0))
+    o = bpy.context.active_object
+    o.name = name
+    o.scale = (r_out - r_in, thick, height)
+    bpy.ops.object.transform_apply(location=True, scale=True)
+    bm = bmesh.new()
+    bm.from_mesh(o.data)
+    bmesh.ops.subdivide_edges(bm, edges=bm.edges[:], cuts=6, use_grid_fill=True)
+    bm.to_mesh(o.data)
+    bm.free()
+    for p_ in o.data.polygons:
+        p_.use_smooth = True
+    md = o.modifiers.new("Twist", "SIMPLE_DEFORM")
+    md.deform_method, md.deform_axis, md.angle = "TWIST", "X", math.radians(twist_deg)
+    r_mid = (r_in + r_out) / 2
+    o.location = (r_mid * math.cos(ang), r_mid * math.sin(ang), z)
+    o.rotation_euler = (0, 0, ang)
+    o.data.materials.append(mat)
+    o.parent = grp
+    return o
+
+
+def turbocharger():
+    ZT, ZC = -1.3, 1.3                      # turbine / compressor wheel heights
+    steel = micro(material("Steel", "#d3d6dc", metallic=1.0, rough=0.24), 420, 0.03)
+    dark = micro(material("DarkSteel", "#9aa0aa", metallic=0.7, rough=0.40), 300, 0.03)
+    cast = material("CastIron", "#7f848c", metallic=0.55, rough=0.5)
+    alu = micro(material("Alu", "#d6d9de", metallic=1.0, rough=0.32), 500, 0.04)
+    brass = material("Brass", "#b8935a", metallic=1.0, rough=0.3)
+    black = material("Black", "#17181b", metallic=0.2, rough=0.5)
+    turb_m = material("TurbineM", "#8e5a3c", metallic=1.0, rough=0.38)       # heat-darkened nickel alloy
+    comp_m = material("CompressorM", "#cfd3da", metallic=1.0, rough=0.28)
+
+    # Static housings (all named H_ so the collision sweep treats them as one fixed assembly).
+    box("H_Base", (3.4, 1.7, 0.16), (0, 0, -3.28), black, bevel=0.03)
+    t_shell = tube_shell("H_TurbShell", 1.0, 1.16, -1.95, -0.7, 0.0, math.pi, cast)
+    hole(t_shell, 1.1, 0, 0.32, ZT, depth=0.6, rot=(0.0, math.radians(90), 0.0))                  # exhaust inlet opening
+    tube_shell("H_TurbPlateTop", 0.2, 1.16, -0.76, -0.7, 0.0, math.pi, cast)
+    tube_shell("H_TurbPlateBot", 0.42, 1.16, -1.95, -1.89, 0.0, math.pi, cast)
+    ex_out = tube_shell("H_ExhOut", 0.42, 0.56, -3.2, -1.95, 0.0, math.pi, dark)
+    ex_in = pipe_x("H_ExhIn", 0.32, 0.46, 2.45, 1.0, ZT, dark)
+    c_shell = tube_shell("H_CompShell", 1.1, 1.26, 0.7, 1.95, 0.0, math.pi, cast)
+    hole(c_shell, -1.2, 0, 0.35, ZC - 0.05, depth=0.6, rot=(0.0, math.radians(90), 0.0))          # outlet opening
+    tube_shell("H_CompPlateBot", 0.2, 1.26, 0.7, 0.76, 0.0, math.pi, cast)
+    tube_shell("H_CompPlateTop", 0.5, 1.26, 1.89, 1.95, 0.0, math.pi, cast)
+    air_in = tube_shell("H_AirIn", 0.5, 0.64, 1.95, 3.1, 0.0, math.pi, alu)
+    c_out = pipe_x("H_CompOut", 0.35, 0.49, -1.1, -2.5, ZC - 0.05, alu)
+    centre = tube_shell("H_Centre", 0.55, 0.72, -0.7, 0.7, 0.0, math.pi, cast)
+    tube_shell("H_BearingA", 0.11, 0.26, -0.55, -0.22, 0.0, 2 * math.pi, brass)
+    tube_shell("H_BearingB", 0.11, 0.26, 0.22, 0.55, 0.0, 2 * math.pi, brass)
+    PARTS["turbine housing"], PARTS["compressor housing"] = t_shell, c_shell
+    PARTS["exhaust inlet"], PARTS["exhaust outlet"] = ex_in, ex_out
+    PARTS["air inlet"], PARTS["outlet to engine"] = air_in, c_out
+    PARTS["bearing housing"] = centre
+
+    # Rotating assembly: one shaft, a turbine wheel and a compressor wheel.
+    shaft = cyl("Shaft", 0.1, 3.0, (0, 0, 0), mat=steel, verts=32)
+    PARTS["shaft"] = shaft
+    grp_t = bpy.data.objects.new("TurbineWheel", None)
+    grp_c = bpy.data.objects.new("CompressorWheel", None)
+    scene.collection.objects.link(grp_t)
+    scene.collection.objects.link(grp_c)
+    t_hub = cone("TurbHub", 0.12, 0.34, 0.62, (0, 0, ZT), turb_m)
+    t_hub.parent = grp_t
+    for i in range(13):
+        blade(f"TurbBlade{i}", 0.30, 0.88, 0.40, 0.03, 2 * math.pi * i / 13, ZT, 30.0, turb_m, grp_t)
+    c_hub = cone("CompHub", 0.34, 0.12, 0.62, (0, 0, ZC), comp_m)
+    c_hub.parent = grp_c
+    for i in range(8):
+        blade(f"CompBlade{i}", 0.30, 0.98, 0.46, 0.028, 2 * math.pi * i / 8, ZC, -34.0, comp_m, grp_c)
+        blade(f"CompSplit{i}", 0.62, 0.98, 0.30, 0.024, 2 * math.pi * (i + 0.5) / 8, ZC - 0.08, -34.0, comp_m, grp_c)
+    PARTS["turbine wheel"], PARTS["compressor wheel"] = t_hub, c_hub
+
+    # Flow: hot exhaust (orange) in from the right, fresh air (blue) in from the top, compressed air out to the left.
+    mats = {
+        "ex": material("PEx", "#ff6a14", emit=4.5),
+        "air": material("PAir", "#3f9cff", emit=3.5),
+        "boost": material("PBoost", "#7fd0ff", emit=6.0),
+    }
+    N = 24
+    parts = {k: [] for k in mats}
+    for k, m in mats.items():
+        for i in range(N):
+            bpy.ops.mesh.primitive_uv_sphere_add(radius=0.075 if k != "boost" else 0.06, location=(0, 0, 0), segments=12, ring_count=8)
+            o_ = bpy.context.active_object
+            o_.name = f"Particle_{k}{i}"
+            o_.data.materials.append(m)
+            parts[k].append((o_, i / N, ((i * 37) % 11 - 5) * 0.012))
+
+    def lerp3(a, b, u):
+        return Vector(a).lerp(Vector(b), u)
+
+    def exhaust_path(s):
+        if s < 0.28:
+            return lerp3((2.35, 0, ZT), (1.1, 0, ZT), s / 0.28)
+        if s < 0.78:
+            u = (s - 0.28) / 0.5
+            r, a = 0.92 - 0.5 * u, 2.3 * math.pi * u
+            return Vector((r * math.cos(a), r * math.sin(a) * 0.95, ZT - 0.45 * u))
+        return lerp3((0.0, 0, -1.95), (0.0, 0, -3.1), (s - 0.78) / 0.22)
+
+    def air_path(s):
+        if s < 0.38:
+            return lerp3((0, 0, 3.0), (0, 0, 1.55), s / 0.38)
+        if s < 0.8:
+            u = (s - 0.38) / 0.42
+            r, a = 0.25 + 0.8 * u, 1.7 * math.pi * u + math.pi * 0.5
+            return Vector((r * math.cos(a), r * math.sin(a) * 0.95, ZC + 0.1 - 0.15 * u))
+        return lerp3((-1.15, 0, ZC - 0.1), (-2.45, 0, ZC - 0.05), (s - 0.8) / 0.2)
+
+    def speed_at(t):
+        h = 0.05
+        return abs(theta_deg(t + h) - theta_deg(max(0.0, t - h))) / (2 * h)
+
+    vmax = float(SPEC.get("max_speed", 540.0))        # deg/s that counts as "full speed" for glow and flow
+
+    @animate
+    def _(f):
+        t = f / FPS
+        th = math.radians(theta_deg(t))
+        grp_t.rotation_euler = (0, 0, th)
+        grp_c.rotation_euler = (0, 0, th)
+        spool = min(1.0, speed_at(t) / vmax)
+        # Heat: the turbine glows as it spools up.
+        b_ = turb_m.node_tree.nodes["Principled BSDF"]
+        try:
+            b_.inputs["Emission Color"].default_value = lin("#ff4e0a")
+            b_.inputs["Emission Strength"].default_value = 1.5 * spool ** 1.6
+        except KeyError:
+            pass
+        vis = min(1.0, spool * 3.0)
+        flow = (t * (0.18 + 0.9 * spool)) % 1.0
+        for key, path in (("ex", exhaust_path), ("air", air_path), ("boost", air_path)):
+            for o_, off, jit in parts[key]:
+                s_ = (off + flow) % 1.0
+                if key == "boost" and s_ < 0.7:
+                    o_.scale = (0, 0, 0)
+                    continue
+                pos = path(s_)
+                o_.location = (pos.x + jit, pos.y + jit * 0.7, pos.z)
+                k_ = vis * (1.0 if key != "boost" else min(1.0, (s_ - 0.7) / 0.1))
+                o_.scale = (k_, k_, k_)
+
+
+KITS = {"crank_piston": crank_piston, "four_stroke": four_stroke, "turbocharger": turbocharger}
 kit = SPEC.get("kit", "crank_piston")
 if kit not in KITS:
     raise SystemExit(f"unknown kit {kit}")
@@ -845,6 +1016,14 @@ for i, lab in enumerate(SPEC.get("labels", [])):
     LABELS.append({"txt": txt, "pad": pad, "line": line, "dot": dot, "part": part, "t0": float(lab["t0"]), "t1": float(lab.get("t1", SPEC["seconds"])), "side": 1 if i % 2 == 0 else -1, "i": i, "w": w})
 
 
+def part_anchor(ob):
+    """World-space centre of a part's geometry (shell and pipe objects keep their origin at the world origin)."""
+    if ob.type == "MESH" and ob.data.vertices:
+        c = sum((Vector(v) for v in ob.bound_box), Vector()) / 8.0
+        return ob.matrix_world @ c
+    return ob.matrix_world.translation
+
+
 REF = 12.0      # reference distance for screen-space layout (world units)
 DZ = 3.5        # labels float this far in front of the camera (always nearer than any shot), scaled so they look REF-sized
 
@@ -857,7 +1036,7 @@ def place_labels(f):
     placed = []
     for L in LABELS:
         k = ease_io((t - L["t0"]) / 0.3) * (1.0 - ease_io((t - L["t1"] + 0.25) / 0.25))
-        anchor = L["part"].matrix_world.translation
+        anchor = part_anchor(L["part"])
         rel = anchor - cam.location
         depth = max(0.1, rel.dot(fwd))
         ax, ay = rel.dot(right) * REF / depth, rel.dot(up) * REF / depth        # anchor in reference-plane units
@@ -945,7 +1124,7 @@ def check_collisions():
             ev.to_mesh_clear()
         for i, a in enumerate(names):
             for b in names[i + 1:]:
-                if frozenset((a, b)) in ok or (norm(a), norm(b)) in ok_prefix:
+                if (a.startswith("H_") and b.startswith("H_")) or frozenset((a, b)) in ok or (norm(a), norm(b)) in ok_prefix:
                     continue
                 if trees[a].overlap(trees[b]):
                     bad.setdefault((a, b), []).append(n)
@@ -970,6 +1149,9 @@ KIT_CONTACTS = {
         ("TickCrank", "PulleyCrank"), ("TickCam_in", "PulleyCam_in"), ("TickCam_ex", "PulleyCam_ex"),
         ("CamShaft_in", "TickCam_in"), ("CamShaft_ex", "TickCam_ex"),
     ],
+    "turbocharger": [
+        ("Shaft", "TurbHub"), ("Shaft", "CompHub"), ("TurbBlade", "TurbHub"), ("CompBlade", "CompHub"), ("CompSplit", "CompBlade"),
+    ],
     "crank_piston": [
         ("Crank", "CrankPin"), ("Crank", "Bearing"), ("Rod", "CrankPin"), ("Rod", "WristPin"), ("Rod", "Piston"),
         ("WristPin", "Piston"), ("Piston", "Ring"), ("WristPin", "Ring"), ("Rod", "Ring"),
@@ -988,6 +1170,7 @@ KIT_IGNORE = {   # glass sleeve = solid stand-in for a hollow bore; the rest are
     "four_stroke": ("Gas", "SparkFlash", "IntakePipe", "ExhaustPipe", "Floor"),
 }
 KIT_PREFIX_IGNORE = ("Pad", "Lbl", "Particle", "Cutter", "Dot", "Floor")
+KIT_IGNORE["turbocharger"] = ()
 
 if SPEC.get("check"):
     check_collisions()
