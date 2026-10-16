@@ -2,6 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { planGapTightening, repoRoot } from '@shorts/core';
+import { ElevenLabsTTSProvider } from '@shorts/providers';
 import { MechanismVideoSpecSchema, type MechanismVideoSpec } from '@shorts/schemas';
 import { buildCaptionAss, buildHudAss, buildStepperAss, checkMechanismKit, findBlender, mechanismCaptionCues, narrationText, planMechanism, retimeWords, wordsFromAlignment } from '@shorts/rendering';
 
@@ -153,6 +154,30 @@ describe('mechanism narration timing', () => {
     const s = MechanismVideoSpecSchema.parse(JSON.parse(fs.readFileSync(file, 'utf-8')));
     expect(s.beats.length).toBeGreaterThanOrEqual(6);
     expect(plan(s).p.hud.length).toBe(s.beats.filter((b) => b.hud).length);
+  });
+});
+
+describe('ElevenLabs voice settings', () => {
+  function capture() {
+    const bodies: Array<Record<string, any>> = [];
+    const audio = Buffer.alloc(2048, 1).toString('base64');
+    const fetchImpl = (async (_url: string, init?: RequestInit) => {
+      bodies.push(JSON.parse(String(init?.body)));
+      return new Response(JSON.stringify({ audio_base64: audio, alignment: { characters: ['a'], character_start_times_seconds: [0], character_end_times_seconds: [0.1] } }), { status: 200, headers: { 'content-type': 'application/json' } });
+    }) as unknown as typeof fetch;
+    return { bodies, fetchImpl };
+  }
+  const base = { timeoutMs: 5000, maxAttempts: 1, usdPer1kChars: 0.22, speed: 1.15 };
+
+  it('sends the per-video stability and style (more energy) and the cache key changes with them', async () => {
+    const c = capture();
+    const energetic = new ElevenLabsTTSProvider('k', 'v', 'eleven_multilingual_v2', { ...base, stability: 0.3, style: 0.6 }, { fetchImpl: c.fetchImpl });
+    await energetic.synthesize({ text: 'hello there' });
+    expect(c.bodies[0].voice_settings).toMatchObject({ stability: 0.3, style: 0.6, speed: 1.15, use_speaker_boost: true });
+    const plain = new ElevenLabsTTSProvider('k', 'v', 'eleven_multilingual_v2', base, { fetchImpl: c.fetchImpl });
+    await plain.synthesize({ text: 'hello there' });
+    expect(c.bodies[1].voice_settings).toMatchObject({ stability: 0.5, style: 0 });
+    expect(energetic.settingsKey).not.toBe(plain.settingsKey);
   });
 });
 
