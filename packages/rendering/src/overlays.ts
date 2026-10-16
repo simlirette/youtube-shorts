@@ -11,6 +11,8 @@ import { ASS_HEADER, assTime, disc, mechanismCaptionCues, type NarrationWord } f
 
 export const FRAME_W = 1080;
 export const FRAME_H = 1920;
+/** Text at the top and bottom of the frame keeps this far from the left and right edges. */
+export const SAFE_MARGIN_PX = 36;
 
 interface Font {
   family: string;
@@ -188,12 +190,46 @@ export interface ProgressSegment {
   index: number;
 }
 
+/** Width of a tracker label of `chars` characters: glyphs (about 0.78 em) plus the 3 px letter spacing. */
+function labelWidth(chars: number, sizePct: number, fit: number, H: number): number {
+  return chars * (0.78 * (px(sizePct * fit, H) / 1.22) + 3);
+}
+
+/** Centre of a label: its dot's x, slid inward when the label would cross the safe margin. */
+function labelCentre(x: number, width: number, W: number): number {
+  return Math.min(W - SAFE_MARGIN_PX - width / 2, Math.max(SAFE_MARGIN_PX + width / 2, x));
+}
+
+/**
+ * Scale (at most 1) for the tracker labels: the largest size at which, whichever step is active, no two labels come
+ * within 8 px of each other and every label stays inside the safe margin. The four strokes fit at 1 (they look as
+ * they always did); five longer steps shrink to fit.
+ */
+export function progressFit(steps: string[], cfg: ProgressConfig, W = FRAME_W, H = FRAME_H): number {
+  const n = steps.length;
+  if (n < 2) return 1;
+  const spread = px(cfg.spreadPct, W);
+  const xs = steps.map((_, i) => W / 2 + (i - (n - 1) / 2) * (spread / (n - 1)));
+  const fits = (f: number): boolean =>
+    steps.every((_, active) => {
+      const rects = steps.map((s, i) => {
+        const w = labelWidth(s.length, i === active ? cfg.activeFont.sizePct : cfg.inactiveFont.sizePct, f, H);
+        const c = labelCentre(xs[i], w, W);
+        return [c - w / 2, c + w / 2];
+      });
+      return rects.every((rc, i) => (i === 0 || rc[0] - rects[i - 1][1] >= 8) && rc[0] >= SAFE_MARGIN_PX - 0.5 && rc[1] <= W - SAFE_MARGIN_PX + 0.5);
+    });
+  for (let f = 1; f >= 0.4; f -= 0.01) if (fits(f)) return Math.round(f * 100) / 100;
+  return 0.4;
+}
+
 /** The step tracker (INTAKE > COMPRESSION > POWER > EXHAUST style), visible from frame 1 when configured. */
 export function buildProgressOverlay(steps: string[], segments: ProgressSegment[], cfg: ProgressConfig, W = FRAME_W, H = FRAME_H): string {
-  const label = assStyle('Step', cfg.inactiveFont, cfg.stroke, '#FFFFFF', H, 8, 3);
-  const labelOn = assStyle('StepOn', cfg.activeFont, cfg.stroke, '#FFFFFF', H, 8, 3);
-  const draw = ['Draw', 'Montserrat', 20, '&H00FFFFFF', '&H000000FF', '&H00000000', '&H00000000', 0, 0, 0, 0, 100, 100, 0, 0, 1, 0, 0, 7, 0, 0, 0, 1].join(',');
   const n = steps.length;
+  const fit = progressFit(steps, cfg, W, H);
+  const label = assStyle('Step', { ...cfg.inactiveFont, sizePct: cfg.inactiveFont.sizePct * fit }, cfg.stroke, '#FFFFFF', H, 8, 3);
+  const labelOn = assStyle('StepOn', { ...cfg.activeFont, sizePct: cfg.activeFont.sizePct * fit }, cfg.stroke, '#FFFFFF', H, 8, 3);
+  const draw = ['Draw', 'Montserrat', 20, '&H00FFFFFF', '&H000000FF', '&H00000000', '&H00000000', 0, 0, 0, 0, 100, 100, 0, 0, 1, 0, 0, 7, 0, 0, 0, 1].join(',');
   const cy = r(px(cfg.yPct, H));
   const spread = px(cfg.spreadPct, W);
   const xs = steps.map((_, i) => r(W / 2 + (i - (n - 1) / 2) * (spread / Math.max(1, n - 1))));
@@ -215,7 +251,9 @@ export function buildProgressOverlay(steps: string[], segments: ProgressSegment[
       const colour = on ? cfg.colors.active : i < e.index ? cfg.colors.done : cfg.colors.upcoming;
       out.push(`Dialogue: 1,${t},Draw,,0,0,0,,${base}\\c${assColour(colour)}}${disc(xs[i], cy, r(px(on ? cfg.dotRadiusPct.active : cfg.dotRadiusPct.inactive, H)))}{\\p0}`);
       const dim = !on && i > e.index ? '\\1a&H40&' : '';
-      out.push(`Dialogue: 2,${t},${on ? 'StepOn' : 'Step'},,0,0,0,,{\\an8\\pos(${xs[i]},${cy + r(px(1.9, H))})${fade}${dim}}${s.toUpperCase()}`);
+      // An edge label slides inward so it stays inside the safe margin; its dot stays where it is.
+      const lx = r(labelCentre(xs[i], labelWidth(s.length, on ? cfg.activeFont.sizePct : cfg.inactiveFont.sizePct, fit, H), W));
+      out.push(`Dialogue: 2,${t},${on ? 'StepOn' : 'Step'},,0,0,0,,{\\an8\\pos(${lx},${cy + r(px(1.9, H))})${fade}${dim}}${s.toUpperCase()}`);
     });
   });
   return ASS_HEADER(W, H, [`Style: ${label}`, `Style: ${labelOn}`, `Style: ${draw}`]) + out.join('\n') + '\n';

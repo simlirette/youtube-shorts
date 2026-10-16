@@ -18,6 +18,7 @@ import {
   findBlender,
   hookLine,
   hookTextFor,
+  progressFit,
   lengthWarnings,
   loadBase,
   loadVideo,
@@ -250,6 +251,47 @@ describe('overlays (all from config)', () => {
     const hs = progressSegments(hidden.plan, steps, hidden.cfg.progress);
     expect(hs[0].start).toBeGreaterThan(0);
     expect(hs.map((s) => s.index)).toEqual([0, 1, 2, 3]);
+  });
+
+  it('sizes the tracker labels to the number of steps: the four strokes are untouched, five longer steps shrink to fit', () => {
+    const engine = planFor('four-stroke-engine');
+    expect(progressFit(engine.loaded.video.steps!, engine.cfg.progress)).toBe(1);
+    const dam = planFor('dam');
+    const fit = progressFit(dam.loaded.video.steps!, dam.cfg.progress);
+    expect(fit).toBeLessThan(1);
+    expect(fit).toBeGreaterThan(0.6);
+    const size = (ass: string, style: string) => Number(ass.split('\n').find((l) => l.startsWith('Style: ' + style))!.split(',')[2]);
+    const eng = buildProgressOverlay(engine.loaded.video.steps!, progressSegments(engine.plan, engine.loaded.video.steps!, engine.cfg.progress), engine.cfg.progress);
+    const dm = buildProgressOverlay(dam.loaded.video.steps!, progressSegments(dam.plan, dam.loaded.video.steps!, dam.cfg.progress), dam.cfg.progress);
+    expect(size(eng, 'StepOn')).toBe(Math.round(0.024 * 1920)); // exactly the configured size
+    expect(size(dm, 'StepOn')).toBeLessThan(Math.round(0.024 * 1920));
+    // With the fit applied no active label reaches its neighbour: needed width <= gap for every step.
+    const gap = (dam.cfg.progress.spreadPct / 100) * 1080 / (dam.loaded.video.steps!.length - 1);
+    const on = 0.78 * ((dam.cfg.progress.activeFont.sizePct * fit * 19.2) / 1.22) + 3;
+    const off = 0.78 * ((dam.cfg.progress.inactiveFont.sizePct * fit * 19.2) / 1.22) + 3;
+    const steps = dam.loaded.video.steps!;
+    steps.forEach((st, i) => expect(((st.length * on + Math.max(steps[i - 1]?.length ?? 0, steps[i + 1]?.length ?? 0) * off) / 2) * 1.08).toBeLessThanOrEqual(gap + 0.5));
+  });
+
+  it('keeps every tracker label inside the safe margin, sliding edge labels inward', () => {
+    for (const slug of ['four-stroke-engine', 'dam'] as const) {
+      const v = planFor(slug);
+      const steps = v.loaded.video.steps!;
+      const segs = progressSegments(v.plan, steps, v.cfg.progress);
+      const ass = buildProgressOverlay(steps, segs, v.cfg.progress);
+      const fit = progressFit(steps, v.cfg.progress);
+      const labels = ass.split('\n').filter((l) => /^Dialogue: 2,/.test(l));
+      expect(labels.length).toBeGreaterThan(0);
+      for (const l of labels) {
+        const style = l.split(',')[3];
+        const x = Number(/\\pos\((\d+),/.exec(l)![1]);
+        const text = l.replace(/^.*\}/, '');
+        const font = style === 'StepOn' ? v.cfg.progress.activeFont : v.cfg.progress.inactiveFont;
+        const half = (text.length * (0.78 * ((font.sizePct * fit * 19.2) / 1.22) + 3)) / 2;
+        expect(x - half).toBeGreaterThanOrEqual(35);
+        expect(x + half).toBeLessThanOrEqual(1080 - 35);
+      }
+    }
   });
 
   it('places yellow stat cards with a black outline at the right moments', () => {
