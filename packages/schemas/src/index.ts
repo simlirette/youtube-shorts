@@ -914,6 +914,10 @@ export const MechanismVideoSpecSchema = z.object({
   kit: z.enum(MECHANISM_KITS),
   /** Voice speed override (ElevenLabs 0.7-1.2); defaults to the configured speed. */
   speed: z.number().min(0.7).max(1.2).optional(),
+  /** Voice for this video: ElevenLabs voice id and expressiveness (lower stability and higher style = more energy). */
+  voice: z
+    .object({ id: z.string().min(5).optional(), model: z.string().optional(), stability: z.number().min(0).max(1).optional(), style: z.number().min(0).max(1).optional() })
+    .optional(),
   beats: z.array(MechanismBeatSchema).min(1),
 });
 export type MechanismVideoSpec = z.infer<typeof MechanismVideoSpecSchema>;

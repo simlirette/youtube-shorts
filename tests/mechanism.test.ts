@@ -1,9 +1,9 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { repoRoot } from '@shorts/core';
+import { planGapTightening, repoRoot } from '@shorts/core';
 import { MechanismVideoSpecSchema, type MechanismVideoSpec } from '@shorts/schemas';
-import { buildCaptionAss, buildHudAss, checkMechanismKit, findBlender, mechanismCaptionCues, narrationText, planMechanism, wordsFromAlignment } from '@shorts/rendering';
+import { buildCaptionAss, buildHudAss, checkMechanismKit, findBlender, mechanismCaptionCues, narrationText, planMechanism, retimeWords, wordsFromAlignment } from '@shorts/rendering';
 
 /** Alignment as ElevenLabs returns it: one entry per character of the submitted text. */
 function fakeAlignment(text: string, secondsPerChar = 0.06) {
@@ -97,6 +97,41 @@ describe('mechanism narration timing', () => {
     }
     expect(turns.every((t) => Math.abs(Math.abs(t) - 9) < 0.01)).toBe(true);
     expect(Math.sign(turns[0])).not.toBe(Math.sign(turns[1]));
+  });
+
+  it('keeps beats on their words after sentence pauses are tightened', () => {
+    // Narration with a long pause after every sentence (like the real voice).
+    const text = narrationText(spec);
+    const chars = [...text];
+    const starts: number[] = [];
+    const ends: number[] = [];
+    let t = 0;
+    chars.forEach((c, i) => {
+      starts.push(t);
+      t += 0.06;
+      ends.push(t);
+      if (c === '.' && chars[i + 1] === ' ') t += 0.6; // a 0.6 s pause between sentences
+    });
+    const words = wordsFromAlignment(chars, starts, ends);
+    const cut = planGapTightening(words.map((w) => ({ word: w.word, start: w.start, end: w.end })), t, { leadSeconds: 0.05, gapTargetSeconds: 0.26, tailSeconds: 0.5 });
+    expect(cut.gapsTightened).toBeGreaterThan(0);
+    expect(cut.maxGapAfterSeconds).toBeLessThanOrEqual(0.27);
+    const tight = retimeWords(words, cut.words);
+    const before = planMechanism(spec, words, t);
+    const after = planMechanism(spec, tight, cut.durationAfter);
+    expect(after.seconds).toBeLessThan(before.seconds);
+    // Every beat still starts on its own first word, and word order and offsets are untouched.
+    after.beats.slice(1).forEach((b) => expect(b.start).toBeCloseTo(tight[b.firstWord].start));
+    expect(tight.map((w) => w.charStart)).toEqual(words.map((w) => w.charStart));
+    expect(() => retimeWords(words, cut.words.slice(1))).toThrow(/became/);
+  });
+
+  it('accepts a per-video voice with expressiveness settings', () => {
+    const v = MechanismVideoSpecSchema.parse({ ...spec, voice: { id: 'Ddh3PpD0pGS5vi20kePJ', stability: 0.32, style: 0.5 } });
+    expect(v.voice).toEqual({ id: 'Ddh3PpD0pGS5vi20kePJ', stability: 0.32, style: 0.5 });
+    expect(() => MechanismVideoSpecSchema.parse({ ...spec, voice: { stability: 1.4 } })).toThrow();
+    const shipped = MechanismVideoSpecSchema.parse(JSON.parse(fs.readFileSync(path.join(repoRoot(), 'content', 'mechanisms', 'four-stroke-engine.json'), 'utf-8')));
+    expect(shipped.voice?.id).toBe('Ddh3PpD0pGS5vi20kePJ');
   });
 
   it('fails closed when the alignment does not match the beats', () => {

@@ -13,7 +13,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { ElevenLabsTTSProvider } from '@shorts/providers';
-import { cacheDir, detectSilence, ensureDir, loadConfig, measureLoudness, repoRoot, runFfmpeg, summarizeMedia, writeContactSheet } from '@shorts/core';
+import { cacheDir, detectSilence, ensureDir, loadConfig, measureLoudness, repoRoot, runFfmpeg, summarizeMedia, tightenNarrationWav, writeContactSheet } from '@shorts/core';
 import {
   MechanismRenderer,
   buildCaptionAss,
@@ -22,6 +22,7 @@ import {
   mechanismCaptionCues,
   narrationText,
   planMechanism,
+  retimeWords,
   wordsFromAlignment,
 } from '@shorts/rendering';
 import { MechanismVideoSpecSchema } from '@shorts/schemas';
@@ -59,7 +60,7 @@ async function getNarration(): Promise<{ audioPath: string; saved: SavedNarratio
   const speed = spec.speed ?? cfg.ELEVENLABS_SPEED;
   if (fs.existsSync(jsonPath) && fs.existsSync(audioPath)) {
     const saved = JSON.parse(fs.readFileSync(jsonPath, 'utf-8')) as SavedNarration;
-    if (saved.text === text && saved.speed === speed && Boolean(saved.mock) === MOCK && (MOCK || saved.voiceId === cfg.ELEVENLABS_VOICE_ID)) {
+    if (saved.text === text && saved.speed === speed && Boolean(saved.mock) === MOCK && (MOCK || saved.voiceId === (spec.voice?.id ?? cfg.ELEVENLABS_VOICE_ID))) {
       console.log(`narration: reusing cached audio (${MOCK ? 'mock' : 'ElevenLabs'}), 0 credits spent`);
       return { audioPath, saved };
     }
@@ -75,11 +76,13 @@ async function getNarration(): Promise<{ audioPath: string; saved: SavedNarratio
     return { audioPath, saved };
   }
 
-  const tts = new ElevenLabsTTSProvider(cfg.ELEVENLABS_API_KEY ?? '', cfg.ELEVENLABS_VOICE_ID, cfg.ELEVENLABS_MODEL_ID, {
+  const tts = new ElevenLabsTTSProvider(cfg.ELEVENLABS_API_KEY ?? '', spec.voice?.id ?? cfg.ELEVENLABS_VOICE_ID, spec.voice?.model ?? cfg.ELEVENLABS_MODEL_ID, {
     timeoutMs: cfg.TTS_TIMEOUT_MS,
     maxAttempts: cfg.PROVIDER_MAX_ATTEMPTS,
     usdPer1kChars: cfg.ELEVENLABS_USD_PER_1K_CHARS,
     speed,
+    stability: spec.voice?.stability,
+    style: spec.voice?.style,
   });
   const credits = tts.creditsFor(text);
   const account = await tts.remainingCredits();
@@ -103,8 +106,19 @@ async function getNarration(): Promise<{ audioPath: string; saved: SavedNarratio
 
 async function main(): Promise<void> {
   const { audioPath, saved } = await getNarration();
-  const words = wordsFromAlignment(saved.characters, saved.startTimes, saved.endTimes);
-  const audioSeconds = (await summarizeMedia(audioPath)).durationSeconds ?? words[words.length - 1].end;
+  let words = wordsFromAlignment(saved.characters, saved.startTimes, saved.endTimes);
+  let audioForVideo = audioPath;
+  if (!MOCK) {
+    // Tighten the pauses between sentences (the voice leaves 0.5-0.7 s) so the pace holds attention;
+    // word timestamps are realigned to the edited audio and everything downstream uses those.
+    const wav = path.join(outDir, 'narration_tight.wav');
+    await runFfmpeg(['-y', '-i', audioPath, '-ar', '44100', '-ac', '1', '-c:a', 'pcm_s16le', wav], { description: 'decode narration' });
+    const cut = tightenNarrationWav(wav, words, { leadSeconds: 0.05, gapTargetSeconds: 0.26, tailSeconds: 0.5 });
+    console.log(`narration: tightened ${cut.gapsTightened} pauses, removed ${cut.secondsRemoved.toFixed(1)} s, longest pause now ${cut.maxGapAfterSeconds.toFixed(2)} s`);
+    words = retimeWords(words, cut.words);
+    audioForVideo = wav;
+  }
+  const audioSeconds = (await summarizeMedia(audioForVideo)).durationSeconds ?? words[words.length - 1].end;
   const plan = planMechanism(spec, words, audioSeconds);
   fs.writeFileSync(path.join(outDir, 'plan.json'), JSON.stringify(plan, null, 2));
   console.log(`plan: ${words.length} words, ${plan.seconds.toFixed(1)} s, ${(words.length / words[words.length - 1].end).toFixed(2)} words/s`);
@@ -130,12 +144,12 @@ async function main(): Promise<void> {
     fs.writeFileSync(path.join(work, 'captions.ass'), buildCaptionAss(mechanismCaptionCues(words)));
     fs.writeFileSync(path.join(work, 'hud.ass'), buildHudAss(plan.hud));
     fs.copyFileSync(silentVideo, path.join(work, 'video.mp4'));
-    fs.copyFileSync(audioPath, path.join(work, 'narration' + path.extname(audioPath)));
+    fs.copyFileSync(audioForVideo, path.join(work, 'narration' + path.extname(audioForVideo)));
     const total = plan.seconds.toFixed(3);
     const finalPath = path.join(outDir, `${spec.slug}.mp4`);
     await runFfmpeg(
       [
-        '-y', '-i', 'video.mp4', '-i', 'narration' + path.extname(audioPath),
+        '-y', '-i', 'video.mp4', '-i', 'narration' + path.extname(audioForVideo),
         '-filter_complex',
         `[0:v]vignette=PI/3,eq=contrast=1.04:saturation=1.05:brightness=0.035:gamma=1.08,noise=alls=3:allf=t,ass=hud.ass:fontsdir=fonts,ass=captions.ass:fontsdir=fonts,scale=out_range=tv:out_color_matrix=bt709,format=yuv420p[v];` +
           `[1:a]aresample=48000,${MOCK ? '' : 'loudnorm=I=-14:TP=-1.5:LRA=11,'}apad,atrim=0:${total},aformat=sample_fmts=fltp:channel_layouts=stereo[a]`,

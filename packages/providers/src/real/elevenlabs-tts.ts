@@ -22,10 +22,10 @@ export class ElevenLabsTTSProvider implements TTSProvider {
     private readonly apiKey: string,
     readonly voiceId: string,
     readonly modelId: string,
-    private readonly opts: { timeoutMs: number; maxAttempts: number; usdPer1kChars: number; speed: number },
+    private readonly opts: { timeoutMs: number; maxAttempts: number; usdPer1kChars: number; speed: number; stability?: number; style?: number },
     private readonly ctx: ProviderContext = {}
   ) {
-    this.settingsKey = `stability=0.5;similarity=0.75;speed=${opts.speed}`;
+    this.settingsKey = `stability=${opts.stability ?? 0.5};similarity=0.75;style=${opts.style ?? 0};speed=${opts.speed}`;
     if (!apiKey) throw new ConfigurationError('ELEVENLABS_API_KEY is required for the ElevenLabs provider');
     if (!voiceId) throw new ConfigurationError('ELEVENLABS_VOICE_ID is required for the ElevenLabs provider');
   }
@@ -73,7 +73,7 @@ export class ElevenLabsTTSProvider implements TTSProvider {
         {
           method: 'POST',
           headers: { 'xi-api-key': this.apiKey, 'Content-Type': 'application/json' },
-          body: JSON.stringify({ text, model_id: this.modelId, voice_settings: { stability: 0.5, similarity_boost: 0.75, speed: req.speed ?? this.opts.speed } }),
+          body: JSON.stringify({ text, model_id: this.modelId, voice_settings: { stability: this.opts.stability ?? 0.5, similarity_boost: 0.75, style: this.opts.style ?? 0, use_speaker_boost: true, speed: req.speed ?? this.opts.speed } }),
         },
         {
           provider: this.name,

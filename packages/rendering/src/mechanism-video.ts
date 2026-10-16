@@ -43,6 +43,18 @@ export function wordsFromAlignment(characters: string[], starts: number[], ends:
   return words;
 }
 
+/**
+ * Carries each word's position in the narrated text over to the realigned (gap-tightened) timestamps.
+ * Tightening keeps every word in order, so words are matched by index.
+ */
+export function retimeWords(original: NarrationWord[], tightened: Array<{ word: string; start: number; end: number }>): NarrationWord[] {
+  if (original.length !== tightened.length) throw new InternalError(`retimeWords: ${original.length} words became ${tightened.length}`);
+  return tightened.map((t, i) => {
+    if (t.word !== original[i].word) throw new InternalError(`retimeWords: word ${i} changed ("${original[i].word}" -> "${t.word}")`);
+    return { word: t.word, start: t.start, end: t.end, charStart: original[i].charStart };
+  });
+}
+
 /** The text sent to the voice: beat texts joined with one space. */
 export function narrationText(spec: MechanismVideoSpec): string {
   return spec.beats.map((b) => b.text.trim()).join(' ');

@@ -5,7 +5,7 @@
   "speed": 1.05,
   "beats": [
     {
-      "text": "Your car engine only makes power one stroke out of every four.",
+      "text": "Your car engine only makes power one stroke out of every four!",
       "crank": [
         0,
         360
@@ -95,7 +95,7 @@
       ]
     },
     {
-      "text": "Stroke three: power. A spark ignites it, and the explosion shoves the piston down. This is the only stroke that pushes the car.",
+      "text": "Stroke three: power! A spark ignites it, and the explosion shoves the piston down. This is the only stroke that pushes the car.",
       "hud": "Stroke 3 · Power",
       "crankPath": [
         {
@@ -195,7 +195,7 @@
       ]
     },
     {
-      "text": "Four strokes, two full turns of the crankshaft, and just one push.",
+      "text": "Four strokes, two full turns of the crankshaft, and just one push!",
       "crank": [
         1440,
         2160
@@ -209,5 +209,10 @@
         "distance": 16.0
       }
     }
-  ]
+  ],
+  "voice": {
+    "id": "Ddh3PpD0pGS5vi20kePJ",
+    "stability": 0.32,
+    "style": 0.5
+  }
 }
