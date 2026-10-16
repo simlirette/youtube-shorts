@@ -82,6 +82,23 @@ describe('mechanism narration timing', () => {
     expect(p.hud).toEqual([{ start: beat.start, end: beat.end, text: '3 · POWER' }]);
   });
 
+  it('orbits the camera a few degrees during each beat, alternating direction, while pushing in slightly', () => {
+    const { p } = plan();
+    const look = (b: number) => spec.beats[b].camera.look;
+    // Two keys per beat: arrival, then the end-of-beat position.
+    const dist = (k: { pos: number[] }, b: number) => Math.hypot(k.pos[0] - look(b)[0], k.pos[1] - look(b)[1], k.pos[2] - look(b)[2]);
+    const azimuth = (k: { pos: number[] }, b: number) => Math.atan2(k.pos[1] - look(b)[1], k.pos[0] - look(b)[0]) * (180 / Math.PI);
+    const turns: number[] = [];
+    for (let b = 0; b < spec.beats.length; b++) {
+      const arrive = p.blender.camera_keys[2 * b];
+      const leave = p.blender.camera_keys[2 * b + 1];
+      expect(dist(leave, b)).toBeCloseTo(dist(arrive, b) * 0.95, 5);
+      turns.push(azimuth(leave, b) - azimuth(arrive, b));
+    }
+    expect(turns.every((t) => Math.abs(Math.abs(t) - 9) < 0.01)).toBe(true);
+    expect(Math.sign(turns[0])).not.toBe(Math.sign(turns[1]));
+  });
+
   it('fails closed when the alignment does not match the beats', () => {
     const text = narrationText(spec);
     const a = fakeAlignment(text.slice(0, 20));
