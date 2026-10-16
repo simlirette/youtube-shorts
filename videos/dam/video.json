@@ -1,0 +1,521 @@
+{
+  "base": "v1",
+  "slug": "dam",
+  "title": "How a dam becomes electricity",
+  "subject": {
+    "name": "Hydroelectric dam",
+    "kit": "dam",
+    "kitFile": "kit.py"
+  },
+  "hook": {
+    "formula": "stat",
+    "stat": "Falling water makes 14% of the world's electricity!"
+  },
+  "steps": [
+    "Reservoir",
+    "Penstock",
+    "Turbine",
+    "Generator",
+    "Grid"
+  ],
+  "scenes": [
+    {
+      "text": "Falling water makes about fourteen percent of the world's electricity. So how does a wall of water turn into power?",
+      "camera": {
+        "look": [
+          2.2,
+          0,
+          -0.4
+        ],
+        "distance": 30
+      },
+      "crankPath": [
+        {
+          "at": 0,
+          "deg": 0.0
+        },
+        {
+          "at": 0.1667,
+          "deg": 0.0
+        },
+        {
+          "at": 0.3333,
+          "deg": 0.0
+        },
+        {
+          "at": 0.5,
+          "deg": 0.0
+        },
+        {
+          "at": 0.6667,
+          "deg": 0.0
+        },
+        {
+          "at": 0.8333,
+          "deg": 0.0
+        },
+        {
+          "at": 1.0,
+          "deg": 0.0
+        }
+      ]
+    },
+    {
+      "text": "Behind the dam, a lake holds a huge amount of water, high above the river below. That height is stored energy, and the taller the dam, the more energy every drop carries.",
+      "camera": {
+        "look": [
+          -2.4,
+          0,
+          2.2
+        ],
+        "distance": 15
+      },
+      "step": 0,
+      "labels": [
+        {
+          "text": "Reservoir",
+          "part": "reservoir",
+          "from": 0.15,
+          "to": 1.0
+        },
+        {
+          "text": "Dam",
+          "part": "dam",
+          "from": 0.45,
+          "to": 1.0
+        }
+      ],
+      "crankPath": [
+        {
+          "at": 0,
+          "deg": 0.0
+        },
+        {
+          "at": 0.1667,
+          "deg": 0.0
+        },
+        {
+          "at": 0.3333,
+          "deg": 0.0
+        },
+        {
+          "at": 0.5,
+          "deg": 0.0
+        },
+        {
+          "at": 0.6667,
+          "deg": 0.0
+        },
+        {
+          "at": 0.8333,
+          "deg": 0.0
+        },
+        {
+          "at": 1.0,
+          "deg": 0.0
+        }
+      ]
+    },
+    {
+      "text": "A gate opens, and the water rushes down a giant pipe called the penstock, picking up speed as it falls.",
+      "camera": {
+        "look": [
+          0.3,
+          0,
+          -1.4
+        ],
+        "distance": 20
+      },
+      "step": 1,
+      "labels": [
+        {
+          "text": "Intake gate",
+          "part": "intake gate",
+          "from": 0.05,
+          "to": 1.0
+        },
+        {
+          "text": "Penstock",
+          "part": "penstock",
+          "from": 0.4,
+          "to": 1.0
+        }
+      ],
+      "crankPath": [
+        {
+          "at": 0,
+          "deg": 0.0
+        },
+        {
+          "at": 0.1667,
+          "deg": 0.0
+        },
+        {
+          "at": 0.3333,
+          "deg": 0.0
+        },
+        {
+          "at": 0.5,
+          "deg": 0.0
+        },
+        {
+          "at": 0.6667,
+          "deg": 0.0
+        },
+        {
+          "at": 0.8333,
+          "deg": 0.0
+        },
+        {
+          "at": 1.0,
+          "deg": 0.0
+        }
+      ]
+    },
+    {
+      "text": "At the bottom, it slams into the blades of a turbine, and forces it to spin.",
+      "camera": {
+        "look": [
+          3.4,
+          0,
+          -4.4
+        ],
+        "distance": 11
+      },
+      "step": 2,
+      "labels": [
+        {
+          "text": "Turbine",
+          "part": "turbine runner",
+          "from": 0.3,
+          "to": 1.0
+        }
+      ],
+      "crankPath": [
+        {
+          "at": 0,
+          "deg": 0.0
+        },
+        {
+          "at": 0.1667,
+          "deg": 10.0
+        },
+        {
+          "at": 0.3333,
+          "deg": 40.1
+        },
+        {
+          "at": 0.5,
+          "deg": 90.3
+        },
+        {
+          "at": 0.6667,
+          "deg": 160.6
+        },
+        {
+          "at": 0.8333,
+          "deg": 250.9
+        },
+        {
+          "at": 1.0,
+          "deg": 361.3
+        }
+      ]
+    },
+    {
+      "text": "The turbine's shaft turns the generator, where huge magnets spin past coils of copper wire.",
+      "camera": {
+        "look": [
+          3.4,
+          0,
+          -2.6
+        ],
+        "distance": 10
+      },
+      "step": 3,
+      "labels": [
+        {
+          "text": "Shaft",
+          "part": "shaft",
+          "from": 0.1,
+          "to": 1.0
+        },
+        {
+          "text": "Magnets",
+          "part": "magnets",
+          "from": 0.45,
+          "to": 1.0
+        }
+      ],
+      "crankPath": [
+        {
+          "at": 0,
+          "deg": 361.3
+        },
+        {
+          "at": 0.1667,
+          "deg": 480.2
+        },
+        {
+          "at": 0.3333,
+          "deg": 611.3
+        },
+        {
+          "at": 0.5,
+          "deg": 754.4
+        },
+        {
+          "at": 0.6667,
+          "deg": 909.7
+        },
+        {
+          "at": 0.8333,
+          "deg": 1077.0
+        },
+        {
+          "at": 1.0,
+          "deg": 1256.5
+        }
+      ]
+    },
+    {
+      "text": "Moving magnets push the electrons in the copper along. That flow is electricity!",
+      "camera": {
+        "look": [
+          3.4,
+          0,
+          -2.0
+        ],
+        "distance": 7.5
+      },
+      "step": 3,
+      "labels": [
+        {
+          "text": "Coils",
+          "part": "coils",
+          "from": 0.1,
+          "to": 1.0
+        }
+      ],
+      "crankPath": [
+        {
+          "at": 0,
+          "deg": 1256.5
+        },
+        {
+          "at": 0.1667,
+          "deg": 1420.1
+        },
+        {
+          "at": 0.3333,
+          "deg": 1589.6
+        },
+        {
+          "at": 0.5,
+          "deg": 1764.9
+        },
+        {
+          "at": 0.6667,
+          "deg": 1946.1
+        },
+        {
+          "at": 0.8333,
+          "deg": 2133.0
+        },
+        {
+          "at": 1.0,
+          "deg": 2325.8
+        }
+      ]
+    },
+    {
+      "text": "A transformer then raises the voltage, so the power can travel hundreds of miles through power lines.",
+      "camera": {
+        "look": [
+          6.2,
+          0,
+          0.8
+        ],
+        "distance": 14
+      },
+      "step": 4,
+      "labels": [
+        {
+          "text": "Transformer",
+          "part": "transformer",
+          "from": 0.1,
+          "to": 1.0
+        },
+        {
+          "text": "Power lines",
+          "part": "power lines",
+          "from": 0.5,
+          "to": 1.0
+        }
+      ],
+      "crankPath": [
+        {
+          "at": 0,
+          "deg": 2325.8
+        },
+        {
+          "at": 0.1667,
+          "deg": 2581.7
+        },
+        {
+          "at": 0.3333,
+          "deg": 2837.6
+        },
+        {
+          "at": 0.5,
+          "deg": 3093.5
+        },
+        {
+          "at": 0.6667,
+          "deg": 3349.5
+        },
+        {
+          "at": 0.8333,
+          "deg": 3605.4
+        },
+        {
+          "at": 1.0,
+          "deg": 3861.3
+        }
+      ]
+    },
+    {
+      "text": "Worldwide, hydropower made about forty-five hundred terawatt-hours in 2024, and the water simply carries on down the river.",
+      "camera": {
+        "look": [
+          4.0,
+          0,
+          -2.4
+        ],
+        "distance": 22
+      },
+      "labels": [
+        {
+          "text": "Tailrace",
+          "part": "tailrace",
+          "from": 0.55,
+          "to": 1.0
+        }
+      ],
+      "crankPath": [
+        {
+          "at": 0,
+          "deg": 3861.3
+        },
+        {
+          "at": 0.1667,
+          "deg": 4132.3
+        },
+        {
+          "at": 0.3333,
+          "deg": 4403.2
+        },
+        {
+          "at": 0.5,
+          "deg": 4674.2
+        },
+        {
+          "at": 0.6667,
+          "deg": 4945.2
+        },
+        {
+          "at": 0.8333,
+          "deg": 5216.1
+        },
+        {
+          "at": 1.0,
+          "deg": 5487.1
+        }
+      ]
+    },
+    {
+      "text": "Water falls, a turbine spins, magnets move, and your lights turn on!",
+      "camera": {
+        "look": [
+          2.2,
+          0,
+          -0.4
+        ],
+        "distance": 30
+      },
+      "crankPath": [
+        {
+          "at": 0,
+          "deg": 5487.1
+        },
+        {
+          "at": 0.1667,
+          "deg": 5667.7
+        },
+        {
+          "at": 0.3333,
+          "deg": 5848.4
+        },
+        {
+          "at": 0.5,
+          "deg": 6029.0
+        },
+        {
+          "at": 0.6667,
+          "deg": 6209.7
+        },
+        {
+          "at": 0.8333,
+          "deg": 6390.3
+        },
+        {
+          "at": 1.0,
+          "deg": 6571.0
+        }
+      ]
+    }
+  ],
+  "callouts": [
+    {
+      "value": "14%",
+      "label": "of the world's electricity",
+      "at": {
+        "scene": 0,
+        "fraction": 0.55
+      }
+    },
+    {
+      "value": "4,500 TWh",
+      "label": "from hydropower in 2024",
+      "at": {
+        "phrase": "forty-five hundred"
+      }
+    }
+  ],
+  "captionText": {
+    "fourteen": "14",
+    "forty-five": "45"
+  },
+  "hashtags": [
+    "#engineering",
+    "#howitworks",
+    "#hydropower",
+    "#renewableenergy",
+    "#3danimation",
+    "#learnontiktok"
+  ],
+  "description": "A dam stores water high above a river, drops it down a pipe onto a turbine, and a generator turns that spin into electricity. About 14% of the world's electricity comes from hydropower.",
+  "blender": {
+    "floorZ": -6.45,
+    "events": [
+      {
+        "name": "gate",
+        "scene": 2,
+        "from": 0.04,
+        "to": 0.3
+      }
+    ],
+    "maxSpeed": 300,
+    "allowedContacts": []
+  }
+}

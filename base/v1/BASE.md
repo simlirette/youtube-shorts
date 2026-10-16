@@ -1,0 +1,78 @@
+# BASE v1 and the per-video layer
+
+One command builds a complete video from the BASE plus a small per-video config. The base is versioned
+(`base/v1`) and is never edited for a video.
+
+```
+pnpm video videos/<slug>/video.json
+```
+
+## What belongs in the BASE (never edited per video)
+
+| Part | Where it lives | Frozen by SHA-256? |
+|---|---|---|
+| Studio, lighting rig, camera rig, depth of field, colour management, floor, backdrop | `packages/rendering/blender/mechanism.py` | yes |
+| The three built-in subjects (crank-piston, four-stroke engine, turbocharger): model and animation | `packages/rendering/blender/mechanism.py` | yes |
+| Part-label pill style (dark pill, white text, hairline, dot) and its placement | `packages/rendering/blender/mechanism.py` | yes |
+| Collision sweep (parts that must not touch) | `packages/rendering/blender/mechanism.py` | yes |
+| Wrapper that adds a per-video kit to the frozen script in memory | `base/v1/blender_entry.py` | yes |
+| Caption font, label font | `assets/fonts/` | yes |
+| Camera planning (look-at, push-in, orbit, headroom), narration-timed drive | `packages/rendering/src/mechanism-video.ts` (`planMechanism`) | by the golden test |
+| Render settings: 1080x1920, 30 fps, H.264, bitrate, loudness, grade, 50-60 s target | `base/v1/base.json` `render` | no (config) |
+| The one fixed voice: ElevenLabs id, model, stability, style, speed, pause target | `base/v1/base.json` `voice` | no (config) |
+| Caption engine: font, size, stroke, position, colours, word or phrase timing | `base/v1/base.json` `captions` + `overlays.ts` | no (config) |
+| Hook line: formulas, size, position, accent colour, duration | `base/v1/base.json` `hook` | no (config) |
+| Progress tracker (visible from frame 1) | `base/v1/base.json` `progress` | no (config) |
+| Fact-callout card style (yellow, black outline) | `base/v1/base.json` `callouts` | no (config) |
+| Outro template | `base/v1/base.json` `outro` | no (config) |
+
+`pnpm video` and the test suite refuse to run if a frozen file no longer matches `base/v1/frozen.json`.
+A deliberate change to the visual layer is: edit, `pnpm base:freeze --confirm`, and a new base version if the look changes.
+
+## What belongs in the per-video layer (`videos/<slug>/`)
+
+| File | Contents |
+|---|---|
+| `video.json` | subject (name, built-in kit or its own kit), hook formula and its fields, steps, scenes (narration text, camera look-at and distance, part labels, shaft/crank motion), fact callouts, caption display text, title, description, hashtags, optional overrides |
+| `kit.py` | **only for a new 3D subject**: `build_kit()` (model and animation) and optionally `register_checks()` |
+
+A video cannot override `render` or `voice`: `VideoConfigSchema` has no such fields and rejects unknown keys.
+It may override these overlay sections, key by key: `captions`, `hook`, `progress`, `callouts`, `outro`.
+
+## Build commands
+
+```
+pnpm video videos/dam/video.json                       one video (narration -> Blender -> overlays -> mux)
+pnpm video "videos/*/video.json"                       every video, one after another (also: pnpm video:batch ...)
+pnpm video a/video.json b/video.json c/video.json      an explicit list
+pnpm video videos/dam/video.json --plan-only           validate, narrate (spends credits only if the script is new) and print the timeline
+pnpm video videos/dam/video.json --mock-voice          silent placeholder voice, no credits (look and timing)
+pnpm video videos/dam/video.json --remux               reuse the last Blender render; redo overlays and audio only
+pnpm video videos/dam/video.json --suggest-callouts    list numbers in the script that could get a fact card
+pnpm base:freeze [--confirm]                           record / re-record the frozen manifest
+```
+
+Output: `output/videos/<slug>/` with `<slug>.mp4` (1080x1920, H.264), `<slug>.post.txt` (title, description,
+hashtags), `<slug>.meta.json`, `plan.json`, `contact-sheet.jpg`.
+
+## Every config option
+
+See `BaseConfigSchema` and `VideoConfigSchema` in `packages/schemas/src/index.ts`; the values are in `base/v1/base.json`.
+Sizes are percentages of the frame height (1920 px) or width (1080 px), so a change never depends on pixel arithmetic.
+
+- `captions`: `enabled`, `layout` (`phrase` | `single`), `timing` (`word` | `phrase`), `maxWordsPerCue`, `maxLines`,
+  `font {family, bold, sizePct}`, `stroke {widthPct, color, shadowPct}`, `colors {spoken, current, upcoming}`,
+  `position {xPct, yPct}`, `safeWidthPct`, `uppercase`, `hideDuringHook`, `fadeMs`
+- `hook`: `enabled`, `seconds`, `formulas`, `font`, `stroke`, `colors {text, accent}`, `position`, `safeWidthPct`, `uppercase`,
+  `accentNumbers`, `fadeMs`; per video: `hook {formula: how_becomes | how_works | why | stat | custom, ...fields}`
+- `progress`: `enabled`, `visibleFromStart`, `afterLast` (`complete` | `hide` | `hold`), `yPct`, `spreadPct`, `activeFont`,
+  `inactiveFont`, `stroke`, `colors {active, done, upcoming, line}`, `dotRadiusPct`
+- `callouts`: `fill`, `text`, `outline`, `outlineWidthPct`, `valueFont`, `labelFont`, `position`, `paddingPct`, `seconds`, `fadeMs`;
+  per video: `callouts [{value, label, at {scene, fraction} | {phrase}, seconds}]`
+- `outro`: `enabled`, `mode` (`tail` extends the video | `overlay`), `seconds`, `text`, `subtext`, fonts, `stroke`, `colors`,
+  `position`, `fadeMs`
+- `render`: `width` / `height` / `fps` (fixed 1080 / 1920 / 30), `video {codec, crf, preset, pixFmt}`,
+  `audio {codec, bitrate, loudnessLufs, truePeakDb}`, `grade {contrast, saturation, grain}`, `lengthSeconds {min, max}`
+- `voice`: `id`, `model`, `stability`, `style`, `speed`, `pauseTargetSeconds`, `leadSeconds`, `tailSeconds`
+- per video only: `captionText` (display text for spoken words), `blender {floorZ, events, maxSpeed, allowedContacts}` for a new kit,
+  `overrides`, `hashtags`, `description`, `title`, `steps`, `scenes`

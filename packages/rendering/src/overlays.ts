@@ -79,7 +79,10 @@ function outside(start: number, end: number, windows: Array<[number, number]>): 
       return out;
     });
   }
-  return parts.filter(([s, e]) => e - s > 0.01);
+  // An untouched event is kept however short (a short word still needs its highlight). A sliver left over at the
+  // edge of a window would show as a one-frame flash, so clipped fragments under 0.12 s are dropped.
+  if (parts.length === 1 && parts[0][0] === start && parts[0][1] === end) return parts;
+  return parts.filter(([s, e]) => e - s >= 0.12);
 }
 
 // ---------------------------------------------------------------------------------------------------------
