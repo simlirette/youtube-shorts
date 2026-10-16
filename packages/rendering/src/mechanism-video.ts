@@ -262,7 +262,7 @@ const CAP_NEXT = '&HA8A8A8&';
  * the voice is saying. A thin bracket line sits above the phrase.
  */
 export function buildCaptionAss(cues: CaptionCue[], words: NarrationWord[], layout: CaptionLayout = CAPTION_LAYOUT): string {
-  const style = ['Caption', 'Montserrat', 62, '&H00FFFFFF', '&H000000FF', '&H00101010', '&H78000000', -1, 0, 0, 0, 100, 100, 0.5, 0, 1, 3.2, 2.0, 2, 90, 90, 430, 1].join(',');
+  const style = ['Caption', 'Montserrat', 62, '&H00FFFFFF', '&H000000FF', '&H8C181818', '&H8C181818', -1, 0, 0, 0, 100, 100, 0.5, 0, 3, 11, 0, 2, 90, 90, 430, 1].join(',');
   const bracket = ['Bracket', 'Montserrat', 20, '&H00FFFFFF', '&H000000FF', '&H00000000', '&H00000000', 0, 0, 0, 0, 100, 100, 0, 0, 1, 0, 0, 7, 0, 0, 0, 1].join(',');
   const events: string[] = [];
   for (const c of cues) {
@@ -316,14 +316,14 @@ function disc(cx: number, cy: number, r: number): string {
  * current step in bold white with a large gold dot, finished steps in white, upcoming ones dimmed.
  */
 export function buildStepperAss(events: StepperEvent[], layout: CaptionLayout = CAPTION_LAYOUT): string {
-  const label = ['Step', 'Montserrat SemiBold', 34, '&H00FFFFFF', '&H000000FF', '&H00101010', '&H64000000', 0, 0, 0, 0, 100, 100, 3, 0, 1, 2.2, 1.2, 8, 0, 0, 0, 1].join(',');
-  const labelOn = ['StepOn', 'Montserrat', 54, '&H00FFFFFF', '&H000000FF', '&H00101010', '&H64000000', -1, 0, 0, 0, 100, 100, 3, 0, 1, 2.6, 1.4, 8, 0, 0, 0, 1].join(',');
+  const label = ['Step', 'Montserrat SemiBold', 28, '&H00FFFFFF', '&H000000FF', '&H00101010', '&H78000000', 0, 0, 0, 0, 100, 100, 3, 0, 1, 3.0, 1.6, 8, 0, 0, 0, 1].join(',');
+  const labelOn = ['StepOn', 'Montserrat', 46, '&H00FFFFFF', '&H000000FF', '&H00101010', '&H78000000', -1, 0, 0, 0, 100, 100, 3, 0, 1, 3.6, 2.0, 8, 0, 0, 0, 1].join(',');
   const draw = ['Draw', 'Montserrat', 20, '&H00FFFFFF', '&H000000FF', '&H00000000', '&H00000000', 0, 0, 0, 0, 100, 100, 0, 0, 1, 0, 0, 7, 0, 0, 0, 1].join(',');
   const out: string[] = [];
   const cy = 200;
   events.forEach((e, ei) => {
     const n = e.steps.length;
-    const gap = Math.min(250, 760 / Math.max(1, n - 1));
+    const gap = Math.min(280, 840 / Math.max(1, n - 1));
     const xs = e.steps.map((_, i) => Math.round(layout.width / 2 + (i - (n - 1) / 2) * gap));
     const t = `${assTime(e.start)},${assTime(e.end)}`;
     const fadeIn = ei === 0 || events[ei - 1].end < e.start - 0.01 ? 250 : 0;
@@ -336,7 +336,7 @@ export function buildStepperAss(events: StepperEvent[], layout: CaptionLayout = 
       const on = i === e.index;
       const colour = on ? '&H00D2FF&' : i < e.index ? '&HFFFFFF&' : '&HA0A0A0&';
       out.push(`Dialogue: 1,${t},Draw,,0,0,0,,${base}\\c${colour}}${disc(xs[i], cy, on ? 19 : 10)}{\\p0}`);
-      out.push(`Dialogue: 2,${t},${on ? 'StepOn' : 'Step'},,0,0,0,,{\\an8\\pos(${xs[i]},${cy + 38})${fade}${on ? '' : '\\1a&H70&'}}${s.toUpperCase()}`);
+      out.push(`Dialogue: 2,${t},${on ? 'StepOn' : 'Step'},,0,0,0,,{\\an8\\pos(${xs[i]},${cy + 38})${fade}${on ? '' : '\\1a&H40&'}}${s.toUpperCase()}`);
     });
   });
   return ASS_HEADER(layout.width, layout.height, [`Style: ${label}`, `Style: ${labelOn}`, `Style: ${draw}`]) + out.join('\n') + '\n';
@@ -344,7 +344,7 @@ export function buildStepperAss(events: StepperEvent[], layout: CaptionLayout = 
 
 /** Large centred title for beats that are not part of a numbered sequence. */
 export function buildHudAss(events: HudEvent[], layout: CaptionLayout = CAPTION_LAYOUT): string {
-  const style = ['Hud', 'Montserrat', 64, '&H00FFFFFF', '&H000000FF', '&H00101010', '&H64000000', -1, 0, 0, 0, 100, 100, 6, 0, 1, 3, 1.6, 8, 60, 60, 160, 1].join(',');
+  const style = ['Hud', 'Montserrat', 72, '&H00FFFFFF', '&H000000FF', '&H00101010', '&H78000000', -1, 0, 0, 0, 100, 100, 6, 0, 1, 4, 2, 8, 60, 60, 160, 1].join(',');
   return (
     ASS_HEADER(layout.width, layout.height, [`Style: ${style}`]) +
     events.map((e) => `Dialogue: 0,${assTime(e.start)},${assTime(e.end)},Hud,,0,0,0,,{\\fad(250,200)}${e.text.toUpperCase().replace(/[{}]/g, '')}`).join('\n') +

@@ -286,7 +286,7 @@ describe('mechanism captions', () => {
     expect(ass).toContain('Dialogue: 0,0:00:01.00,0:00:03.50,Hud');
     expect(ass).toContain('VALVE TIMING');
     expect(ass).not.toContain('{timing}');
-    expect(ass).toContain('Style: Hud,Montserrat,64');
+    expect(ass).toContain('Style: Hud,Montserrat,72');
   });
 });
 
