@@ -259,11 +259,11 @@ const CAP_NEXT = '&HA8A8A8&';
  * Karaoke captions in a clean bold sans (Montserrat Bold), like the reference reels: a short phrase stays
  * on screen while the word being spoken is gold, words already spoken are white and words still to come
  * are dimmed. One event per word, timed from the narration word timestamps, so the highlight is the word
- * the voice is saying. A thin bracket line sits above the phrase.
+ * the voice is saying. Plain text only: no box and no lines.
  */
 export function buildCaptionAss(cues: CaptionCue[], words: NarrationWord[], layout: CaptionLayout = CAPTION_LAYOUT): string {
-  const style = ['Caption', 'Montserrat', 62, '&H00FFFFFF', '&H000000FF', '&H8C181818', '&H8C181818', -1, 0, 0, 0, 100, 100, 0.5, 0, 3, 11, 0, 2, 90, 90, 430, 1].join(',');
-  const bracket = ['Bracket', 'Montserrat', 20, '&H00FFFFFF', '&H000000FF', '&H00000000', '&H00000000', 0, 0, 0, 0, 100, 100, 0, 0, 1, 0, 0, 7, 0, 0, 0, 1].join(',');
+  // Plain text: white fill, dark outline and a soft shadow. No box, no lines.
+  const style = ['Caption', 'Montserrat', 62, '&H00FFFFFF', '&H000000FF', '&H00080808', '&HB4000000', -1, 0, 0, 0, 100, 100, 0.5, 0, 1, 6.2, 3.4, 2, 90, 90, 430, 1].join(',');
   const events: string[] = [];
   for (const c of cues) {
     const flat = c.lines.flatMap((l, li) => l.split(' ').map((w) => ({ w, li })));
@@ -286,13 +286,8 @@ export function buildCaptionAss(cues: CaptionCue[], words: NarrationWord[], layo
       const fade = k === 0 ? '{\\fad(70,0)}' : k === flat.length - 1 ? '{\\fad(0,60)}' : '';
       events.push(`Dialogue: 1,${assTime(start)},${assTime(end)},Caption,,0,0,0,,${fade}${text}`);
     }
-    // Thin bracket above the phrase for the whole cue.
-    const y = layout.height - 430 - 170;
-    const x0 = 270;
-    const x1 = layout.width - 270;
-    events.push(`Dialogue: 0,${assTime(c.start)},${assTime(c.end)},Bracket,,0,0,0,,{\\an7\\pos(0,0)\\p1\\c&HC8C8C8&\\1a&H50&}m ${x0} ${y} l ${x1} ${y} l ${x1} ${y + 2} l ${x0 + 0} ${y + 2} m ${x0} ${y} l ${x0 + 2} ${y} l ${x0 + 2} ${y + 14} l ${x0} ${y + 14} m ${x1 - 2} ${y} l ${x1} ${y} l ${x1} ${y + 14} l ${x1 - 2} ${y + 14}{\\p0}`);
   }
-  return ASS_HEADER(layout.width, layout.height, [`Style: ${style}`, `Style: ${bracket}`]) + events.join('\n') + '\n';
+  return ASS_HEADER(layout.width, layout.height, [`Style: ${style}`]) + events.join('\n') + '\n';
 }
 
 export interface StepperEvent {

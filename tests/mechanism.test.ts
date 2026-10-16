@@ -271,6 +271,16 @@ describe('mechanism captions', () => {
     expect(first.replace(/\{[^}]*\}/g, '').split(',').slice(9).join(',').replace(/\\N/g, ' ').trim().startsWith(words[0].word)).toBe(true);
   });
 
+  it('is plain text: no background box and no drawn lines around the captions', () => {
+    const { words } = plan();
+    const ass = buildCaptionAss(mechanismCaptionCues(words), words);
+    const style = ass.split('\n').find((l) => l.startsWith('Style: Caption'))!.split(',');
+    expect(style[15]).toBe('1'); // BorderStyle 1 = outline only (3 would be an opaque box)
+    expect(ass).not.toContain('\\p1'); // no vector drawings
+    expect(ass).not.toContain('Bracket');
+    expect(ass.split('\n').filter((l) => l.startsWith('Style:'))).toHaveLength(1);
+  });
+
   it('draws a centred stepper with the active step gold and fades only at the ends of a run', () => {
     const steps = ['Intake', 'Compression', 'Power', 'Exhaust'];
     const ass = buildStepperAss([
