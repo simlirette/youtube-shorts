@@ -20,6 +20,10 @@ import { cacheDir, detectSilence, ensureDir, loadConfig, measureLoudness, repoRo
 import {
   MechanismRenderer,
   buildCalloutOverlay,
+  buildPointerOverlay,
+  overlayPointers,
+  placePills,
+  probeAnchors,
   buildCaptionOverlay,
   buildHookOverlay,
   buildOutroOverlay,
@@ -37,9 +41,12 @@ import {
   planOptionsFor,
   progressSegments,
   retimeWords,
+  splitPointerLabels,
   toMechanismSpec,
   verifyFrozen,
   wordsFromAlignment,
+  type AnchorTracks,
+  type PointerLabel,
 } from '@shorts/rendering';
 import { ensureNarration } from './lib/narration.js';
 
@@ -104,12 +111,21 @@ async function buildOne(file: string): Promise<Summary> {
     audioForVideo = wav;
   }
   const audioSeconds = (await summarizeMedia(audioForVideo)).durationSeconds ?? words[words.length - 1].end;
-  const plan = planMechanism(spec, words, audioSeconds, planOptionsFor(video, cfg));
+  let plan = planMechanism(spec, words, audioSeconds, planOptionsFor(video, cfg));
   warnings.push(...lengthWarnings(plan.seconds, cfg));
+  // Part labels: with overlay pointers the pills are drawn in the overlay layer (at the frame edge, with a leader line
+  // to the part) and Blender is given no labels at all. The frozen script is not edited; its label input is just empty.
+  const ptr = overlayPointers(cfg);
+  let pointerLabels: PointerLabel[] = [];
+  if (ptr) {
+    const split = splitPointerLabels(plan, video);
+    plan = split.plan;
+    pointerLabels = split.labels;
+  }
   const callouts = calloutEvents(video, cfg, words, plan, text);
   const segments = progressSegments(plan, video.steps ?? [], cfg.progress);
 
-  fs.writeFileSync(path.join(outDir, 'plan.json'), JSON.stringify(plan, null, 2));
+  fs.writeFileSync(path.join(outDir, 'plan.json'), JSON.stringify({ ...plan, pointers: pointerLabels }, null, 2));
   console.log(`${video.slug}: ${words.length} words, ${plan.seconds.toFixed(1)} s, ${(words.length / words[words.length - 1].end).toFixed(2)} words/s; hook: "${hook}"`);
   for (const b of plan.beats) console.log(`  scene ${b.index}: ${b.start.toFixed(2)}-${b.end.toFixed(2)} s`);
   for (const w of warnings) console.log(`  warning: ${w}`);
@@ -126,6 +142,22 @@ async function buildOne(file: string): Promise<Summary> {
     kitFile: loaded.kitFile,
     entryScript: loaded.kitFile ? path.join(repoRoot(), base.frozen.blenderEntry) : undefined,
   });
+  const mechanismCache = path.join(cacheDir(appCfg.outputDir, 'media'), '..', 'mechanism');
+  let tracks: AnchorTracks = {};
+  if (ptr && pointerLabels.length) {
+    tracks = await probeAnchors({
+      blenderPath: blender,
+      plan,
+      parts: [...new Set(pointerLabels.map((l) => l.part))],
+      kitFile: loaded.kitFile,
+      entryScript: path.join(repoRoot(), base.frozen.blenderEntry),
+      probeKit: path.join(repoRoot(), 'base', base.version, 'probe_kit.py'),
+      cacheDir: mechanismCache,
+    });
+    const shown = placePills(pointerLabels, tracks, ptr);
+    console.log(`pointers: ${shown.length} of ${pointerLabels.length} part labels placed at the frame edge`);
+    for (const l of pointerLabels) if (!shown.some((p) => p.label === l)) warnings.push(`label "${l.text}" (${l.part}) is not drawn: its part is off screen or there is no free spot for its pill`);
+  }
   const silentVideo = path.join(outDir, 'video_silent.mp4');
   if (REMUX && fs.existsSync(silentVideo)) console.log('render: reusing video_silent.mp4 (--remux)');
   else {
@@ -142,6 +174,7 @@ async function buildOne(file: string): Promise<Summary> {
   if (outroOn) suppress.push([outroStart, plan.seconds]);
   const layers: Array<{ name: string; ass: string }> = [];
   if (cfg.progress.enabled && video.steps) layers.push({ name: 'progress', ass: buildProgressOverlay(video.steps, segments, cfg.progress) });
+  if (ptr && pointerLabels.length) layers.push({ name: 'pointers', ass: buildPointerOverlay(pointerLabels, tracks, ptr, base.render.fps) });
   if (callouts.length) layers.push({ name: 'callouts', ass: buildCalloutOverlay(callouts, cfg.callouts) });
   if (cfg.hook.enabled) layers.push({ name: 'hook', ass: buildHookOverlay(hook, cfg.hook) });
   if (outroOn) layers.push({ name: 'outro', ass: buildOutroOverlay(outroStart, plan.seconds, cfg.outro) });

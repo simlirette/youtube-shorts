@@ -10,6 +10,7 @@ import {
   buildCaptionOverlay,
   buildHookOverlay,
   buildOutroOverlay,
+  buildPointerOverlay,
   buildProgressOverlay,
   calloutEvents,
   captionCues,
@@ -23,10 +24,13 @@ import {
   loadBase,
   loadVideo,
   narrationText,
+  overlayPointers,
+  placePills,
   planMechanism,
   planOptionsFor,
   progressSegments,
   retimeWords,
+  splitPointerLabels,
   toMechanismSpec,
   verifyFrozen,
   wordsFromAlignment,
@@ -133,8 +137,8 @@ describe('config', () => {
   });
 
   it('applies allowed overrides key by key', () => {
-    const { cfg } = planFor('four-stroke-engine', (v) => (v.overrides = { captions: { font: { sizePct: 9.5 } }, outro: { enabled: false } }));
-    expect(cfg.captions.font).toEqual({ family: 'Montserrat', bold: true, sizePct: 9.5 }); // only sizePct changed
+    const { cfg } = planFor('four-stroke-engine', (v) => (v.overrides = { caption: { size_pct: 6.5 }, outro: { enabled: false } }));
+    expect(cfg.captions.font).toEqual({ family: 'Montserrat', bold: true, sizePct: 6.5 }); // only sizePct changed
     expect(cfg.captions.colors.current).toBe('#FFD200');
   });
 
@@ -156,14 +160,15 @@ describe('overlays (all from config)', () => {
     return Number(h) * 3600 + Number(m) * 60 + Number(s);
   };
 
-  it('captions are much larger than before and centred, not in the lower third', () => {
+  it('captions are 5-7% of the frame height, in the lower third, at most 3 words', () => {
     const { cfg, words } = planFor('four-stroke-engine');
     const ass = buildCaptionOverlay(captionCues(words, cfg.captions), words, cfg.captions);
     const size = Number(ass.split('\n').find((l) => l.startsWith('Style: Caption'))!.split(',')[2]);
-    expect(size / 1920).toBeGreaterThanOrEqual(0.08); // was 62 px = 3.2%
-    expect(size / 1920).toBeLessThanOrEqual(0.12);
+    expect(size / 1920).toBeGreaterThanOrEqual(0.05);
+    expect(size / 1920).toBeLessThanOrEqual(0.07);
+    expect(cfg.captions.maxWordsPerCue).toBeLessThanOrEqual(3);
     const first = eventsOf(ass, 'Caption')[0];
-    expect(first).toContain('\\an5\\pos(540,960)'); // the middle of the 1080x1920 frame
+    expect(first).toContain('\\an5\\pos(540,1459)'); // lower third (76%), not the middle
   });
 
   it('highlights exactly the word being spoken, from the ElevenLabs timestamps (word timing)', () => {
@@ -258,13 +263,13 @@ describe('overlays (all from config)', () => {
     expect(progressFit(engine.loaded.video.steps!, engine.cfg.progress)).toBe(1);
     const dam = planFor('dam');
     const fit = progressFit(dam.loaded.video.steps!, dam.cfg.progress);
-    expect(fit).toBeLessThan(1);
+    expect(fit).toBeLessThanOrEqual(1);
     expect(fit).toBeGreaterThan(0.6);
     const size = (ass: string, style: string) => Number(ass.split('\n').find((l) => l.startsWith('Style: ' + style))!.split(',')[2]);
     const eng = buildProgressOverlay(engine.loaded.video.steps!, progressSegments(engine.plan, engine.loaded.video.steps!, engine.cfg.progress), engine.cfg.progress);
     const dm = buildProgressOverlay(dam.loaded.video.steps!, progressSegments(dam.plan, dam.loaded.video.steps!, dam.cfg.progress), dam.cfg.progress);
-    expect(size(eng, 'StepOn')).toBe(Math.round(0.024 * 1920)); // exactly the configured size
-    expect(size(dm, 'StepOn')).toBeLessThan(Math.round(0.024 * 1920));
+    expect(size(eng, 'StepOn')).toBe(Math.round((engine.cfg.progress.activeFont.sizePct / 100) * 1920)); // exactly the configured size
+    expect(size(dm, 'StepOn')).toBeLessThanOrEqual(size(eng, 'StepOn'));
     // With the fit applied no active label reaches its neighbour: needed width <= gap for every step.
     const gap = (dam.cfg.progress.spreadPct / 100) * 1080 / (dam.loaded.video.steps!.length - 1);
     const on = 0.78 * ((dam.cfg.progress.activeFont.sizePct * fit * 19.2) / 1.22) + 3;
@@ -425,4 +430,96 @@ describe.skipIf(!blender)('the dam kit (Blender)', () => {
     const collisions = await checkMechanismKit(blender!, 'dam', { kitFile: loaded.kitFile, entryScript: path.join(root, 'base', 'v1', 'blender_entry.py'), floorZ: -6.45 });
     expect(collisions).toEqual([]);
   }, 300_000);
+});
+
+describe('overlay refinement (captions, tracker, pointers, fact cards)', () => {
+  const { cfg, plan, loaded } = planFor('four-stroke-engine');
+  const ptr = overlayPointers(cfg)!;
+  // A part that drifts across the frame, one on the left and one on the right.
+  const tracks = {
+    'intake valve': [[0, 0.3, 0.4, 5], [60, 0.3, 0.4, 5]] as Array<[number, number, number, number]>,
+    'exhaust valve': [[0, 0.7, 0.42, 5], [60, 0.7, 0.42, 5]] as Array<[number, number, number, number]>,
+    piston: [[0, 0.5, 0.6, 5], [60, 0.5, 0.6, 5]] as Array<[number, number, number, number]>,
+  };
+  const labels = [
+    { text: 'INTAKE VALVE', part: 'intake valve', t0: 1, t1: 4 },
+    { text: 'EXHAUST VALVE', part: 'exhaust valve', t0: 1, t1: 4 },
+    { text: 'PISTON', part: 'piston', t0: 1, t1: 4, style: 'pulse' as const },
+  ];
+
+  it('defaults: caption 5-7% lower third max 3 words, slim tracker, scaled cards, overlay pointers', () => {
+    expect(cfg.captions.font.sizePct).toBeGreaterThanOrEqual(5);
+    expect(cfg.captions.font.sizePct).toBeLessThanOrEqual(7);
+    expect(cfg.captions.position.yPct).toBe(76);
+    expect(cfg.captions.maxWordsPerCue).toBe(3);
+    expect(cfg.progress.lineHeightPx).toBe(3);
+    expect(cfg.progress.dimOpacity).toBe(0.45);
+    expect(cfg.progress.visibleFromStart).toBe(true);
+    expect(cfg.callouts.valueFont.sizePct).toBeLessThan(6.5);
+    expect(ptr.style).toBe('leader');
+    expect(ptr.thickness_px).toBeGreaterThanOrEqual(2);
+    expect(ptr.thickness_px).toBeLessThanOrEqual(3);
+  });
+
+  it('removing the new sections restores the old look (legacy values are the fallback)', () => {
+    const base = loadBase('v1');
+    const legacy = effectiveConfig({ ...base, caption: undefined, tracker: undefined, callout: undefined, pointer: undefined } as any, loaded.video);
+    expect(legacy.captions.font.sizePct).toBe(8);
+    expect(legacy.captions.position.yPct).toBe(50);
+    expect(legacy.callouts.position.yPct).toBe(72);
+  });
+
+  it('zones map to a caption position', () => {
+    for (const [zone, y] of [['center', 50], ['upper_third', 24], ['lower_third', 76]] as const) {
+      expect(planFor('four-stroke-engine', (v) => (v.overrides = { caption: { zone } })).cfg.captions.position.yPct).toBe(y);
+    }
+  });
+
+  it('pointer mode "blender" keeps the old in-render pills (no overlay)', () => {
+    const c = planFor('four-stroke-engine', (v) => (v.overrides = { pointer: { mode: 'blender' } })).cfg;
+    expect(overlayPointers(c)).toBeNull();
+  });
+
+  it('putting labels in the overlay changes nothing in the Blender spec except an empty labels list', () => {
+    const e = planFor('four-stroke-engine');
+    const { plan: split, labels: ls } = splitPointerLabels(e.plan, e.loaded.video);
+    expect(split.blender.labels).toEqual([]);
+    expect({ ...split.blender, labels: e.plan.blender.labels }).toEqual(e.plan.blender);
+    expect(ls).toHaveLength(e.plan.blender.labels.length);
+    expect(ls.map((l) => l.text)).toEqual(e.plan.blender.labels.map((l) => l.text));
+  });
+
+  it('every pill sits at a frame edge, never over the middle, and has a leader line', () => {
+    const pills = placePills(labels, tracks, ptr);
+    expect(pills).toHaveLength(3);
+    for (const p of pills) {
+      const atLeft = p.x === ptr.edge_margin_px;
+      const atRight = Math.abs(p.x + p.w - (1080 - ptr.edge_margin_px)) < 1;
+      expect(atLeft || atRight).toBe(true);
+      expect(p.w).toBeLessThan(540); // never reaches the middle
+      expect(p.y).toBeGreaterThanOrEqual((ptr.zone.topPct / 100) * 1920);
+      expect(p.y).toBeLessThanOrEqual((ptr.zone.bottomPct / 100) * 1920);
+    }
+    const ass = buildPointerOverlay(labels, tracks, ptr, 30);
+    const draws = ass.split('\n').filter((l) => l.startsWith('Dialogue:') && l.includes('PtrDraw'));
+    expect(draws.length).toBeGreaterThanOrEqual(3 * 2); // line + dot (or ring) per label at least
+    expect(ass).toContain('PINTAKE'.slice(1)); // INTAKE VALVE text present
+  });
+
+  it('pills on screen together do not overlap; a part that is off screen gets no pill', () => {
+    const near = labels.map((l) => ({ ...l, part: 'intake valve' }));
+    const pills = placePills(near, tracks, ptr);
+    for (let i = 0; i < pills.length; i++) {
+      for (let j = i + 1; j < pills.length; j++) {
+        if (pills[i].side !== pills[j].side) continue;
+        expect(Math.abs(pills[i].y - pills[j].y)).toBeGreaterThanOrEqual(pills[i].h);
+      }
+    }
+    expect(placePills([{ text: 'GHOST', part: 'nothing', t0: 1, t1: 2 }], tracks, ptr)).toEqual([]);
+  });
+
+  it('fact cards scale with callout.size_pct', () => {
+    const small = planFor('four-stroke-engine', (v) => (v.overrides = { callout: { size_pct: 3 } })).cfg;
+    expect(small.callouts.valueFont.sizePct).toBeLessThan(cfg.callouts.valueFont.sizePct);
+  });
 });

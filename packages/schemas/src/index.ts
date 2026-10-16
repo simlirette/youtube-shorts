@@ -906,7 +906,7 @@ export const MechanismBeatSchema = z.object({
   /** Index into the video's `steps` when this beat belongs to a numbered sequence (shown in the top stepper). */
   step: z.number().int().min(0).optional(),
   /** Callouts that point at named kit parts; from/to are fractions (0-1) of the beat. */
-  labels: z.array(z.object({ text: z.string().min(1).max(24), part: z.string().min(1), from: z.number().min(0).max(1).default(0), to: z.number().min(0).max(1).default(1) })).default([]),
+  labels: z.array(z.object({ text: z.string().min(1).max(24), part: z.string().min(1), from: z.number().min(0).max(1).default(0), to: z.number().min(0).max(1).default(1), /** leader (default) or pulse ring on the part */ pointer: z.enum(['leader', 'pulse']).optional() })).default([]),
 });
 export type MechanismBeat = z.infer<typeof MechanismBeatSchema>;
 
@@ -997,6 +997,9 @@ export const HookStyleSchema = z.object({
   enabled: z.boolean(),
   /** How long the hook line stays on screen, from the first frame. */
   seconds: z.number().min(0.5).max(5),
+  /** Same as `seconds` / `font.sizePct`; when present they win (the names used in the refinement spec). */
+  duration_s: z.number().min(0.5).max(5).optional(),
+  size_pct: z.number().min(0.5).max(20).optional(),
   formulas: HookFormulasSchema,
   font: FontConfigSchema,
   stroke: StrokeConfigSchema,
@@ -1024,6 +1027,10 @@ export const ProgressConfigSchema = z.object({
   stroke: StrokeConfigSchema,
   colors: z.object({ active: Hex, done: Hex, upcoming: Hex, line: Hex }),
   dotRadiusPct: z.object({ active: z.number().min(0).max(2), inactive: z.number().min(0).max(2) }),
+  /** Thickness of the bar in px; absent = the original 8 px bar. */
+  lineHeightPx: z.number().min(1).max(12).optional(),
+  /** Opacity (0-1) of steps not reached yet; absent = the original look. */
+  dimOpacity: z.number().min(0.1).max(1).optional(),
 });
 
 export const CalloutStyleSchema = z.object({
@@ -1065,6 +1072,51 @@ export const RenderConfigSchema = z.object({
   lengthSeconds: z.object({ min: z.number(), max: z.number() }),
 });
 
+/** Names used by the refinement spec. Each key, when present, overrides the matching legacy setting; remove the section to get the old look back. */
+export const CaptionAliasSchema = z.object({
+  /** Font size, % of the frame height. */
+  size_pct: z.number().min(0.5).max(20).optional(),
+  /** Where the caption block sits: the lower third, the centre, or the upper third. */
+  zone: z.enum(['lower_third', 'center', 'upper_third']).optional(),
+  /** Most words on screen at once. */
+  max_words: z.number().int().min(1).max(6).optional(),
+});
+export const TrackerAliasSchema = z.object({
+  /** Bar thickness in px. */
+  height_px: z.number().min(1).max(12).optional(),
+  /** Active step label size, % of the frame height (inactive labels are 60% of it). */
+  font_size_pct: z.number().min(0.5).max(6).optional(),
+  /** Opacity (0-1) of steps not reached yet. */
+  dim_opacity: z.number().min(0.1).max(1).optional(),
+});
+export const CalloutAliasSchema = z.object({
+  /** Size of the big figure on a fact card, % of the frame height (the label scales with it). */
+  size_pct: z.number().min(1).max(15).optional(),
+  /** Height of the card's centre, % of the frame height (clear of the lower-third captions). */
+  y_pct: z.number().min(5).max(95).optional(),
+});
+
+/** Part pointers: pills at the frame edge, a leader line (or pulse ring) to the part. Drawn in the overlay layer. */
+export const PointerConfigSchema = z.object({
+  /** overlay: pills and pointers are drawn here and Blender gets no labels; blender: the original pills baked into the render. */
+  mode: z.enum(['overlay', 'blender']),
+  /** Default pointer for every label; a label can choose its own. */
+  style: z.enum(['leader', 'pulse']),
+  thickness_px: z.number().min(1).max(8),
+  color: Hex,
+  /** Radius of the dot where the line meets the part. */
+  dot_px: z.number().min(2).max(14),
+  label_size_pct: z.number().min(0.8).max(4),
+  pill: z.object({ fill: Hex, text: Hex, opacity: z.number().min(0.3).max(1), paddingPx: z.number().min(6).max(40) }),
+  /** Distance of a pill from the left or right edge of the frame. */
+  edge_margin_px: z.number().min(8).max(120),
+  /** Pills stay between these heights (% of the frame): below the tracker, above the captions. */
+  zone: z.object({ topPct: Pct, bottomPct: Pct }),
+  minGapPx: z.number().min(4).max(80),
+  pulse: z.object({ radiusPct: z.object({ min: z.number().min(0.2).max(4), max: z.number().min(0.2).max(6) }), periodS: z.number().min(0.4).max(4) }),
+  fadeMs: z.object({ in: z.number().min(0), out: z.number().min(0) }),
+});
+
 export const VoiceConfigSchema = z.object({
   /** The one fixed voice. Not overridable per video. */
   id: z.string().min(5),
@@ -1097,6 +1149,11 @@ export const BaseConfigSchema = z.object({
   callouts: CalloutStyleSchema,
   outro: OutroConfigSchema,
   frozen: FrozenConfigSchema,
+  /** Optional refinement sections: absent = the previous behaviour. */
+  caption: CaptionAliasSchema.optional(),
+  tracker: TrackerAliasSchema.optional(),
+  callout: CalloutAliasSchema.optional(),
+  pointer: PointerConfigSchema.optional(),
 });
 export type BaseConfig = z.infer<typeof BaseConfigSchema>;
 export type CaptionsConfig = z.infer<typeof CaptionsConfigSchema>;
@@ -1104,6 +1161,10 @@ export type HookStyle = z.infer<typeof HookStyleSchema>;
 export type ProgressConfig = z.infer<typeof ProgressConfigSchema>;
 export type CalloutStyle = z.infer<typeof CalloutStyleSchema>;
 export type OutroConfig = z.infer<typeof OutroConfigSchema>;
+export type PointerConfig = z.infer<typeof PointerConfigSchema>;
+export type CaptionAlias = z.infer<typeof CaptionAliasSchema>;
+export type TrackerAlias = z.infer<typeof TrackerAliasSchema>;
+export type CalloutAlias = z.infer<typeof CalloutAliasSchema>;
 
 // ---------------------------------------------------------------------------------------------------------
 // Per video
@@ -1136,6 +1197,10 @@ export const VideoOverridesSchema = z
     progress: ProgressConfigSchema.deepPartial(),
     callouts: CalloutStyleSchema.deepPartial(),
     outro: OutroConfigSchema.deepPartial(),
+    caption: CaptionAliasSchema,
+    tracker: TrackerAliasSchema,
+    callout: CalloutAliasSchema,
+    pointer: PointerConfigSchema.deepPartial(),
   })
   .partial()
   .strict();

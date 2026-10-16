@@ -93,3 +93,32 @@ Sizes are percentages of the frame height (1920 px) or width (1080 px), so a cha
    (copy `videos/dam/kit.py` as the pattern: `build_kit()`, optional `register_checks()`), and its collision sweep must pass.
 3. `pnpm video videos/<slug>/video.json --mock-voice --plan-only` validates the config and the timeline for 0 credits.
 4. `pnpm video videos/<slug>/video.json` builds it (about 900 ElevenLabs credits for a 50-60 s script; about 25 min of rendering).
+
+## Overlay refinement (2026-10-16): new options, all additive
+
+Config-only. The legacy sections (`captions`, `progress`, `callouts`, `hook`) stay as fallback values; delete a section below and the old look returns. Every key can also be set per video under `overrides`.
+
+| Key | Default | Effect |
+|---|---|---|
+| `caption.size_pct` | 5.8 | caption size, % of frame height (5-7) |
+| `caption.zone` | `lower_third` | `lower_third` (y 76%), `center` (50%), `upper_third` (24%) |
+| `caption.max_words` | 3 | words on screen at once (word-by-word gold highlight kept) |
+| `hook.size_pct` / `hook.duration_s` | 6.4 / 2.0 | the big centred hook line in the first seconds |
+| `tracker.height_px` | 3 | thickness of the tracker bar |
+| `tracker.font_size_pct` | 1.5 | tracker label size |
+| `tracker.dim_opacity` | 0.45 | opacity of upcoming steps; tracker visible from frame 1 |
+| `callout.size_pct` | 4.6 | fact-card size (yellow/black style kept) |
+| `callout.y_pct` | 27 | fact-card vertical position |
+| `pointer.mode` | `overlay` | `overlay` = pills at the frame edge; `blender` = old in-render pills |
+| `pointer.style` | `leader` | `leader` (line + dot) or `pulse` (ring on the part); per label: `"pointer": "pulse"` |
+| `pointer.thickness_px` / `color` / `dot_px` | 2.5 / #FFFFFF / 5 | leader line |
+| `pointer.label_size_pct` | 1.9 | pill text size |
+| `pointer.edge_margin_px` | 36 | pill distance from the frame edge |
+| `pointer.zone` | top 15% - bottom 64% | vertical band for pills (below tracker, above captions) |
+| `pointer.pill`, `minGapPx`, `pulse`, `fadeMs` | see base.json | pill colours, spacing, ring size and period, fades |
+
+How pointers work without touching frozen files: the frozen `mechanism.py` draws pills over the subject, so in overlay mode it is given an empty `labels` list. `base/v1/probe_kit.py` (unfrozen) runs the same Blender script through the frozen wrapper and records where each part appears on screen per frame; the overlay layer draws pill, leader line and dot from that.
+
+### Kit authoring guideline (not enforced)
+
+Frame the subject in the upper two thirds of the frame. Keep the lower third free of key parts: it is the caption zone.

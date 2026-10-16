@@ -1,5 +1,5 @@
 import { InternalError } from '@shorts/core';
-import type { CalloutStyle, CaptionCue, CaptionsConfig, HookStyle, OutroConfig, ProgressConfig, VideoHook } from '@shorts/schemas';
+import type { CalloutStyle, CaptionCue, CaptionsConfig, HookStyle, OutroConfig, PointerConfig, ProgressConfig, VideoHook } from '@shorts/schemas';
 import { CAPTION_LAYOUT, emphasisIndex } from './captions.js';
 import { ASS_HEADER, assTime, disc, mechanismCaptionCues, type NarrationWord } from './mechanism-video.js';
 
@@ -95,6 +95,12 @@ function outside(start: number, end: number, windows: Array<[number, number]>): 
 export function captionCues(words: NarrationWord[], cfg: CaptionsConfig, W = FRAME_W, H = FRAME_H): CaptionCue[] {
   const maxWords = cfg.layout === 'single' ? 1 : cfg.maxWordsPerCue;
   return mechanismCaptionCues(words, { ...CAPTION_LAYOUT, maxCharsPerLine: lineBudget(cfg.font, cfg.safeWidthPct, W, H) }, maxWords, cfg.maxLines);
+}
+
+/** ASS alpha override for an opacity of 0-1 (1 = solid). */
+export function alphaTag(opacity: number): string {
+  const a = Math.round((1 - Math.min(1, Math.max(0, opacity))) * 255);
+  return `&H${a.toString(16).padStart(2, '0').toUpperCase()}&`;
 }
 
 const wordKey = (w: string): string => w.toLowerCase().replace(/[^a-z0-9']/g, '');
@@ -233,6 +239,13 @@ export function buildProgressOverlay(steps: string[], segments: ProgressSegment[
   const cy = r(px(cfg.yPct, H));
   const spread = px(cfg.spreadPct, W);
   const xs = steps.map((_, i) => r(W / 2 + (i - (n - 1) / 2) * (spread / Math.max(1, n - 1))));
+  const slim = cfg.lineHeightPx !== undefined;
+  const lineH = slim ? +(cfg.lineHeightPx! / 2).toFixed(2) : Math.max(2, r(px(0.2, H)));
+  const dimA = cfg.dimOpacity !== undefined ? alphaTag(cfg.dimOpacity) : null; // alpha of steps not reached yet
+  const lineAlpha = dimA ?? '&H50&';
+  const rActive = slim ? Math.max(6, r(4.2 * cfg.lineHeightPx!)) : r(px(cfg.dotRadiusPct.active, H));
+  const rInactive = slim ? Math.max(3, r(2.4 * cfg.lineHeightPx!)) : r(px(cfg.dotRadiusPct.inactive, H));
+  const labelDy = slim ? rActive + r(px(0.7, H)) : r(px(1.9, H));
   const out: string[] = [];
   const segs = [...segments].sort((a, b) => a.start - b.start);
   segs.forEach((e, ei) => {
@@ -242,18 +255,18 @@ export function buildProgressOverlay(steps: string[], segments: ProgressSegment[
     const fadeIn = firstOfRun && !(cfg.visibleFromStart && e.start <= 0.001) ? 250 : 0;
     const fade = `\\fad(${fadeIn},${lastOfRun ? 200 : 0})`;
     const base = `{\\an7\\pos(0,0)\\p1${fade}`;
-    const lineH = Math.max(2, r(px(0.2, H)));
-    out.push(`Dialogue: 0,${t},Draw,,0,0,0,,${base}\\c${assColour(cfg.colors.line)}\\1a&H50&}m ${xs[0]} ${cy - lineH} l ${xs[n - 1]} ${cy - lineH} l ${xs[n - 1]} ${cy + lineH} l ${xs[0]} ${cy + lineH}{\\p0}`);
+    out.push(`Dialogue: 0,${t},Draw,,0,0,0,,${base}\\c${assColour(cfg.colors.line)}\\1a${lineAlpha}}m ${xs[0]} ${cy - lineH} l ${xs[n - 1]} ${cy - lineH} l ${xs[n - 1]} ${cy + lineH} l ${xs[0]} ${cy + lineH}{\\p0}`);
     const reach = e.index >= n ? n - 1 : e.index;
     if (reach >= 0) out.push(`Dialogue: 0,${t},Draw,,0,0,0,,${base}\\c${assColour(cfg.colors.done)}}m ${xs[0]} ${cy - lineH} l ${xs[reach]} ${cy - lineH} l ${xs[reach]} ${cy + lineH} l ${xs[0]} ${cy + lineH}{\\p0}`);
     steps.forEach((s, i) => {
       const on = i === e.index;
       const colour = on ? cfg.colors.active : i < e.index ? cfg.colors.done : cfg.colors.upcoming;
-      out.push(`Dialogue: 1,${t},Draw,,0,0,0,,${base}\\c${assColour(colour)}}${disc(xs[i], cy, r(px(on ? cfg.dotRadiusPct.active : cfg.dotRadiusPct.inactive, H)))}{\\p0}`);
-      const dim = !on && i > e.index ? '\\1a&H40&' : '';
+      const upcoming = !on && i > e.index;
+      out.push(`Dialogue: 1,${t},Draw,,0,0,0,,${base}\\c${assColour(colour)}${upcoming && dimA ? `\\1a${dimA}` : ''}}${disc(xs[i], cy, on ? rActive : rInactive)}{\\p0}`);
+      const dim = upcoming ? `\\1a${dimA ?? '&H40&'}` : '';
       // An edge label slides inward so it stays inside the safe margin; its dot stays where it is.
       const lx = r(labelCentre(xs[i], labelWidth(s.length, on ? cfg.activeFont.sizePct : cfg.inactiveFont.sizePct, fit, H), W));
-      out.push(`Dialogue: 2,${t},${on ? 'StepOn' : 'Step'},,0,0,0,,{\\an8\\pos(${lx},${cy + r(px(1.9, H))})${fade}${dim}}${s.toUpperCase()}`);
+      out.push(`Dialogue: 2,${t},${on ? 'StepOn' : 'Step'},,0,0,0,,{\\an8\\pos(${lx},${cy + labelDy})${fade}${dim}}${s.toUpperCase()}`);
     });
   });
   return ASS_HEADER(W, H, [`Style: ${label}`, `Style: ${labelOn}`, `Style: ${draw}`]) + out.join('\n') + '\n';
@@ -337,4 +350,144 @@ export function buildOutroOverlay(start: number, end: number, cfg: OutroConfig, 
     `Dialogue: 2,${t},OutroSub,,0,0,0,,{\\an5\\pos(${cx},${r(cy + gap * 1.25)})${fade}}${cfg.subtext}`,
   ];
   return ASS_HEADER(W, H, [`Style: ${text}`, `Style: ${sub}`, `Style: ${draw}`]) + out.join('\n') + '\n';
+}
+
+// ---------------------------------------------------------------------------------------------------------
+// Part pointers (pills at the frame edge, a leader line or a pulse ring to the part)
+// ---------------------------------------------------------------------------------------------------------
+
+/** Where a part appears on screen over time: [seconds, x, y, depth] with x and y as fractions of the frame (y downwards). */
+export type AnchorTrack = Array<[number, number, number, number]>;
+export type AnchorTracks = Record<string, AnchorTrack>;
+
+export interface PointerLabel {
+  text: string;
+  part: string;
+  t0: number;
+  t1: number;
+  /** leader (thin line and a dot) or pulse (a ring on the part). Default: the config's style. */
+  style?: 'leader' | 'pulse';
+}
+
+/** Anchor of a part at time t, interpolated between samples; null when it is behind the camera or outside the frame. */
+export function anchorAt(track: AnchorTrack | undefined, t: number): { x: number; y: number } | null {
+  if (!track || track.length === 0) return null;
+  if (t < track[0][0] - 1e-6 || t > track[track.length - 1][0] + 1e-6) return null;
+  let i = 0;
+  while (i < track.length - 2 && track[i + 1][0] < t) i++;
+  const a = track[i];
+  const b = track[Math.min(i + 1, track.length - 1)];
+  const u = b[0] === a[0] ? 0 : Math.min(1, Math.max(0, (t - a[0]) / (b[0] - a[0])));
+  const z = Math.min(a[3], b[3]);
+  const x = a[1] + (b[1] - a[1]) * u;
+  const y = a[2] + (b[2] - a[2]) * u;
+  if (z <= 0 || x < 0.01 || x > 0.99 || y < 0.01 || y > 0.99) return null;
+  return { x, y };
+}
+
+export interface PlacedPill {
+  label: PointerLabel;
+  side: 'left' | 'right';
+  /** Pill rectangle in pixels. */
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+}
+
+/**
+ * Pills go to the left or right edge of the frame (the side nearer the part), at the part's height but inside the
+ * allowed band (below the tracker, above the captions), with pills that are on screen together kept apart.
+ */
+export function placePills(labels: PointerLabel[], tracks: AnchorTracks, cfg: PointerConfig, W = FRAME_W, H = FRAME_H): PlacedPill[] {
+  const sizePx = px(cfg.label_size_pct, H);
+  const em = sizePx / 1.22;
+  const h = r(sizePx * 1.25 + cfg.pill.paddingPx * 0.7);
+  const top = px(cfg.zone.topPct, H) + h / 2;
+  const bottom = px(cfg.zone.bottomPct, H) - h / 2;
+  const placed: PlacedPill[] = [];
+  for (const label of [...labels].sort((a, b) => a.t0 - b.t0)) {
+    const mid = (label.t0 + label.t1) / 2;
+    const a = anchorAt(tracks[label.part], mid) ?? anchorAt(tracks[label.part], label.t0);
+    if (!a) continue;
+    const w = r(label.text.length * (0.66 * em + 2) + cfg.pill.paddingPx * 2);
+    const wanted = Math.min(bottom, Math.max(top, a.y * H));
+    const sides: Array<'left' | 'right'> = a.x < 0.5 ? ['left', 'right'] : ['right', 'left'];
+    for (const side of sides) {
+      const busy = placed.filter((p) => p.side === side && p.label.t0 < label.t1 && p.label.t1 > label.t0).map((p) => [p.y - p.h / 2 - cfg.minGapPx, p.y + p.h / 2 + cfg.minGapPx]);
+      // The free spot nearest to where the part is.
+      const candidates = [wanted, ...busy.flatMap(([lo, hi]) => [lo - h / 2, hi + h / 2])].filter((y) => y >= top - 0.5 && y <= bottom + 0.5);
+      const free = candidates.filter((y) => busy.every(([lo, hi]) => y + h / 2 <= lo + 0.5 || y - h / 2 >= hi - 0.5)).sort((p, q) => Math.abs(p - wanted) - Math.abs(q - wanted));
+      if (free.length) {
+        const x = side === 'left' ? cfg.edge_margin_px : W - cfg.edge_margin_px - w;
+        placed.push({ label, side, x, y: r(free[0]), w, h });
+        break;
+      }
+    }
+  }
+  return placed;
+}
+
+function polygon(pts: Array<[number, number]>): string {
+  return `m ${pts[0][0].toFixed(1)} ${pts[0][1].toFixed(1)} l ${pts.slice(1).map((p) => `${p[0].toFixed(1)} ${p[1].toFixed(1)}`).join(' ')}`;
+}
+
+/** A thin line from a to b, as a polygon (ASS has no stroked lines). */
+function lineShape(a: [number, number], b: [number, number], thickness: number): string {
+  const dx = b[0] - a[0];
+  const dy = b[1] - a[1];
+  const len = Math.hypot(dx, dy) || 1;
+  const nx = (-dy / len) * (thickness / 2);
+  const ny = (dx / len) * (thickness / 2);
+  return polygon([[a[0] + nx, a[1] + ny], [b[0] + nx, b[1] + ny], [b[0] - nx, b[1] - ny], [a[0] - nx, a[1] - ny]]);
+}
+
+function circle(cx: number, cy: number, rad: number, n = 20): string {
+  return polygon(Array.from({ length: n }, (_, i): [number, number] => [cx + rad * Math.cos((2 * Math.PI * i) / n), cy + rad * Math.sin((2 * Math.PI * i) / n)]));
+}
+
+/**
+ * The part pointers: for each label a dark pill at the frame edge with its text, and a thin leader line to a dot on
+ * the part (or a pulse ring on the part). Line, dot and ring follow the part frame by frame from the anchor tracks.
+ */
+export function buildPointerOverlay(labels: PointerLabel[], tracks: AnchorTracks, cfg: PointerConfig, fps = 30, W = FRAME_W, H = FRAME_H): string {
+  const pills = placePills(labels, tracks, cfg, W, H);
+  const fontPx = r(px(cfg.label_size_pct, H));
+  const text = ['PtrText', 'Montserrat SemiBold', fontPx, styleColour(cfg.pill.text), '&H000000FF', '&H00000000', '&H00000000', 0, 0, 0, 0, 100, 100, 1, 0, 1, 0, 0, 5, 0, 0, 0, 1].join(',');
+  const draw = ['PtrDraw', 'Montserrat', 20, '&H00FFFFFF', '&H000000FF', '&H00000000', '&H00000000', 0, 0, 0, 0, 100, 100, 0, 0, 1, 0, 0, 7, 0, 0, 0, 1].join(',');
+  const out: string[] = [];
+  const col = assColour(cfg.color);
+  const fadeIn = cfg.fadeMs.in / 1000;
+  const fadeOut = cfg.fadeMs.out / 1000;
+  for (const p of pills) {
+    const { label } = p;
+    const t = `${assTime(label.t0)},${assTime(label.t1)}`;
+    const fade = `\\fad(${cfg.fadeMs.in},${cfg.fadeMs.out})`;
+    out.push(`Dialogue: 1,${t},PtrDraw,,0,0,0,,{\\an7\\pos(0,0)\\p1${fade}\\c${assColour(cfg.pill.fill)}\\1a${alphaTag(cfg.pill.opacity)}\\bord0\\shad0}${roundedRect(r(p.x), r(p.y - p.h / 2), p.w, p.h, r(p.h / 2.6))}{\\p0}`);
+    out.push(`Dialogue: 2,${t},PtrText,,0,0,0,,{\\an5\\pos(${r(p.x + p.w / 2)},${r(p.y)})${fade}}${label.text.toUpperCase()}`);
+    const style = label.style ?? cfg.style;
+    const edge: [number, number] = [p.side === 'left' ? p.x + p.w : p.x, p.y];
+    const step = 1 / fps;
+    for (let f = 0; label.t0 + f * step < label.t1 - 1e-6; f++) {
+      const t0 = label.t0 + f * step;
+      const t1 = Math.min(label.t1, t0 + step);
+      const a = anchorAt(tracks[label.part], t0 + step / 2);
+      if (!a) continue;
+      // Fade the pointer with the pill.
+      const k = Math.min(1, (t0 - label.t0) / fadeIn, (label.t1 - t0) / fadeOut);
+      if (k <= 0.02) continue;
+      const at: [number, number] = [a.x * W, a.y * H];
+      const tt = `${assTime(t0)},${assTime(t1)}`;
+      const alpha = `\\alpha${alphaTag(k)}`;
+      out.push(`Dialogue: 0,${tt},PtrDraw,,0,0,0,,{\\an7\\pos(0,0)\\p1${alpha}\\c${col}\\bord0\\shad0}${lineShape(edge, at, cfg.thickness_px)}{\\p0}`);
+      out.push(`Dialogue: 0,${tt},PtrDraw,,0,0,0,,{\\an7\\pos(0,0)\\p1${alpha}\\c${col}\\bord0\\shad0}${circle(at[0], at[1], cfg.dot_px)}{\\p0}`);
+      if (style === 'pulse') {
+        const phase = (((t0 - label.t0) / cfg.pulse.periodS) % 1 + 1) % 1;
+        const rad = px(cfg.pulse.radiusPct.min + (cfg.pulse.radiusPct.max - cfg.pulse.radiusPct.min) * phase, H);
+        const ringA = alphaTag(k * (1 - phase) * 0.95);
+        out.push(`Dialogue: 0,${tt},PtrDraw,,0,0,0,,{\\an7\\pos(0,0)\\p1\\1a&HFF&\\3c${col}\\3a${ringA}\\bord${cfg.thickness_px}\\shad0}${circle(at[0], at[1], rad, 28)}{\\p0}`);
+      }
+    }
+  }
+  return ASS_HEADER(W, H, [`Style: ${text}`, `Style: ${draw}`]) + out.join('\n') + '\n';
 }

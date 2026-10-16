@@ -4,10 +4,27 @@
     "width": 1080,
     "height": 1920,
     "fps": 30,
-    "video": { "codec": "libx264", "crf": 17, "preset": "medium", "pixFmt": "yuv420p" },
-    "audio": { "codec": "aac", "bitrate": "192k", "loudnessLufs": -14, "truePeakDb": -1.5 },
-    "grade": { "contrast": 1.04, "saturation": 1.06, "grain": 2 },
-    "lengthSeconds": { "min": 50, "max": 60 }
+    "video": {
+      "codec": "libx264",
+      "crf": 17,
+      "preset": "medium",
+      "pixFmt": "yuv420p"
+    },
+    "audio": {
+      "codec": "aac",
+      "bitrate": "192k",
+      "loudnessLufs": -14,
+      "truePeakDb": -1.5
+    },
+    "grade": {
+      "contrast": 1.04,
+      "saturation": 1.06,
+      "grain": 2
+    },
+    "lengthSeconds": {
+      "min": 50,
+      "max": 60
+    }
   },
   "voice": {
     "id": "Ddh3PpD0pGS5vi20kePJ",
@@ -19,21 +36,43 @@
     "leadSeconds": 0.05,
     "tailSeconds": 0.5
   },
-  "fonts": { "dir": "assets/fonts", "caption": "Montserrat-Bold.ttf", "label": "Montserrat-SemiBold.ttf" },
+  "fonts": {
+    "dir": "assets/fonts",
+    "caption": "Montserrat-Bold.ttf",
+    "label": "Montserrat-SemiBold.ttf"
+  },
   "captions": {
     "enabled": true,
     "layout": "phrase",
     "timing": "word",
     "maxWordsPerCue": 3,
     "maxLines": 2,
-    "font": { "family": "Montserrat", "bold": true, "sizePct": 8.0 },
-    "stroke": { "widthPct": 0.42, "color": "#080808", "shadowPct": 0.18 },
-    "colors": { "spoken": "#FFFFFF", "current": "#FFD200", "upcoming": "#A8A8A8" },
-    "position": { "xPct": 50, "yPct": 50 },
+    "font": {
+      "family": "Montserrat",
+      "bold": true,
+      "sizePct": 8.0
+    },
+    "stroke": {
+      "widthPct": 0.42,
+      "color": "#080808",
+      "shadowPct": 0.18
+    },
+    "colors": {
+      "spoken": "#FFFFFF",
+      "current": "#FFD200",
+      "upcoming": "#A8A8A8"
+    },
+    "position": {
+      "xPct": 50,
+      "yPct": 50
+    },
     "safeWidthPct": 88,
     "uppercase": false,
     "hideDuringHook": true,
-    "fadeMs": { "in": 70, "out": 60 }
+    "fadeMs": {
+      "in": 70,
+      "out": 60
+    }
   },
   "hook": {
     "enabled": true,
@@ -45,14 +84,33 @@
       "stat": "{stat}",
       "custom": "{text}"
     },
-    "font": { "family": "Montserrat", "bold": true, "sizePct": 6.4 },
-    "stroke": { "widthPct": 0.4, "color": "#080808", "shadowPct": 0.18 },
-    "colors": { "text": "#FFFFFF", "accent": "#FFD200" },
-    "position": { "xPct": 50, "yPct": 40 },
+    "font": {
+      "family": "Montserrat",
+      "bold": true,
+      "sizePct": 6.4
+    },
+    "stroke": {
+      "widthPct": 0.4,
+      "color": "#080808",
+      "shadowPct": 0.18
+    },
+    "colors": {
+      "text": "#FFFFFF",
+      "accent": "#FFD200"
+    },
+    "position": {
+      "xPct": 50,
+      "yPct": 40
+    },
     "safeWidthPct": 86,
     "uppercase": false,
     "accentNumbers": true,
-    "fadeMs": { "in": 120, "out": 200 }
+    "fadeMs": {
+      "in": 120,
+      "out": 200
+    },
+    "size_pct": 6.4,
+    "duration_s": 2.0
   },
   "progress": {
     "enabled": true,
@@ -60,23 +118,57 @@
     "afterLast": "complete",
     "yPct": 10.42,
     "spreadPct": 77.8,
-    "activeFont": { "family": "Montserrat", "bold": true, "sizePct": 2.4 },
-    "inactiveFont": { "family": "Montserrat SemiBold", "bold": false, "sizePct": 1.46 },
-    "stroke": { "widthPct": 0.19, "color": "#101010", "shadowPct": 0.1 },
-    "colors": { "active": "#FFD200", "done": "#FFFFFF", "upcoming": "#A0A0A0", "line": "#9A9A9A" },
-    "dotRadiusPct": { "active": 0.99, "inactive": 0.52 }
+    "activeFont": {
+      "family": "Montserrat",
+      "bold": true,
+      "sizePct": 2.4
+    },
+    "inactiveFont": {
+      "family": "Montserrat SemiBold",
+      "bold": false,
+      "sizePct": 1.46
+    },
+    "stroke": {
+      "widthPct": 0.19,
+      "color": "#101010",
+      "shadowPct": 0.1
+    },
+    "colors": {
+      "active": "#FFD200",
+      "done": "#FFFFFF",
+      "upcoming": "#A0A0A0",
+      "line": "#9A9A9A"
+    },
+    "dotRadiusPct": {
+      "active": 0.99,
+      "inactive": 0.52
+    }
   },
   "callouts": {
     "fill": "#FFD200",
     "text": "#111111",
     "outline": "#000000",
     "outlineWidthPct": 0.35,
-    "valueFont": { "family": "Montserrat", "bold": true, "sizePct": 6.5 },
-    "labelFont": { "family": "Montserrat", "bold": true, "sizePct": 2.2 },
-    "position": { "xPct": 50, "yPct": 72 },
+    "valueFont": {
+      "family": "Montserrat",
+      "bold": true,
+      "sizePct": 6.5
+    },
+    "labelFont": {
+      "family": "Montserrat",
+      "bold": true,
+      "sizePct": 2.2
+    },
+    "position": {
+      "xPct": 50,
+      "yPct": 72
+    },
     "paddingPct": 2.2,
     "seconds": 2.4,
-    "fadeMs": { "in": 120, "out": 150 }
+    "fadeMs": {
+      "in": 120,
+      "out": 150
+    }
   },
   "outro": {
     "enabled": true,
@@ -84,12 +176,33 @@
     "seconds": 2.2,
     "text": "Follow for more machines",
     "subtext": "How things really work",
-    "textFont": { "family": "Montserrat", "bold": true, "sizePct": 4.6 },
-    "subtextFont": { "family": "Montserrat SemiBold", "bold": false, "sizePct": 2.3 },
-    "stroke": { "widthPct": 0.35, "color": "#080808", "shadowPct": 0.15 },
-    "colors": { "text": "#FFFFFF", "accent": "#FFD200" },
-    "position": { "xPct": 50, "yPct": 46 },
-    "fadeMs": { "in": 250, "out": 200 }
+    "textFont": {
+      "family": "Montserrat",
+      "bold": true,
+      "sizePct": 4.6
+    },
+    "subtextFont": {
+      "family": "Montserrat SemiBold",
+      "bold": false,
+      "sizePct": 2.3
+    },
+    "stroke": {
+      "widthPct": 0.35,
+      "color": "#080808",
+      "shadowPct": 0.15
+    },
+    "colors": {
+      "text": "#FFFFFF",
+      "accent": "#FFD200"
+    },
+    "position": {
+      "xPct": 50,
+      "yPct": 46
+    },
+    "fadeMs": {
+      "in": 250,
+      "out": 200
+    }
   },
   "frozen": {
     "files": [
@@ -100,5 +213,50 @@
     ],
     "blenderScript": "packages/rendering/blender/mechanism.py",
     "blenderEntry": "base/v1/blender_entry.py"
+  },
+  "caption": {
+    "size_pct": 5.8,
+    "zone": "lower_third",
+    "max_words": 3
+  },
+  "tracker": {
+    "height_px": 3,
+    "font_size_pct": 1.5,
+    "dim_opacity": 0.45
+  },
+  "callout": {
+    "size_pct": 4.6,
+    "y_pct": 27
+  },
+  "pointer": {
+    "mode": "overlay",
+    "style": "leader",
+    "thickness_px": 2.5,
+    "color": "#FFFFFF",
+    "dot_px": 5,
+    "label_size_pct": 1.9,
+    "pill": {
+      "fill": "#0B0D11",
+      "text": "#FFFFFF",
+      "opacity": 0.92,
+      "paddingPx": 18
+    },
+    "edge_margin_px": 36,
+    "zone": {
+      "topPct": 15,
+      "bottomPct": 64
+    },
+    "minGapPx": 18,
+    "pulse": {
+      "radiusPct": {
+        "min": 0.9,
+        "max": 2.3
+      },
+      "periodS": 1.3
+    },
+    "fadeMs": {
+      "in": 300,
+      "out": 250
+    }
   }
 }
