@@ -76,3 +76,20 @@ Sizes are percentages of the frame height (1920 px) or width (1080 px), so a cha
 - `voice`: `id`, `model`, `stability`, `style`, `speed`, `pauseTargetSeconds`, `leadSeconds`, `tailSeconds`
 - per video only: `captionText` (display text for spoken words), `blender {floorZ, events, maxSpeed, allowedContacts}` for a new kit,
   `overrides`, `hashtags`, `description`, `title`, `steps`, `scenes`
+
+## Decisions on record (2026-10-16)
+
+- `mechanism.py` stays frozen exactly as hashed in `frozen.json`. One label (CAMSHAFT, scene 6 of the engine) sits about 10 px
+  higher and to the right than in the v3b render, because labels now anchor at the centre of a part's geometry. Accepted; not restored.
+- No per-scene title text. The progress tracker carries the structure of a video, and on-screen text is kept minimal for retention.
+  The `hud` field in a scene is accepted by the schema for older specs but `pnpm video` does not draw it.
+- Tracker label sizing for any number of steps is a base responsibility (`progressFit`); the four-stroke tracker is unchanged by it (tested).
+- The four-stroke engine keeps its original 39 s narration, so it shows a length warning. New videos target 50-60 s.
+
+## Starting a new video
+
+1. `videos/<slug>/video.json`: copy `videos/dam/video.json` and change the subject, hook, steps, scenes, callouts, hashtags.
+2. A built-in subject (crank_piston, four_stroke, turbocharger) needs nothing else. A new 3D subject needs `videos/<slug>/kit.py`
+   (copy `videos/dam/kit.py` as the pattern: `build_kit()`, optional `register_checks()`), and its collision sweep must pass.
+3. `pnpm video videos/<slug>/video.json --mock-voice --plan-only` validates the config and the timeline for 0 credits.
+4. `pnpm video videos/<slug>/video.json` builds it (about 900 ElevenLabs credits for a 50-60 s script; about 25 min of rendering).
