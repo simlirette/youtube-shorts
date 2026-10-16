@@ -1,0 +1,209 @@
+QUERY: short form educational video virality what drives shares saves 2026 study
+Title: What Actually Drives Views on Educational Instagram Reels? A Within-Account Analysis of 300 Reels by Grigorii Tvorogov :: SSRN
+URL: https://papers.ssrn.com/sol3/Delivery.cfm/7600885.pdf?abstractid=7600885&mirid=1
+Published: 2026-10-07T12:42:13.000Z
+Author: Tvorogov, Grigorii
+Highlights:
+Instagram Reels? A Within-Account ... of 300 Reels by
+...
+Creators of educational short-form video get a great deal of advice about hooks, video length, editing speed and comment prompts, mostly from successful creators describing their own experience. I tested some of that advice against data. I coded 300 educational Instagram Reels from 21 accounts (380 to 11.1 million followers) on more than 30 variables, including hook type, length, subtitles, calls to action, comment prompts and three 1-5 quality ratings, and recorded each Reel's views and comments. Because accounts differ so much, I compared Reels mainly within the same account. Which account posted a Reel explained 68% of the variation in views, and follower count alone accounted for about two thirds of that. Inside accounts, performance came in rare spikes: 9.7% of Reels reached at least ten times their own account's median views. No hook type, hook length, video length, editing pace, subtitle type or music choice was reliably linked to views. Comments grew more slowly than views (elasticity 0.82), and comment bait did not raise the comment rate; an explicit request to comment was the only prompt with a consistent signal (about 2.3 times, preliminary). In my own ratings, information density went with higher Education Value, and visual support, segmentation and fewer extraneous elements went with higher attention and execution ratings. I turn these results into practical takeaways for creators and list the experiments that would test them. 
+
+Declaration of Interest
+
+---
+
+Title: Electronic Health Literacy Content Is Scarce and Underperforming on TikTok: An Exploratory Analysis
+URL: https://doi.org/10.3390/info17060524
+Published: 2026-05-25T00:00:00.000Z
+Author: Elham Aldousari
+Highlights:
+Most TikTok users have low electronic health (eHealth) literacy. Yet, evidence on the availability, content, and engagement metrics of TikTok videos on eHealth literacy is scanty. This study analyzes the content and engagement metrics of recent TikTok videos on health literacy to identify the unmet eHealth literacy needs of TikTok users. A convergent mixed-methods study was conducted. The hashtag #eHealthliteracy was searched for videos published between January 2025 and February 2026. Engagement and content data were retrieved and analyzed statistically and thematically, respectively. Sixty of the 69 retrieved TikTok videos were shorter than 288 s. Favorite:like ratio was the only high engagement ratio at 15%; the rest were less than 4%. Only four of the 69 videos were generated using artificial intelligence, and their engagement metrics were the highest. Video lengths were negatively associated with all engagement metrics (β = −0.004 to −0.008, p < 0.001). Favorites, shares, and likes were significantly higher for educational videos compared to promotional videos (p = 0.0071, 0.0252, and 0.0413), with medium effect sizes of ε2 = 0.1072, 0.0743, and 0.0617, respectively. Only six of the 69 videos were directly on eHealth literacy; the rest were on health literacy. The increasing availability of health information is not accompanied by eHealth literacy on TikTok. Future eHealth literacy videos should be short, institutional, AI-optimized, and embedded with health topics for better reach and engagement.
+
+---
+
+Title: A study on the dissemination effectiveness and influencing factors of short videos in scientific journals: An empirical analysis based on the ELM model | PLOS One
+URL: https://journals.plos.org/plosone/article?id=10.1371%2Fjournal.pone.0341716
+Published: 2026-01-29T18:17:09.000Z
+Author: Sirui Li, Shufang Zhao, Xi Wang, Zhengzong Huang, Xiangdong Liu
+Highlights:
+Based on data analysis of 4,422 short videos from scientific journals, this study constructs a Dissemination Effectiveness Index comprising Likes, comments, Favorites, and shares. Using an Enhanced Logistic Model (ELM), it examines how different cues influence dissemination performance. Results indicate that video duration and visual quality show significant positive correlations with dissemination effectiveness, while subtitles and clear covers exert stable effects. The impact direction of Hashtags varies depending on usage patterns. Fan base size and content volume exhibit strong correlations with dissemination effectiveness, demonstrating significant moderating effects across several content characteristics. The study further reveals the limited relevance of verification badges, reflecting evolving trends in platform recommendation and user selection mechanisms. Interpreting these patterns through the lens of heuristic processing in algorithmic contexts, this research proposes practical recommendations for scientific journals in short video creation.
+...
+H2. Regarding visual quality, Mann-Whitney U test results show that high-quality videos significantly outperform low-quality videos in average dissemination effectiveness (Z = −2.694, p = 0.007). This indicates that clear visual experiences form a foundational threshold for effective dissemination, supporting Hypothesis H3, though with a small effect size (r = 0.041). In practice, we should rationally view the role of image quality—it primarily serves as
+...
+Regarding visual packaging, both standalone cover design and subtitle usage (p < 0.001) showed significant positive effects, supporting hypotheses H7 and H8. Hashtag usage significantly enhanced dissemination effectiveness (p < 0.001). Although contrary to the original negative expectation, this confirms hashtags’ traffic-driving value in algorithmic recommendations, thus rejecting hypothesis H6 (as the impact was positive). Posting time slots also exhibited significant differences (p = 0.006), with morning and afternoon slots demonstrating superior dissemination efficiency compared to evening slots, supporting Hypothesis H9. Notably, Account Verification status showed no statistically significant difference under Non-parametric Tests (p = 0.481), indicating that the verification badge alone does not directly translate into traffic dividends, and Hypothesis H10 was not supported.
+...
+Regarding the validation of content strategy effectiveness, after controlling for follower size, the proportion of science popularization content remains significantly positively associated with effectiveness. Even among accounts with comparable follower bases, those publishing a higher proportion of Popular Science videos demonstrate superior overall dissemination efficiency, macro-level results that reaffirm the importance of the Central Route (H1). Conversely, Account Verification status remains insignificant in the regression model, corroborating the conclusion that form yields to content. To examine whether follower size moderates content strategy outcomes, we included the interaction term “Number of Followers × science content proportion” in the model. Results indicate a significantly positive interaction coefficient (). The Simple Slope Test indicates (see Fig 3) that increasing the proportion of science popularization content yields exponential growth in dissemination among accounts with large follower bases. Conversely, the same strategy produces relatively modest growth among accounts with smaller follower bases. This demonstrates that large accounts exhibit a more substantial “traffic leverage” effect, partially supporting Hypothesis H12 (moderating effect).
+...
+Empirical findings on peripheral routes reveal adaptive mutations of traditional ELM theory within algorithmic distribution scenarios, primarily manifested through the reconfiguration of cue functions. First, the significant positive effect of hashtags (H6)—contrary to the original hypothesis—provides crucial theoretical insights. It has shifted from “cognitive redundancy” to “algorithmic indexing.” Unlike information redundancy in traditional perspectives, tags transform into technical indexes for system crawling within algorithmic ecosystems. By enabling precise distribution, they reduce audience search costs and cognitive mismatches, serving as “traffic funnels” on the algorithm side while establishing “relevance” for audiences—thus overturning the traditional negative hypothesis. Second, the ineffectiveness of Account Verification (H10) reveals the decoupling effect of algorithmic distribution from static identity cues. Verification fails to generate significant traffic, indicating distribution logic has shifted from identity-based trust to behavior-based interest. Static verification has devolved into a defensive cue—its absence may trigger distrust, yet its presence does not directly drive dissemination. Unlike dynamic metrics like completion rate, it cannot secure high algorithmic weighting. Furthermore, the interval effect of video duration (H5) (30 seconds–1 minute) further validates the “algorithm-cognition dual constraint” mechanism. This interval effect confirms that effective content must simultaneously meet the algorithm's technical requirement for completion rate (avoiding excessive length that causes drop-off) and the audience's Cognitive Load threshold (avoiding excessive brevity that feels hollow). In other words, it must satisfy both “algorithm-friendly” and “Cognitive Load-friendly” standards. Finally, the significant positive effect of background music (H4) validates its unique value as a “Sensory Heuristic Cues” in lowering cognitive barriers. Although this study did not specify music genres, empirical results indicate that when processing high Cognitive Load scientific information, the mere presence of background music functions as a crucial “auditory lubricant [42].” While background music conveys no direct information, it effectively modulates audience arousal levels, mitigating the tedium and psychological defenses triggered by hard-core knowledge. It functions as an “auditory anchor,” creating a low-resistance immersive psychological environment conducive to deep Central Route processing.
+...
+Based on the ELM model, this study employs non-parametric tests and account aggregation analysis of short videos from scientific journals on the Douyin platform. Findings reveal that communication effectiveness arises from the synergistic interaction of the Central Route, the Peripheral Route, and account attributes. Findings confirm that “30 seconds to 1 minute” represents the optimal duration balancing information density and Cognitive Load. The study further reveals the decisive role of follower count as a key algorithmic signal in distribution mechanisms, while highlighting the traffic decoupling effect of verification badges at the individual content level due to “Cue Saturation.” This refines the applicability boundaries of ELM within algorithmic recommendation contexts and underscores how accounting for social capital structurally reshapes dual-path processing. In practice, scientific journals should abandon blind reliance on platform verification and instead implement “knowledge translation” initiatives while strictly adhering to audiovisual standards. Frequent updates should accumulate private domain traffic to overcome cold-start thresholds. Although this study validated the robustness of the results through aggregate analysis, limitations in cross-sectional data and sample size prevent complete decoupling of nested effects between videos and accounts, as well as the control for potential endogeneity. Furthermore, variable measurement granularity requires refinement—particularly in auditory cue encoding. Future research may employ HLM or longitudinal data for more precise causal inference.
+
+---
+
+Title: The current status and future directions of short video dissemination on urolithiasis via the TikTok platform: a cross-sectional study
+URL: https://doi.org/10.1038/s41598-026-54245-1
+Published: 2026-05-28T00:00:00.000Z
+Author: Yunfeng Zhang, Tao Lin, Jun Li, Xing Wang, Zhengjie Xiang
+Highlights:
+Urolithiasis is a common and highly recurrent urological disorder. With the growing role of short video platforms in health communication, Douyin (TikTok) has become an important medium for public medical education. However, the quality and user engagement characteristics of urolithiasis-related content remain insufficiently evaluated. This study aimed to assess the content quality and user engagement of urolithiasis-related videos on TikTok and to explore how video source, content theme, and presentation style are associated with educational value and audience response. A total of 400 Chinese-language TikTok videos across five stone types, including renal, ureteral, bladder, urethral, and urinary tract stones, were analyzed. Content quality was evaluated using four validated instruments, namely the Journal of American Medical Association (JAMA) Benchmark Criteria, Global Quality Scale (GQS), modified DISCERN (mDISCERN) instrument, and the Patient Education Materials Assessment Tool (PEMAT). User engagement metrics included likes, comments, shares, and saves. Statistical analyses were conducted to examine variations in quality and engagement across source, content, and presentation form. Overall content quality was low (mean JAMA 1.23; GQS 2.84; mDISCERN 3.09). Videos focusing on prevention and recurrence demonstrated higher PEMAT understandability and actionability scores and were associated with greater user engagement. Hospital- and news agency-based videos showed higher content quality; however, lower engagement was primarily observed in hospital-based videos. Animation and image-text formats were associated with improved understandability. Traditional Chinese Medicine (TCM)-themed videos, although less frequent, demonstrated relatively high actionability and user engagement. The quality and communication effectiveness of urolithiasis-related videos on TikTok varied substantially. Prevention-oriented content, culturally relevant framing, and visually supported formats were associated with improved user engagement and understanding. Integrating evidence-based information with platform-adaptive design may enhance the effectiveness of digital health communication.
+
+---
+
+Title: Instagram Video Engagement in Medical Education: Cross-Sectional Study - PMC
+URL: https://pmc.ncbi.nlm.nih.gov/articles/PMC13082447/
+Published: 2026-04-15T00:00:00.000Z
+Author: Aapeli Kemppainen, Henrik Nuutinen, Virve Koljonen, Petri Kulmala
+Highlights:
+This study aims to identify engaging types of posts, determine the optimal video length for medical education, and provide evidence-based recommendations to medical educators on SM content.
+...
+A cross-sectional study analyzed real-life Instagram medical education account data from Instagram Insights, with a focus on video posts. Insights’ post-related data—reached accounts, views, and watch time—were used. Video posts were categorized based on their type (theoretical, clinical, health promotional, or entertaining) and their implementation (use of animation, human models, or medical models). Video length was stratified into 3 categories: ≤60 seconds, 61-120 seconds, and >120 seconds. The Kruskal-Wallis test was used to determine whether video type, implementation, or length were associated with reach, views, or watch time.
+...
+From May 26, 2020, to May 3, 2024, 125 video posts were analyzed. The median of reached accounts was 5317 (IQR 4007-6244) per video. The median (IQR) of views was 6533 (4708-8601) per video, and relative watch time was 19% (15%-30%). Health promotion and awareness videos had the greatest reach (median 7070, IQR 6093-11,340) compared to theory (median 5265, IQR 4476-5829; P=.006), clinical skills (median 4597, IQR 2001-5688; P=.003), and entertainment videos (median 5605, IQR 3887-6492; P=.04). Videos >120 seconds had higher reach (median 5774, IQR 4754-6636) and views (median 7455, IQR 5321-11,031) compared to videos that were 61-120 seconds (median reach 4514, IQR 2551-5615, P=.02; views 5987, IQR 3727-6970, P=.02). Similarly, videos that were ≤60 seconds had higher reach (median 5484, IQR 4299-6737) and views (median 7189, IQR 5182-10,609) than videos that were 61-120 seconds (median reach 4514, IQR 2551-5615, P=.02; views 5987, IQR 3727-6970, P=.02). However, videos that were ≤60 seconds had significantly higher relative watch time (median 29%, IQR 20%-40%) compared to videos that were 61-120 seconds (median 17%, IQR 14%-20%; P=.003) and videos that were >120 seconds (median 15%, IQR 11%-17%; P=.002). The implementation method did not significantly affect video engagement.
+...
+Unlike previous studies that have primarily explored the theoretical potential of Instagram or analyzed isolated posts, this study provides a longitudinal real-world analysis of 125 video posts published on an active medical education Instagram account. Our findings demonstrate that shorter video lengths and health promotion content are associated with greater engagement, while diverse implementation types may further support content effectiveness. By examining authentic educational content in SM, this study offers practical, data-driven insights for medical educators seeking to optimize their educational strategies. Future research should explore how different demographic groups engage, thereby enabling more targeted and effective medical education approaches.
+...
+Therefore, we analyzed engagement metrics for medical education posts from a real-world educational SM account using a cross-sectional design. We also aimed to identify the most engaging types of videos by analyzing several features, thereby providing real-life recommendations for effective medical education content on SM.
+...
+The median length of Plasticsteacher videos was 72 seconds, which is longer than the previously found average length of 33 seconds for medical posts on SM [40]. Health promotion and awareness videos, as well as entertainment videos, were significantly shorter than theory and clinical skills videos (health promotion and awareness vs theory, P=.006; health promotion and awareness vs clinical skills, P=.002; entertainment vs theory, P=.003; entertainment vs clinical skills, P=.002). We aimed to seek the optimal length for educational videos by assessing views, reaches, and relative watch time. Both the videos that were 60 seconds or less or more than 120 seconds were evenly reached and viewed, yet still statistically significantly better than videos that were 61 to 120 seconds (≤60 seconds vs 61-120 seconds, P=.02; >120 seconds vs 61-120 seconds, P=.02). However, the shorter videos (≤60 seconds) were watched significantly further when comparing the relative watch time (≤60 seconds vs 61-120 seconds, P=.003; ≤60 seconds vs >120 seconds, P=.002). Hence, the shortest videos (≤60 seconds) were most effective to deliver information, but longer videos (>120 seconds) were equally popular. Although previous qualitative and experimental studies have demonstrated that shorter videos were more engaging and university students were more inclined to rewatch videos [41], our study indicates that a variety of video lengths may be suitable for medical education on SM. The shortest video length in our study was 9 seconds, and the longest was 6 minutes and 16 seconds. Microlearning, which involves acquiring information in small units, serves as an emerging educational technique in medical education [36, 42]. Depending on the literature, a microlearning lesson can be up to 5 minutes long or even up to 15 minutes in length, although students’ focus tends to decrease after 9 minutes [36]. On the basis of our findings, short videos, adhering to the principles of microlearning, could be used to help students prepare for exams, such as reviewing the key steps of surgical procedures.
+
+Although health promotion and awareness videos were the most popular, clinical skills, theory, and entertainment videos performed equally well, with no significant differences in reach or views between these categories. Plasticsteacher is targeting medical students on surgical topics, with views having an IQR of 4708 to 8601, which may indicate that videos of all categories are seen as meaningful. Interestingly, the video implementation type—whether using human models, phantom models, or animations—did not significantly impact video popularity, suggesting that producing a variety of video types may be beneficial when planning educational content. Different visualization methods, such as animations for explaining surgical techniques or human models for realistic demonstrations, can complement each other and enrich the learning experience [17]. However, the data on whether video implementation influences popularity or educational outcomes remain limited in the current literature [31-33]. For reference, in SM marketing, pictures with human faces and filters received more reactions compared to pictures without human faces or those that were unfiltered [43].
+...
+In conclusion, this study provides a unique analysis of video-based real-life educational content on Instagram. The study emphasizes the opportunity to produce high-quality medical content for the public without using actual patient data. The role of social media as a platform for medical education has been increasing [31-34], yet there remains a need to develop educational material that is evidence-based [2]. There is a clear gap in analytical research on this topic, in which this study stands out as a pioneering effort. Our findings highlight the effectiveness of short video length and health promotional content in engaging viewers, while also demonstrating the value of diverse video implementation types. We observed that demonstrative video content is well received by audiences. Health promotion content can serve as inspiration for medical professionals, and based on its founded effectiveness, it may be beneficial to incorporate such content into larger educational campaigns on SM. Short videos can be used in diverse ways on SM, such as summarizing key points on theoretical topics or reviewing key steps of procedures. Future studies should explore the impact of Instagram’s algorithms on variations in video popularity and further examine how different demographic groups engage with educational content. Such studies would support the development of a more targeted and effective approach to medical education content creation.
+
+---
+
+Title: Personal_Branding_TikTok_Research_Birlikova_2026
+URL: https://osf.io/tfnbw
+Published: 2026-02-25T00:00:00.000Z
+Author: Aida Birlikova
+Highlights:
+This independent research project explores the role of emotionally structured short-form educational content in shaping engagement among teenage audiences on TikTok. Using a project-based educational account created by the author, the study analyses eight pilot videos published in a “Did You Know?” format and compares engagement metrics between the highest- and lowest-performing posts. The research focuses on emotional hooks, editing pace, curiosity-driven framing, and perceived informational value, measured through views, likes, comments, shares, and saves using TikTok’s internal analytics. Findings suggest that emotionally intense introductions combined with rapid pacing and relatable school-related topics significantly increase engagement, particularly saves and shares. Due to its exploratory case-study design and limited sample size, the results are considered preliminary. However, the project provides insight into ethical emotional framing in educational content for adolescents and contributes to discussions on personal branding and Gen Z digital engagement. This project was conducted independently and is published as part of an open science initiative. AI Use Statement AI tools were used for language editing, structural refinement, and idea iteration. All data collection, analysis, interpretation, and conclusions were conducted independently by the author.
+
+---
+
+Title: ”Why is Ice Spice Teaching Me Calculus?”: Design and Perceptions of Short-Form Brainrot Content for STEM Education
+URL: https://doi.org/10.2139/ssrn.7081511
+Published: 2026-01-01T00:00:00.000Z
+Author: Yugin Tan, Eden Shaveet, Olzhas Yessenbayev, Kim T.M. Dang, Sangeun Lee, Sirui Wang, et al.
+Highlights:
+to stick with the same modality. On the other hand, in educational contexts, engagement concerns features that prospective material needs to elicit in students for effective learning. Fredricks et al. [17] describe behavioural, emotional, and cognitive engagement in learners [17] as three key dimensions as as "antidote" to student disinterest and
+...
+While social media engagement often relies on passive, continuous consumption, and educational engagement requires active cognitive investment, brainrot content creates a unique bridge between the two. Features such as short durations, vertical formats, rapid editing, and absurd content serve to capture and hold viewer attention for the entirety of their brief duration. At the same time, brainrot content also contains unique hooks that can act as a catalyst for the behavioral and emotional dimensions of educational engagement. These videos tend to contain "incongruous, surprising information; character identification or personal relevance; and intensity, " which serves as a strong hook that creates user interest [25] . For instance, a deepfaked celebrity in an academic context (e.g. "Ice Spice" teaching calculus) introduces an absurd incongruity that immediately arrests a viewer's scrolling, creating emotional engagement by eliciting interest and curiousity [11] . This is amplified by parasocial interactions [5, 14] between viewers and personalities in these videos; when viewers identify with particular celebrities, learning motivation [5] and efficiency [14] may be enhanced, tying in to participatory behavioural engagement [16] . Furthermore, Uses and Gratifications Theory (UGT) suggests that brainrot media consumption can be a self-perpetuating cycle: having gotten accustomed to such content, users then feel a need to continuously seek out more of it regularly [50] . This creates a positive reinforcement cycle that keeps users interested and engaged over time.
+...
+Fig. 3 shows the results for why viewers were attracted to Onlock Learning videos. "Others" responses, as well as any responses in the follow-up free-text question, are detailed in Table 2 . Notably, "Short duration" was the most common reason (n = 78; 72%) for watching Onlock Learning videos, followed by "Meme/humor value" (n = 72; 67%) and "Recognizable celebrities" (n = 44; 41%). Within the free-text responses, the most common themes were "Novelty & Juxtaposition", referring to the absurdity of celebrities acting as teachers, and "Good or Better Explanations", which referred to the pedagogical methods employed in Onlock Learning videos (n = 18; 28% of free-text respondents). These why users were attracted to watch Onlock Learning videos. ”Others” responses were analyzed in the following thematic analysis table.
+...
+Multimodal Layering. To sustain continued engagement following the "hook" of the video, the creator designs his videos using multimodal layering. This approach weaves together three primary modalities: visual, audio, and "flow. " 5.1.3 Lowering Barriers to Engagement. The creator stressed that his content is deliberately designed to reduce the psychological and cognitive barriers associated with engaging with STEM material. Central to this approach via Onlock Learning videos is his intentional adoption of the student’s role. Rather than presenting himself as an expert in the video, he frequently asks basic questions on behalf of the viewer, modeling uncertainty and confusion. He believes that this strategy has a destigmatizing effect, signaling that not immediately understanding a concept is a fine place to start. The creator attributes this choice to his own experiences in STEM courses, where fear of asking questions inhibited engagement, and uses it to establish relatability and lower barriers to engagement.
+...
+More specific to educational brainrot, apart from recognizable celebrities and pop references, a compelling "hook" in the first few seconds of each video (such as posing a question) is especially useful to catch and retain viewer attention in the endless-scrolling, auto-playing feeds that short-form videos are typically found in. After initial engagement, the use of contrast to break up monotony is a key way to keep viewers engaged throughout, something critical for retaining viewers and their attention. Apart from contrasting color palettes between shots or varying tones of the voices used, choices like unexpected pairings of on-screen characters were appreciated by viewers who cited novelty and absurdity as reasons for appeal. consumption to active learning is reflected in our findings and viewer feedback. For example, one viewer commented, "It's not just how engaged i am watching different celebrities teach me differential equations but also how easy to follow and concisely the topics in the videos are taught." Our findings hint at key ways to achieve this alignment with several existing learning theories. We highlight here that designing such videos goes beyond compiling memes and deepfakes. Important considerations go into planning and scaffolding each video, borrowing from conventional pedagogical wisdom (as mentioned in Section 2.3). One such theory is Situated Learning Theory [30] , which suggests that learning thrives in participatory, social contexts, often through a gradual process of increasing involvement over time. This theory finds a compelling parallel in the world of short-form educational brainrot content, as this material appears organically within viewers' existing feeds, often making use of the same digital artifacts found in videos they normally consume for recreation. Consequently, the content may not feel out of place or overly academic, which lowers the barrier to initial engagement. Because viewers encounter the material passively on their own terms, the first point of contact is also inherently low-stakes and less taxing to view. From there, some viewers may progress toward deeper levels of participation, including choosing to follow the channel, watching additional videos, leaving subject-matter-related comments, and eventually joining an affiliated community such as the Discord server offered by the channel creator. This trajectory from passive encounter to active community member mirrors the Legitimate Peripheral Participation (LPP) model within Situated Learning of gradual, increasing participation.
+...
+In this study, we investigated educational brainrot as an emerging genre and contributed early empirical evidence about how audiences engage with it "in the wild", by analyzing ∼83,000 comments across three short-form platforms, triangulating with a survey of 108 viewers, and contextualizing them through an interview with the creator of Onlock Learning. Our results suggest that repurposing brainrot's attention-grabbing conventions may lower barriers to engaging with STEM, with the subset of highly engaged viewers frequently reporting increased learning utility compared to traditional instruction and using comment sections to actively discuss and clarify technical concepts. Triangulating viewer reactions with an interview with the creator of Onlock Learning, we identified recurring design affordances that appear to scaffold this engagement within short-form video constraints: very short durations, an immediate hook that pairs STEM questions with an unexpected deepfaked celebrity persona, multimodal layering and rapid edits to sustain attention, and structured step-by-step visuals that keep cognitive load manageable. This suggests that while short-form educational brainrot is not a replacement for conventional education, it may serve as a plausible entry point and supplement that can make complex ideas feel approachable within short-form video feeds. Future work should test when and how these designs may translate from perceived understanding to measurable learning outcomes, and how to do so responsibly in light of the ethical concerns around generative AI and celebrity deepfakes.
+
+---
+
+Title: TikTok saves and shares: data from 1,278 posts
+URL: https://postdom.com/research/tiktok-saves-and-shares
+Published: 2026-10-05T10:22:01.000Z
+Author: Ana Ibáñez Lario
+Highlights:
+Which posts earn TikTok saves, shares and comments? Postdom measured each one per 100 likes across 1,278 TikTok posts: 656 videos, 565 photo carousels and 57 high-view posts.
+
+> TikTok tutorials drew 41 saves per 100 likes, against 11 for all videos (656 videos from 140 accounts, late Sept to early Oct 2026).
+...
+Last updated 10 October 2026. Corrected the headline comparison: tutorials now compare with all 656 videos (41 against 11 saves per 100 likes), not with funny videos, a group of only 24.
+...
+## Key findings: TikTok saves, shares and comments
+
+- Funny videos reached 2.7 times their account's usual views (median, 24 videos), the highest of any tone. They drew 4 saves per 100 likes, against 11 for all videos.
+- Tutorials drew 41 saves per 100 likes, against 11 for all videos. Listicles drew 36. Videos with numbered items drew 35, against 10 for videos without them.
+- Photo carousels drew 51 saves per 100 likes, 4.5 times the video rate. 73 of 565 carousels had more saves than likes. 4 of 656 videos did.
+- Carousels are quiet: 0.65 comments per 100 likes, against 2.3 for videos.
+- Warning hooks drew 6.7 comments per 100 likes (28 videos) and stat or fact hooks 7.0 (16 videos), against 1.1 for POV and relatable hooks.
+- Captions asking for a comment keyword went with 4.5 comments per 100 likes, against ... .1 with ... call to action ... 3 and 450 videos).
+- Among 57 viral posts, money and rights checklists drew 33 saves per 100 likes and itinerary guides 28. POV memes drew 5.
+...
+Videos that teach get saved. Videos that entertain don't Embed this chart Paste this HTML into your page. Please keep the source link. Embed code for: Videos that teach get saved. Videos that entertain don't Source: Postdom research Copy code
+...
+Even among viral posts, money tips and travel guides get kept Embed this chart Paste this HTML into your page. Please keep the source link. Embed code for: Even among viral posts, money tips and travel guides get kept Source: Postdom research Copy code
+...
+| Set | Posts used | Drawn from | Collected | What it measures |
+| --- | --- | --- | --- | --- |
+| Video research sample | 656 TikTok videos with 100+ likes | 1,120 TikTok videos from 140 accounts | late Sept – early Oct 2026 | saves, comments, shares per like; views vs the account's median |
+| Carousel research sample | 565 TikTok photo carousels with 100+ likes | 1,018 TikTok photo posts from 129 accounts | late Sept – early Oct 2026 | the same |
+| High-view sweep | 57 TikTok posts, 73.5K to 15.8M views | format-by-format TikTok searches | counts read 4 Oct 2026 | saves, comments, shares per like |
+| Total | 1,278 | | | |
+...
+High-view sweep. TikTok searches by format (memes, walls of text, hook clips, montages, talking presenters, green screen, before/after, single images). Counts were read from each post's public data on 4 Oct ... 026. Each post was coded by format by hand. Search ranks ... relevance and engagement, so these are top-of-niche ... , not a random sample.
+...
+- Saves, comments and shares per 100 likes: for each post, saves ÷ likes (and so on), then the median within a group, times 100. Likes are the denominator because every public post shows them and they track how many people engaged at all.
+...
+| Group | ... |
+| --- | --- |
+| Funny / humorous tone | tone = humorous |
+| Entertainment | value type = entertainment |
+| POV / relatable hook | hook type ... pov_relatable |
+| Personal story | arc = story |
+| Day-in-the-life vlog | arc = day_in_life_vlog |
+| Listicle | arc = listicle |
+| Tutorial / how-to | arc = tutorial_demo |
+| Numbered items | numbered items on screen = true |
+| Warning hook | hook type = warning |
+| Stat or fact hook | hook type = stat_or_fact |
+| Question hook | hook type = question |
+| Comment-keyword CTA | caption asks for a keyword in the comments |
+| Caption asks to save or share | caption CTA = save_share |
+| Short clip, long caption | 20 s or less, caption of 400+ characters, under 30% talking |
+...
+| Dataset | Group | Posts | Median views | Saves / 100 likes | Comments / 100 likes | Shares / 100 likes | Views vs account median | Posts with more saves than likes |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| Video | All | 656 | 28,690 | 11.3 | 2.33 | 4.8 | 1.79x | 4 |
+| Video | Funny / humorous tone | 24 | 97,830 | 4.2 | 1.00 | 5.4 | 2.72x | 0 |
+| Video | Entertainment (value type) | 59 | n/a | 4.4 | 1.13 | 3.9 | 2.38x | n/a |
+| Video | POV / relatable hook | 54 | 56,333 | 6.6 | 1.11 | 4.1 | 2.14x | 0 |
+| Video | Personal story | 102 | 39,583 | 7.4 | 2.12 | 3.5 | 2.18x | 0 |
+| Video | Day-in-the-life vlog | 66 | 32,878 | 6.2 | 1.08 | 3.3 | 0.43x | 0 |
+| Video | Listicle | 58 | 39,204 | 36.1 | 1.92 | 8.7 | 2.48x | 1 |
+| Video | Tutorial / how-to | 78 | 24,583 | 41.1 | 2.94 | 8.4 | 1.65x | 3 |
+| Video | Numbered items on screen | 55 | 29,198 | 35.2 | 2.42 | 8.6 | 2.61x | 1 |
+| Video | No numbered items | 601 | n/a | 10.2 | 2.33 | 4.6 | 1.75x | n/a |
+| Video | Warning hook | 28 | 45,289 | 18.8 | 6.72 | 12.1 | 1.91x | 0 |
+| Video | Stat or fact hook | 16 | 24,866 | 12.4 | 6.98 | 15.4 | 1.74x | 0 |
+| Video | Question hook | 57 | 27,538 | 13.5 | 3.50 | 4.6 | 1.98x | 0 |
+| Video | Comment-keyword CTA | 63 | 38,936 | 19.7 | 4.55 | 8.4 | 2.62x | 1 |
+| Video | No CTA | 450 | 25,145 | 9.0 | 2.14 | 4.3 | 1.65x | 2 |
+| Video | Short clip, long caption | 5 | n/a | 12.4 | 4.56 | 4.5 | 4.24x | n/a |
+| Video | Short clip, short caption (<100 chars) | 23 | n/a | 9.0 | 0.48 | 4.8 | 1.94x | n/a |
+| Carousel | All | 565 | 46,361 | 51.0 | 0.65 | 5.4 | 2.14x | 73 |
+| Carousel | Relatable tone | 41 | 19,639 | 10.3 | 1.45 | 2.7 | 1.63x | 0 |
+...
+tutorial | 22 | 65,384 | 74.7 | 0 ... 55 | 16 ... | 2 ... 2x | 4 |
+...
+| Carousel | Caption asks to save or share | 53 | 97,976 | 78.9 | 0.49 | 9.3 | 2.61x | 19 |
+...
+keyword CTA | 29 | ... 45 | 57 ... 4 | 1 ... 5.2 | 2.01x | 7 |
+...
+377 | 5 ... 0.64 | 4.8 | ... | 34
+...
+| Sweep | Money and rights checklists (talking) | 6 | 2,400,000 | 33.1 | 1.45 | 20.0 | n/a | 0 |
+...
+| Sweep | Itinerary and place-guide montages | 5 | 1,100,000 | 27.5 | 0.56 | 19.6 | n/a | 1 |
+...
+| Sweep | ... 97 | ... | 0 |
+| Sweep | Walls of text | 5 | 1,000,000 | 5. ... .48 | 2.1 | n/a | 0 |
+| Sweep | POV memes and POV montages | 12 | 2,700,000 | 4.9 | 0.39 | 4 ... 7 | n/a | 0 |
+| Sweep | Hook clip + story caption | 3 | 2,000 ... 000 | ... | 0.1 ... | 0.2 | n/a | 0 |
+...
+- Funny videos are only 24 posts and stat or fact hooks 16. Read both as directional.
+- Saves per 100 likes is a rate per like. It is not the share of people who liked a post and then saved it.
+- Captions asking for a comment keyword went with twice the comments. The data does not show they caused them.
+...
+beat its account median (1.79x) because each account ... s best and worst posts were oversampled.
+...
+0 October 2 ... now compare with ... 656 videos (41 against ... 1 saves per ... 0 likes), ... , a group
+...
+First published, with
+...
+### What makes a video go viral? Data from 1,272 TikToks and Reels
+
+Short videos that ended with "let me know below" drew 39% fewer views than the same account's typical video.
+...
+559 top ... 2026.

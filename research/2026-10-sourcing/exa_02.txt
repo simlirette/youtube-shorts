@@ -1,0 +1,274 @@
+QUERY: tiktok engineering explainer accounts 3D animation mechanisms viral how it works
+Title: How the explainers are made · What makes it tick
+URL: https://whatmakesittick.github.io/about/
+Published: N/A
+Author: Vitalii Elenhaupt
+Highlights:
+What this site is, how every fact is checked before a model is built, and what the models leave out.
+...
+Every page here takes one thing apart: a machine, an instrument or something from nature. You get a 3D model you can turn, slow down and step through, next to a text that moves with it. Scroll to the next chapter and the camera moves, the parts it talks about light up and the labels follow.
+
+The aim is simple. Anyone can watch a thing move. Here you should also see why each part is there and what would go wrong without it.
+...
+No model is built before its facts are in. Every explainer goes through the same five steps, in the same order.
+...
+Work starts with research. Every number and every claim the explainer will make is written down with a link to its source. Primary sources come first: the people who make, measure or study the thing. A number that cannot be found is marked unverified, never guessed. The sheet also lists what the first idea got wrong, the numbers the text is allowed to quote, and the common misconceptions the text must not repeat.
+...
+The facts sheet becomes a spec: what the model shows, how it is simplified, which formulas drive it and which constants they use. Every constant in the simulation points back to a line in the facts sheet. Corrections from the research are folded in here, before anything is built.
+...
+The simulation, the 3D scene and the text in every language are built from that one spec, so the picture, the live readings and the words agree with each other. The simulation is a small program with its own tests. The text may quote only the numbers the facts sheet cleared. Each language is written to read naturally to a native reader, not translated word for word.
+...
+When the parts come together, a reviewer that did not build them checks the physics against the facts sheet, reads every language and looks at the page the way someone with a keyboard or a screen reader would. What the review finds is fixed before the explainer goes any further.
+...
+The finished page is opened on a desktop screen and on a phone, in English and in two other languages. Every chapter is walked through, the timeline is dragged and the readings are watched. Errors, missing translations, labels sitting over the controls or text that does not fit all send it back. Only then is it published.
+...
+These are teaching models, not engineering drawings. Shapes are simplified so you can see the mechanism. Parts are cut away or scaled so the important ones stay in view. The simulation captures what matters for the story, not every effect a real engineer would have to model.
+
+So use them to understand how something works ... you need exact figures for real work, go to
+...
+Scroll, and the model follows the text. Press play to set it going, drag the timeline to step through one cycle, or slow it right down to catch what happens in a blink. The gauge in the corner shows live readings that change as the model runs.
+
+Drag to turn the model, scroll or pinch to zoom, and press R to bring the camera back. The space bar plays and pauses, the arrow keys nudge the timeline, and the number keys jump to a phase. X shows the model full screen. Without JavaScript you still get a still image of the model and the whole text.
+...
+The site and every explainer are open source under the MIT license. Each explainer page links to its own source code, so you can read the simulation behind what you see. There are no ads and no cookies. The only thing loaded from another server is GoatCounter, an open source visit counter. It counts page views and keeps nothing about you as a person. Your language choice is kept in your browser and nowhere else.
+
+---
+
+Title: Animagraffs by Jacob O’Neal | Technical Illustrators.org
+URL: https://technicalillustrators.org/2019/08/animagraffs-by-jacob-oneal/
+Published: 2019-08-19T15:11:14.000Z
+Author: James Provost
+Highlights:
+Jacob O’Neal is a graphic designer, 3D artist, and creator of Animagraffs, animated infographics that explain how everyday things work.
+
+Largely self-taught, O’Neal combined his interests in design, science, and engineering with social media savvy to create viral internet content that propelled him into a career working with some of the best known brands in the world.
+...
+I’d been fiddling around with Photoshop since high school, designing websites etc. for family and friends, among other projects. I also obtained free 3D software in the mid 90s (a program called POV-ray) and it blew my mind that I could make computer generated art at home. I’d stay up all night figuring things out. My first scene was made using simple code to put primitive objects (like spheres and cubes) into place, and “subtract” these shapes from each other to create futuristic vehicles. I later learned of 3D modeling software for building 3D meshes (the wireframes under every 3D model) and that further blew my mind.
+...
+Once I realized how my employers were using my work as a business model from start to finish, I felt confident I could do it myself, and decided to publish my own infographics. But instead of slinging bogus diet pills, I wanted to bring back high art and science in an entertaining format. Like the cutaway art and books I loved as a kid: for example, Stephen Biesty’s works.
+
+And most importantly: I wanted to create a space online where things could be as objectively true as possible. If I lie in explaining something, I’ve simply explained it wrong. There’s little room for hype and other marketing tricks. So many folks in the working world don’t believe it’s possible to have success without manipulation and trickery. I wanted to prove it’s just the opposite: that lasting success comes from unyielding dedication to the truth.
+
+I published a few early animated graphics that went viral on a mild scale. And then, in 2013, I decided to download the free Blender 3D software after about 15 years absence from any 3D art, and use a project as motivation to re-learn 3D. I was already full-time freelance at that point and had a natural lull in client work. Instead of hitting up contacts looking for projects, I took about a month to dedicate to my own project.
+
+The result: the Car Engine graphic. I uploaded it on my personal portfolio site and then put a link out on a few subreddits (sub forums of the massive online social site Reddit). I got 30k visitors in the first day, effectively crashing my site! It was incredible, and felt like an event I’d been building up to my whole life. It’s still the #1 spot if you search for “How a car engine works”, 6 years later.
+
+I created Animagraffs.com with proper sturdy hosting to handle big traffic, and set to work creating projects whenever time allowed. There’s still only a handful of things on the site, but I’m proud of everything there. Many of my projects have gone viral as now I have a fanbase that watches the site for new work.
+...
+Research comes first. I find that most diagrams we’ve been shown as educational models are poor indeed — possibly hastily drawn by scientists who favored numbers and thick manuals over paltry “cartoons” as they call visual diagrams in the scientist world. At any rate, to actually understand a subject I have to dig deep for weeks at a time, in places that few venture. Patent drawings, forums where engineers/pilots/mechanics hang out, library books that have info not available anywhere online, and so forth.
+
+With a prepared research brief I begin to build the 3D model. That can take a month or more in itself, especially for more in-depth subjects.
+
+I use Blender 3D for most of my process, from creating models themselves, to texturing and adding effects. I’ve been aware of Blender since around 2005, and relearned it in 2013 as part of the Car Engine project. I use various Adobe software for layout and video/gif export.
+
+---
+
+Title: Telling 3D stories about things - learnings from Jared Owen provide digital twins and Industrial Metaverse insights
+URL: https://diginomica.com/telling-3d-stories-about-things-learnings-jared-owen-provide-digital-twins-and-industrial-metaverse
+Published: 2024-04-09T09:58:46.000Z
+Author: George Lawton
+Highlights:
+I recently chatted with Jared Owen, who has mastered the art of telling 3D stories about things. Just ask his 3.2 million YouTube followers, who are interested in everything from how motors work to the story of the Apollo 11 moon landing. What he has learned over the last decade has important implications for anyone trying to tell stories about things using digital twins and design tools across new 3D media for Metaverse, spatial computing, and even smartphones.
+...
+Surprisingly, all these were built using Blender, a free open source tool. The hardest part has not been technical. It has been learning how to do better research and tell a better story. His wife is one of his most helpful critics since if she does not understand, he needs to go back and figure out how to make the 3D explanatory part self-evident rather than a cool gimmick.
+...
+> I think with 3D animation, you can show things in a way that you can't show in a textbook or even somebody on screen. Having an actual model allows you to animate things and do things that aren't possible in real life. So, the planet's size is actually growing and shrinking and then fading from a classroom setting into the actual size. It wasn't a space scene necessarily, but it was my way of representing, ‘Hey, this is how enormous it actually is.’ So I'd say things that are possible with 3D animation that are very difficult to do with actual live footage on a camera.
+...
+> That's something where I see a boring textbook with maybe a diagram in there or something in college where I would bang my head for half an hour trying to understand it, realizing I could have a good 3D visualization with some narration. Sometimes, what would take you a half hour to understand what the textbook says, you can get in 30 seconds with a good visualization of it. And so I would kind of see these things in textbooks or even online or things like that, and just realized that if I put that together in 3D visualization,
+...
+Owen says one of his key lessons involved learning how to let the 3D aspect tell the story rather than the words: 
+
+> What I've always focused on over the years is what can I show with 3D animation that would be very difficult to explain otherwise. So, in other words, let the visuals do a good chunk of the talking. You need narrations over it to explain and text on screen, but make sure that the visuals are doing most of the talking. That's kind of been my way of looking at it. And yeah, I've always assumed I'm making videos for engineers or an older adult audience. But I mean, over the years, I've gotten moms that have reached out and said, ‘Hey, my five-year-old loves your videos'.
+...
+> I'll show her the video and if she doesn't get the concept, then I need to revise the video because it's not good enough. And so, we'll walk through, pause the video, and she'll tell me what she doesn't get. I'll re-explain it with words. And after a little bit of time, we'll get to a point where she says, 'Okay, you need to explain it like this.’ Because if she gets the concept, then I found most of my audience can get it. So yeah, the first draft of that video, if I would have posted it, as I originally had it, I don't think it would have as many views. So, getting my wife and other family members and friends to kind of look over these videos and make sure they get them, especially the complicated ones, where there's a really tough concept, has been crucial to figure out.
+...
+Although the tools are improving, a lot of grunt work goes into making a good 3D video. Owen’s programming experience has come in handy here because it can help automate some aspects of the process. Better computers also mean he spends less time rendering things. Blender, his main tool, has also been continually adding new features, most of which he does not use.
+...
+The most tedious part has been translating reference images into 3D shapes. And here, he learned the value of building on others' work. For example, when he was building the International Space Station, he started off spending an hour modeling all of the pieces when he realized it was going to take three weeks to do the 3D modeling. This inspired his big leap:
+...
+> From the beginning of the video to the end of the video, sometimes it'll take me two months, and I am kind of constantly looking at going, ‘What can I train somebody else to do? What's easy?’ The 3D models are kind of the first part where it's like, ‘Hey, that's going to take me a little while,’ I can explain to somebody what I want, and then I can start working on something else. I'd say I'm still at the beginning of that journey of trying to figure out how to make these videos faster without losing that kind of Jared Owen feel to it.
+...
+The early projects were relatively straightforward to research. For example, with the motor, all the information was out there; he just had to figure out how to reorganize it into an easy-to-digest video. However, he had to seek out experts in other domains, such as the Space Station video. He starts with a Google search, and when he cannot find much of substance, he knows he is onto a good story:
+...
+Owen started experimenting with generative AI, hoping it would speed up research. He thought maybe it would help him make things faster, or it might also make his content less valuable because other people could do stuff like his. But for now, he finds it's still up in the air. For research, he found ChatGPT was just as likely to get important facts right as wrong and was a no-go for now.
+
+One place where it is helping today is thinking about writing code to automate parts of the process. For example, some workflows in Blender require clicking through the same menus on a hundred different objects. He has written scripts that can turn five minutes of clicking into a five-second process. He has started asking AI to suggest scripts, and sometimes it works, and other times it does not. But even when it does not it often provides something he can tweak that does work. He explains: 
+
+> Hopefully, it will get to a point where I can explain to it, ‘Hey, I'm making an animation about this. Here's a bunch of reference images. Can you set me up the building? I need this over here.’ And maybe it could at least leapfrog me ahead, even though it probably won't be able to do it all. I think that's where I see it going.
+...
+Jared Owen’s true genius is making complex and difficult stories of things come alive. As a culture, we are still in the irrelevant eye candy phase when telling stories about things in 3D. This will be an essential challenge as we try to figure out how to make better user experiences for multi-dimensional digital twins connected to live things. 
+
+I yawn every time a vendor shows me their new demo of a factory or piece of equipment that is supposed to explain why their innovative technology is so cool. Sure, the graphics are improving, but the storytelling aspect has not. You have to start by thinking about how the 3D or interactive aspect actually helps make the leap to that ‘aha’ moment. 
+
+We also need to consider how we can make it easier to translate experts' insights into simple stories for various audiences. Today, the storytelling primitives are 3D shapes and raw data. We also need to think about providing experts with storytelling primitives that democratize the process of translating their insights into those ‘aha’ moments all of us can understand and across various modalities. 
+
+It’s also important to find better ways of automating the primitives to explain complex concepts at different levels of complexity. An engineer does not need a rudimentary explanation for those things they know, but it might help an executive or a front-line worker. Tailoring stories across various audiences could benefit from ways to automatically show or hide different levels of detail in the stories and user interface. 
+
+ Image credit - YouTube/Jared Owen
+
+---
+
+Title: Earth Xplained TikTok and Youtube - Hello! I’m Aliza
+URL: https://alizashah.com/portfolio/earth-xplained/
+Published: N/A
+Author: Aliza
+Highlights:
+As part of a 3-person team, I created and led the animation, motion and character design of EarthXplained using After Effects, Blender, and Premiere Pro. This include designing characters, preparing models and rigging them. This was a YouTube and TikTok page we started in Viridien for creating engaging geoscience content. 3 TikToks surpassed 100k+ views, spiking engagement and follower growth, plus many others in tens of thousands. The Plate Tectonics long-form video continues to gain steady viewership, and is currently being shown by lecturers in Google Classroom.
+
+## EarthXplained GeoLayers Explainer Content
+
+ We also tested viewership and engagement with a less heavily animated format, using a geologist to explain the content alongside map animations and camera tracking. I was responsible for the animation, GeoLayers, editing, and illustrative assets.
+
+---
+
+Title: Case Study: The 3D animation reel that hit 20M views
+URL: https://vvideo.co/blog/3d-animation-reel-20m-views-case-study
+Published: N/A
+Author: Sarah Chen
+Highlights:
+- The Aesthetic Consumption Community: Broader audiences on TikTok, Instagram, and YouTube who may not understand the technical nuances but are captivated by stunning visuals, satisfying loops, and emotionally resonant storytelling. They engage with content based on its aesthetic appeal and shareability.
+...
+2. Teaser 2: A Perfect Loop. A mesmerizing, seamless loop of a complex mechanical movement. Shared on Instagram Reels and TikTok with trending, ambient music. This catered to the aesthetic community's love for satisfying visuals.
+...
+Recognizing the power of social proof, the artist privately shared the full reel with a handful of respected, mid-tier influencers in the 3D animation space *48 hours before public release*. The request was simple: "If you like it, feel free to share your thoughts when it drops." This created a wave of authentic, simultaneous endorsements from trusted voices at launch, giving the video immediate credibility and a significant initial boost. This mirrors the principles we've seen in animation storytelling for brands going viral, where influencer collaboration is key.
+...
+A masterpiece trapped on a hard drive is a tragedy. The 20-million-view milestone was only possible because the reel was expertly fed into the world's most powerful content distribution engines: the algorithms of YouTube, TikTok, and Instagram. This required a platform-specific, data-informed approach to packaging, publishing, and engagement.
+...
+The full 90-second reel was not simply cross-posted to TikTok and Reels. A dedicated 45-second vertical edit was created, adhering to the unique language of these platforms.
+
+1. The Hook was Everything: The edit began with the single most impressive, visually stunning 3 seconds of the entire reel—a hyper-realistic eye opening, or a complex machine snapping together. There was no slow build-up.
+2. On-Screen Text Hooks: Text overlays like "This is CGI" or "You won't believe this wasn't filmed" were used to directly challenge the viewer's perception, forcing a closer look and encouraging shares to "prove" it to friends.
+3. Sound Design as a Character: The audio was not an afterthought. A custom soundscape was designed, with crisp, satisfying "clicks," "whooshes," and deep bass rumbles that synced perfectly with the visual actions. This made the experience intensely visceral, even on a phone speaker. The sound was also uploaded as a unique sound on TikTok, encouraging others to use it and further propagating the video.
+...
+The artist actively monitored analytics to fuel the video's growth. By noticing that a specific 5-second segment featuring a water simulation had a high rewatch rate on YouTube, they extracted that very segment and released it as a standalone TikTok. That clip, in turn, went viral and drove millions of viewers back to the main YouTube reel. This created a powerful cross-platform feedback loop, a strategy we've documented in our analysis of 3D explainer ads that went viral.
+...
+A specific shot from the reel, often the one featuring the relatable character, was extracted by the internet and turned into a meme template. People added their own captions, using the character's expression to comment on everything from workplace frustrations to pop culture events. The artist, rather than issuing takedowns, embraced this. They even shared their favorite memes on their own social media, further endearing themselves to the community and fueling the fire. This participatory culture is a hallmark of viral success, a dynamic we've seen in animated storytelling videos driving SEO traffic.
+...
+The 20 million views were not just a result of people watching; they were a result of people sharing. Each share was a micro-act of endorsement, a personal recommendation that carried more weight than any algorithm. Understanding the psychological triggers that compelled viewers to hit the "Share" button is crucial to replicating this success. The reel was engineered not just to be admired, but to be used as a social token by its viewers.
+...
+For the technical community, sharing this reel was a way to signal their own taste and expertise. Posting it in a Discord server or subreddit with a comment like, "The subsurface scattering in shot 0:34 is next level," was a performance of their own knowledge. It positioned the sharer as someone "in the know," someone who could appreciate and identify true quality. This is a powerful form of social capital within niche communities. The reel became a shared reference point, a piece of common ground that solidified group identity. This principle of building community through shared appreciation is a key driver for product explainer animations that aim to create brand advocates.
+...
+For the broader audience, the primary trigger was the "I can't believe this is CGI" reaction. The photorealistic quality created a cognitive dissonance that viewers felt an urgent need to resolve by involving others. The share was often accompanied by captions like, "This isn't real, right?" or "My brain can't process this." This transformed the act of sharing from a simple broadcast into a social interaction—a challenge to their friends' perceptions and an invitation to a collective moment of awe. The video became a conversation starter, a puzzle to be solved together. This element of perceptual surprise is a potent tool, similar to the techniques used in motion graphics explainer ads that break through audience apathy.
+...
+- YouTube Deep Dives: A series of long-form videos (15-20 minutes each) were released, each deconstructing a single shot from the viral reel. They showed the raw modeling, the messy viewport, the failed simulations, and the iterative process. This transparency demystified the magic and built immense trust.
+- TikTok/Reels Micro-Tutorials: Short, punchy videos focused on one specific technique: "How I made this water drop in 60 seconds," or "This one lighting trick changed everything." This content was perfectly tailored for the short-form audience that had discovered them, providing quick, digestible value.
+...
+, not just an audience. They created a dedicated Discord server where fans, students, and other artists could gather, share work, and give feedback. The artist was an active participant, not just a figurehead. They ran weekly challenges based on techniques from the viral reel, with the winner's work being featured on
+...
+1. Day 1-3: Direct Traffic and YouTube Search (from the pre-launch seeding and optimized title/description).
+2. Day 4-7: YouTube Suggested Videos exploded, accounting for over 60% of traffic as the algorithm kicked in due to high retention and engagement signals.
+3. Day 8-14: External sources like Reddit, Twitter, and Instagram Reels became the primary drivers, as the video crossed over from the niche community to the mainstream.
+4. Day 15+: A sustained mix of YouTube Suggested and Google Search, as articles from major publications (The Verge, etc.) were indexed and began ranking for terms like "most realistic 3D animation."
+...
+1. Edit the Master Reel (90-120 sec): Structure it with a three-act narrative arc. Prioritize emotional flow over chronological order of creation.
+2. Create the Vertical Edit (45-60 sec): This is not a cropped version. Re-edit specifically for TikTok/Reels, leading with your absolute best shot and syncing to compelling audio.
+...
+- T-48 Hours: Send the private preview to a curated list of influencers and peers.
+- T-0: Launch Hour: Publish the master reel on YouTube. Immediately share the YouTube link on specialized forums (Reddit, Discord) with a context-rich post.
+- T+6 Hours: Publish the vertical edit on TikTok and Instagram Reels, using relevant trending audio if appropriate. The caption should drive traffic to the full YouTube video.
+- T+24 Hours: Engage heavily with all comments across all platforms. Pin thoughtful questions and respond to feedback. This signals active engagement to the algorithms.
+
+---
+
+Title: How to Make Animated Explainer Reels: the @rick.theengineer Formula | Brainrot Shorts Blog
+URL: https://www.brainrotshorts.com/blog/how-to-make-animated-explainer-reels
+Published: 2026-08-17T11:32:42.000Z
+Author: Maiko
+Highlights:
+A breakdown of the animated explainer reel format behind a 108K-follower account — why word-timed motion graphics hold attention, and how to make your own from a script with AI.
+...
+Animated explainer reels are short vertical videos that teach one concept with motion graphics — titles, counters, and diagrams cut to every word of a narration. The format built @rick.theengineer to 108K followers with reels approaching a million views, and every one of those videos is generated from a script with the AI Motion Graphics Generator — no animation software involved.
+
+Open @rick.theengineer and scroll the reels tab for a minute. An animated character walks you through how authenticator apps generate codes with no signal. Why the same photo comes out of an export twice the size. What actually happens when an API tells you to slow down. The account sits at 108K followers, and its biggest reels have done 607K, 749K, and 954K views (figures from the public profile, August 2026).
+...
+First, the format itself — the animated explainer reel — is one of the most reliable performers on Instagram and TikTok right now, and it's almost entirely faceless.
+
+Second, the account isn't hiding how it's made. The bio credits the tool directly: every video comes out of the same AI motion graphics generator you can use today. This isn't a motion designer with a decade of After Effects behind them. It's a script, a narration, and a generator that does the rest.
+...
+Most short-form video is watched muted, at least at first. Explainer reels are built for that: captions land word by word, timed to the narration, styled big enough to be the visual. A viewer scrolling silently gets the full video; one who unmutes gets narration, music, and sound effects hitting on every cut. Either way, the video works. Footage-first video can't make that promise.
+...
+Watch any strong explainer reel closely and you'll notice the discipline: at any moment, the screen shows exactly one thing — a stat counting up, a three-step diagram drawing itself, a single sentence stamped in giant type. The viewer never has to choose where to look. That's the core craft of motion design, and it's the thing template editors can't give you, because a template was laid out before your content existed.
+...
+A static slide gives a viewer permission to leave. Frames that keep resolving — a number still counting, a diagram still connecting, the next caption word lighting up — keep promising something is about to finish, and viewers hold on for completions. It's the same loop that makes progress bars weirdly watchable, run for ninety straight seconds.
+...
+Rick — the animated character walking through every frame — solves the faceless account's biggest problem: nothing for the audience to attach to. A consistent character does the job of an on-camera personality: instantly recognizable in the feed, no camera, no reshoots. It's optional in the format, but it's a large part of why a feed of tech diagrams feels like a creator rather than a slideshow channel.
+...
+Animated explainers reward specificity. "How the internet works" is a saturated topic with no natural audience; "why your authenticator app works in airplane mode" makes one specific group of people feel seen. Rick's feed is software engineering, but the format transfers to any field with concepts worth unpacking — finance, medicine, fitness, law, marketing.
+...
+1. A hook that names a mystery (0–3 seconds). Not "let me explain caching" but "this is why the app feels instant the second time you open it." The hook frames a gap in the viewer's knowledge they suddenly want closed.
+2. The setup (3–15 seconds). One or two frames establishing what the viewer already knows — fast, confident, no throat-clearing.
+3. The mechanism (15–60 seconds). The heart of the video: the diagram that draws itself, the counter that makes the number visceral, the comparison laid out side by side. This is where the word-timed cutting earns its keep — each element appears at the moment the narration calls for it.
+4. The payoff (final 5–10 seconds). One sentence that resolves the hook, usually stamped on screen in big type. The viewer should be able to repeat the answer to a friend.
+
+Sound design runs under all of it: a music bed that stays out of ... voice's way and effects that hit when elements land. Viewers rarely notice it consciously; they notice its absence immediately.
+...
+The old way to produce a minute of this — storyboard, design, keyframe, caption, mix — was a working day for a motion designer or a $300+ invoice. The generator collapses the pipeline into three inputs.
+...
+The single biggest quality lever is the script. Concrete beats abstract, every time:
+
+- Name numbers. "A JPEG throws away about 90% of the data" becomes a counter and a meter. "JPEGs are much smaller" becomes a shrug.
+- Describe steps. "The request hits the cache first, then the database" becomes a diagram that draws itself in order.
+- Set up comparisons. "PNG keeps every pixel; JPEG keeps what your eye notices" becomes a split frame.
+...
+Two options in the generator: pick one of the AI voices to read your script, or upload a recording of yourself narrating. Either way you hear the narration before the video builds, so the voice is never a surprise. Your own voice is worth trying — the animation quality is identical, and audiences bond faster with a real human voice, even on a faceless account.
+...
+Choose a design style from the library, or have the AI design one for your video: it asks a few questions about audience and mood, then shows you one fully designed frame of your actual content to approve before building the rest. Hit generate, and the AI storyboards the narration, designs and animates every frame, times the captions, and mixes music and sound effects. About twenty minutes later you download a vertical 9:16 MP4, built for Reels, Shorts, and TikTok.
+
+Want a presenter like Rick? Upload a character image and it becomes an animated guide who walks through the frames with your narration.
+...
+The "why is it like this?" reel — pick an everyday annoyance and reveal the mechanism. "This is why your phone's storage fills up even though you deleted everything… " Works because the viewer has personally felt the problem.
+
+The "X vs Y" reel — two things your audience half-understands, one clean verdict. "Supabase and Firebase will both build your app. They'll charge you very differently for it." Works because picking sides is engagement fuel.
+
+The "how it actually works" reel — take something invisible and draw it. "When you tap pay, four companies talk to each other in under two seconds." Works because the diagram is the payoff — the viewer finally sees the thing.
+...
+- Post a series, not one-offs. Rick's feed works because every video is recognizably from the same universe — same character, same style, same rhythm. Consistency is what turns a viral view into a follow.
+- Let the hook be the cover. The first frame should state the mystery in big type; that's what profile visitors tap.
+- Cross-post everything. The same vertical MP4 works on Reels, TikTok, and Shorts. Three surfaces, one render.
+- Mine your comments. Every "wait, but how does X work?" reply is your next script, pre-validated.
+...
+Everyone has one — the thing colleagues or friends always ask you to explain. That's your first reel: you already know the confusion, the analogy that lands, and the payoff sentence. Write it down the way you'd say it out loud, hand it to the AI Motion Graphics Generator, and you'll have the animated version rendering before your coffee is done.
+
+---
+
+Title: I reverse-engineered how Fern makes 3D videos so fast | MindStudio AI
+URL: https://www.youtube.com/watch?v=sFniJta2Xo4
+Published: N/A
+Author: Grow with Dani
+Highlights:
+level like me, you've probably tested a ton of tools maybe you've even tried automation before but ran into the same wall I did having to pay for every single individual API key just to access the models those costs add up fast especially once you factor in hosting and even when you get past the cost the bigger hurdle is the technical side it's rarely just drag and drop usually you need some serious technical skills I remember trying to build an automation for my video captions; I spent weeks watching tutorials and wasted a lot of money on tests that just didn't work, but then, I found a platform that lets me build these complex automations without having to manually connect APIs for every single model, it's a game changer and the best part is you can actually try the AI agent I built for yourself using the link in the description the platform is called MindStudio AI to host your own automations you can try their individual plan, and if you use my code, you'll get one month completely free to create unlimited agents once you're inside MindStudio, you just top up your account balance and you're good to go. It works on a pay-per-use model. but check this out: MindStudio does NOT mark up the cost of the models! you pay the EXACT same price as if you had your own API keys directly from the providers, but without the massive headache of connecting everything manually and having your accounts scattered across five different websites. the agent I built is incredibly powerful and I'm giving it to you for free, ready to use. but I'm also going to show you exactly how I built it so you can start creating your own. honestly, the possibilities here are endless. first, I clicked on the menu over here and hit the new agent button. from here on out, we're using blocks. think of these blocks like Lego pieces. each block does one specific thing, and you just snap them together to build your workflow. for this demo, I'll leave the start block as on demand so I can show you the results in real time. but if you wanted the AI to just stay busy in the background, you could easily schedule the execution of this agent. to add a new step, just click the plus sign. the first block I added is scrape URL. remember how Fern always documents their videos? we're doing the same thing here. I'm using official information from a real case. I pasted the link here and saved it into a variable to use later. this block is going to pull all the raw data from that link for us. next, I added a block that fetches captions from a YouTube video. I found a video from Fern, pasted the link into the parameters, and gave it a name. these two blocks together are doing the work of a full-time researcher now I need a scriptwriter to take that research and turn it into a word-for-word script. So, I added a generate text block I've actually put the exact prompt I used for this in a Google Doc in the description just a heads up, it takes me a lot of time to test and perfect these prompts, so if this helps you out definitely subscribe, hit the hype button, like and share the video. Anyway, this is a good spot to give our agent a name I pasted the prompt into the box and if you want to see the details you can just click this button to expand it this prompt tells the AI to use our research source and the example script to write something totally original in that specific Fern style using only the official facts I saved that script as a variable and chose a model from Anthropic to handle the writing I turned the temperature down just a bit to make sure it follows my instructions closely and for this demo, I capped the response at 350 but for a full-length video you just leave that at the default by the way a pro tip here is to test your blocks as you build them just hit the test block button to make sure everything is running smoothly now we need a voice artist instead of hiring someone or recording it myself over and over I'm using a generate speech block I put our script variable in the prompt box and picked arguably the best text-to-speech out there ElevenLabs! You can browse their standard voices or you can go into the ElevenLabs filters find a specific voice you love and just copy the voice ID I pasted the ID right here and selected the 2.5 model because it's the perfect balance of affordability and high quality See how this works? Every block you add is like adding a new specialist to your team next I added another text block and pasted a prompt that analyzes the script to create prompts for image generation I'm saving that output as a JSON list as your workflow expands you can click this button to keep everything organized and tidy then I added a block to run functions I clicked new and pasted the code from the Google Doc this code takes that list and formats it so the next block can read it properly this next part is key because it's going to send those prompts one by one to an artist to create our video clips the block is called run workflow to set this up I first created a sub workflow by clicking this button the start block here uses a variable from our main workflow that I'm going to call prompts then I connected an image generation block I tested a few models and really liked Grok it delivers great results and is very cost-effective I selected the aspect ratio and turned off the watermark then I added a block to turn that image into video with a simple prompt I saved the output and chose the Kling 3.0 model I just made sure to set the variable as the first frame I set the clip length to 5 seconds and finally I configured the end block with a variable that will hold all the video clips to send back to the main workflow back in the main workflow I set that sub workflow to run multiple times it's going to loop through that JSON list we created I set it to run sequentially and instructed it to ignore any minor errors so the automation doesn't stop in the parameters I simply declared that for each iteration it should take one item from the prompt list all those clips get saved into a variable I named videos. So far, this AI agent has done the research the script, the voiceover, and generated all the visuals now we need to stitch it all together I used a special block called Merge Videos which takes our videos variable and combines them in order you can add transitions but I'm keeping it simple for now then I added a block to merge the audio with the video I saved the result as the final video it's like having a video editor on call 24/7! To sum it up, I added a block to email me the result I connected my account and set the subject line and chose to receive the message in HTML so it looks professional this code for that is also in the Google Doc I added some notes to my workflow to keep track of everything hit publish and then preview to run it in the debugger when I hit the button and go full screen I can see the magic happen but wait, right before running it I decided to go even further I added a block to scrape the public info from Fern's channel like their descriptions and titles and then used another text block to generate a high-performing title for my own video based on that data I did a final test with Grok which went well but then I ran it again with Nano Banana Pro after running the agent, this is the email I received it's got the video link, the title, and the source link it looks incredibly professional and here's the final result exactly as I received it what investigators uncovered next was staggering for months, the three men had been secretly drilling through cell walls building a hidden workshop above their cell block and stitching together a rubber raft from more than 50 stolen raincoats Now, I have to give you some important tips while automating content is a huge time saver, that human touch is still vital you need to be aware that YouTube's policies discourage mass-produced content with minimal effort that's why when I got the video back, I didn't just upload it raw I put it
+
+---
+
+Title: Creators on the Rise: Eddy Adams is the man beehind one of TikTok's most viral effects - Tubefilter
+URL: https://www.tubefilter.com/2023/05/31/creators-on-the-rise-eddy-adams/
+Published: 2023-05-31T21:29:44.000Z
+Author: James Hale
+Highlights:
+At the time, TikTok had just launched Effect House, its augmented reality development studio, and was looking for designers who’d be part of the first wave of AR effect creators. Adams joined in, and while looking for inspiration for effects to make, he stumbled across an original painting of an extremely rotund bumblebee with tiny wings, tiny feet, and a perpetually unimpressed expression. He decided to try turning the bee in the painting (which the original artist, Murvyn, later sent to Adams, and which now hangs in Adams’ office) into an effect TikTok’s users could put in their videos.
+...
+Adams has since made around 30 more effects, some for himself and some for freelance clients. He’s also building up his own TikTok account, where he shows people behind-the-scenes glimpses of a day in the life as an AR creator.
+...
+Eddy Adams: I’m a little bit older than the demographic of just, I don’t know, the new social media in general. I was a little bit late getting into TikTok in general, but I was invited to be on the beta program for Effect House, which is their augmented reality platform. That’s where all the effects are made. Creators from anywhere in the world can create on it for free. I was invited to the beta and I started building in it right away, and because it was still in beta, the creator pool was really small. It was I’m guessing a few hundred people maybe in this beta, and so I made a couple of effects that went properly viral on TikTok. My first two effects both hit a billion views.
+...
+Eddy Adams: This effect went viral on TikTok and I think it’s been used by or posted videos by 3 million users across TikTok, which got up to a billion views across those millions of videos. Right away, I saw the potential for building on TikTok, building these AR effects because TikTok’s algorithm, I don’t know how they did it but they just built it in a way where it pushes content out, and if the content is good and resonates, it can rise to the top. You don’t necessarily need a big follower base or you don’t need to be an influencer or have a celebrity endorsement. You can just make content and really just blast off.
+...
+effects. I’m not necessarily the greatest improv artist or I’m not on camera that much, so I didn’t really shine through with my own personal content, but then I discovered that making of videos on TikTok was more what people were resonating with. I would build something like that Tiny Bee effect and then I would make maybe a 15-second or a minute-long tutorial video, but it’s more just
+...
+Maybe I would show how to build the model in Blender, how to texture it in a program called Substance Painter, and how to build and assemble all of that in TikTok Effect House. Showing this whole making-of process really resonated with people and they were excited to see how these things were made when you open up TikTok, you play around with these effects but you might not really understand the work and craft that goes into them.
+...
+Eddy Adams: Certainly. For Tiny Bee, I had been browsing the internet, I think maybe I was on Reddit for a little bit, and I saw a painting, which I showed you, of this perfectly spherical bumblebee with the tiniest of little wings, tiny little feet, and two dots and a straight line for its eyes and mouth. I just thought it was the cutest thing and because it was such a simple shape, it would be really easy to make in a 3D program because it’s basically just a sphere, a couple of stretched-out spheres, and then the dots in line for the face.
+
+I had saved that file as reference, the image, and then I opened up Blender, which is a 3D modeling program, and I built the Tiny Bee pretty quickly in there. It didn’t take much time because it was a simple shape. Once I finished building that model, the model is just like a grey, there’s no texture or color on it. I export that from Blender into Substance Painter, which is a 3D texturing program, and in Substance Painter, I was able to paint the stripes on it, paint the wings, and just give the whole thing texture so that it had color. From there, I exported those textures and now I have the model and the textures.
+
+I brought both of those assets into TikTok Effect House, and that’s where everything gets assembled. You don’t do the modeling in Effect House, but you bring in the assets, you import everything, and then you can assemble it and create the interaction in the Effect House. For Tiny Bee, the bee follows the movement of your head, so I use the head tracker in order to get the position of the head. The bee is basically locked to your head in the frame, so if you rotate your head, the whole bee rotates with you.
+
+I also designed it where there’s another sphere that’s much, much larger, and that’s the environment, and on the sphere, I just made a landscape. There’s a ground on the bottom and then sky on the top, and it’s just an image texture. That was also locked to the bee, so as you rotate your head, the bee moves and the environment moves. You can essentially pretend like you’re flying around like a bumblebee, and your eyes and mouth were also placed where the eyes and mouth of the bee would be so that if you opened your mouth, you would actually see your real teeth and your real mouth on that bee.
+...
+Eddy Adams: Well, thankfully on TikTok, when an effect of yours goes viral, the way effects are laid out is that when you go to the effect page, the first video that you post using the effect is in the top left corner, and it’s the official video for that effect. Let’s say your effect goes viral, it gets used by millions of people. The chances that they see your video in the top left, there’s even a little official tag on it showing that this is the video by the creator. Just because of that little detail in the user experience, a lot of those people using the effect might watch that video and then might end up following me.
+
+Really, when an effect goes viral, there’s a good chance that you’ll get a good bump of followers from that, especially if you also post quality content and it’s not just the effects that you’re making, but you’re also building a presence around that, whether it’s posting funny videos with your effects or doing the behind-the-scenes tutorial stuff, which I’m focusing on but yes, it really makes a difference. If I didn’t have these effects to push my presence out there, I don’t think I’d have nearly as many followers.
+...
+Eddy Adams: It’s hit or miss. On the other platforms, there’s usually attribution of your name. If you tap through, you can usually find the creator of any effects on any of the AR platforms. I just found that TikTok, I don’t know if it’s because the things go more viral or there is a little bit more visibility on the creator, but I’ve had the most success on TikTok because of that. I think it really comes down to their algorithm and how they’re able to push content out. They have such an avid user base that when things go viral, people really respond and they might create their own trends based off of it, which is a unique thing for TikTok that the other platforms have tried to mimic but TikTok is still the reigning champ in that way.
+...
+There’s a new thing where they’re essentially partnering creators with the brands, but then also boosting the content that the users are creating. It’s a new program that just basically amplifies crowdsourced marketing, but on a much more massive scale because it’s TikTok, is the platform, so you already have a lot of inertia there. That was really fun. Public speaking is always a little nerve-wracking, but once you get on stage and sit at the chair and start talking, it always lets the nerves settle down and then you just get to talk about what you’re passionate about, which in this case is our love for augmented reality and sharing these little tiny micro-moments with the world.

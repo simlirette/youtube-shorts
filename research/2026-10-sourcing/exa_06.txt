@@ -1,0 +1,4 @@
+QUERY: how much water does AI use per query data center estimate source 2026
+You've hit Exa's free MCP rate limit. To continue using without limits, create your own Exa API key.
+
+Fix: Create API key at https://dashboard.exa.ai/api-keys , and then update Exa MCP URL to this https://mcp.exa.ai/mcp?exaApiKey=YOUR_EXA_API_KEY
