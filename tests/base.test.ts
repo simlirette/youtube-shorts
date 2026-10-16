@@ -523,3 +523,18 @@ describe('overlay refinement (captions, tracker, pointers, fact cards)', () => {
     expect(small.callouts.valueFont.sizePct).toBeLessThan(cfg.callouts.valueFont.sizePct);
   });
 });
+
+describe('overlay checklist on the real engine and dam narration', () => {
+  it.each(['four-stroke-engine', 'dam'] as const)('%s: captions never show more than 3 words and stay in the lower third', (slug) => {
+    const { cfg, words } = planFor(slug);
+    const ass = buildCaptionOverlay(captionCues(words, cfg.captions), words, cfg.captions);
+    const ev = ass.split(/\r?\n/).filter((l) => l.startsWith('Dialogue:') && l.split(',')[3] === 'Caption');
+    expect(ev.length).toBeGreaterThan(0);
+    for (const e of ev) {
+      const body = e.split(',').slice(9).join(',');
+      const text = body.replace(/\{[^}]*\}/g, '').replace(/\N/g, ' ');
+      expect(text.trim().split(/\s+/).length).toBeLessThanOrEqual(3);
+      expect(Number(/\pos\(\d+,(\d+)\)/.exec(body)![1])).toBeGreaterThanOrEqual(0.7 * 1920); // below the central band
+    }
+  });
+});
