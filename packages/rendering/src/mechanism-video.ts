@@ -93,6 +93,12 @@ export interface PlanOptions {
 
 const DEFAULT_DIR: [number, number, number] = [0.3, -1, 0.14];
 
+/** Rotates a direction about the vertical axis (degrees); used for the slow orbit during a beat. */
+function rotateZ(v: [number, number, number], deg: number): [number, number, number] {
+  const a = (deg * Math.PI) / 180;
+  return [v[0] * Math.cos(a) - v[1] * Math.sin(a), v[0] * Math.sin(a) + v[1] * Math.cos(a), v[2]];
+}
+
 function cameraPosition(look: [number, number, number], dir: [number, number, number], distance: number): [number, number, number] {
   const n = Math.hypot(...dir);
   return [look[0] + (dir[0] / n) * distance, look[1] + (dir[1] / n) * distance, look[2] + (dir[2] / n) * distance];
@@ -149,8 +155,8 @@ export function planMechanism(spec: MechanismVideoSpec, words: NarrationWord[], 
     const dir = b.camera.dir ?? DEFAULT_DIR;
     const arrive = i === 0 ? 0 : Math.min(pb.start + move, pb.end);
     camera_keys.push({ t: arrive, pos: cameraPosition(b.camera.look, dir, b.camera.distance), look: b.camera.look });
-    // A slow push-in while the beat plays keeps the shot alive without cutting.
-    camera_keys.push({ t: pb.end, pos: cameraPosition(b.camera.look, dir, b.camera.distance * 0.95), look: b.camera.look });
+    // A slow push-in with a few degrees of orbit (alternating direction) keeps the shot alive without cutting.
+    camera_keys.push({ t: pb.end, pos: cameraPosition(b.camera.look, rotateZ(dir, i % 2 === 0 ? 9 : -9), b.camera.distance * 0.95), look: b.camera.look });
 
     for (const l of b.labels) {
       labels.push({ text: l.text, part: l.part, t0: pb.start + l.from * dur, t1: pb.start + Math.max(l.to, l.from + 0.1) * dur });

@@ -211,7 +211,7 @@ def studio_setup():
     sep_ = wnt.nodes.new("ShaderNodeSeparateXYZ")
     ramp_ = wnt.nodes.new("ShaderNodeValToRGB")
     ramp_.color_ramp.elements[0].position, ramp_.color_ramp.elements[1].position = 0.40, 0.70
-    ramp_.color_ramp.elements[0].color, ramp_.color_ramp.elements[1].color = lin("#9a9791"), lin("#55565a")
+    ramp_.color_ramp.elements[0].color, ramp_.color_ramp.elements[1].color = lin("#7a7b80"), lin("#3a3b3f")
     bg_cam = wnt.nodes.new("ShaderNodeBackground")
     mix = wnt.nodes.new("ShaderNodeMixShader")
     out_ = wnt.nodes.new("ShaderNodeOutputWorld")
@@ -234,26 +234,36 @@ def studio_setup():
     bpy.ops.mesh.primitive_plane_add(size=120, location=(0, 0, -1.84))
     fl = bpy.context.active_object
     fl.name = "Floor"
-    fl.data.materials.append(material("FloorM", "#9b9892", metallic=0.0, rough=0.7, emit=0.55))
+    fl.data.materials.append(material("FloorM", "#5a5b60", metallic=0.0, rough=0.3, emit=0.3))
 
+    pool = bpy.data.lights.new("Pool", "SPOT")
+    pool.energy, pool.spot_size, pool.spot_blend, pool.color = float(SPEC.get("pool_energy", 9000)), math.radians(46), 0.9, (1.0, 0.92, 0.82)
+    pool_ob = bpy.data.objects.new("Pool", pool)
+    pool_ob.location = (-1.0, -3.0, 10.0)
+    pool_ob.rotation_euler = (Vector((0, 0, -1.8)) - Vector(pool_ob.location)).to_track_quat("-Z", "Y").to_euler()
+    scene.collection.objects.link(pool_ob)
     cam_data.dof.use_dof = True
-    cam_data.dof.aperture_fstop = float(SPEC.get("fstop", 4.5))
+    cam_data.dof.aperture_fstop = float(SPEC.get("fstop", 14.0))
     for vt in ("AgX", "Filmic", "Standard"):
         try:
             scene.view_settings.view_transform = vt
             break
         except TypeError:
             continue
-    scene.view_settings.exposure = float(SPEC.get("exposure", 0.6))
+    scene.view_settings.exposure = float(SPEC.get("exposure", -0.05))
     try:
         scene.view_settings.look = "AgX - Medium High Contrast" if scene.view_settings.view_transform == "AgX" else "None"
     except TypeError:
         pass
-    for attr, val in (("use_raytracing", False), ("use_shadows", True)):
+    for attr, val in (("use_raytracing", bool(SPEC.get("raytracing", True))), ("use_shadows", True)):
         try:
             setattr(scene.eevee, attr, val)
         except (AttributeError, TypeError):
             pass
+    try:
+        scene.eevee.ray_tracing_options.resolution_scale = "2"
+    except (AttributeError, TypeError):
+        pass
 
 
 def micro(mat, scale=300.0, strength=0.04):
@@ -416,9 +426,9 @@ def tube_shell(name, r_in, r_out, z0, z1, a0, a1, mat, seg=56):
     return ob
 
 
-def hole(slab, x, y, r, z, depth=0.6):
-    """Cut a round hole through a slab with a boolean (the cutter is never rendered)."""
-    bpy.ops.mesh.primitive_cylinder_add(vertices=40, radius=r, depth=depth, location=(x, y, z))
+def hole(slab, x, y, r, z, depth=0.6, rot=(0.0, 0.0, 0.0)):
+    """Cut a round passage through a block with a boolean (the cutter is never rendered)."""
+    bpy.ops.mesh.primitive_cylinder_add(vertices=40, radius=r, depth=depth, location=(x, y, z), rotation=rot)
     cutter = bpy.context.active_object
     cutter.name = f"Cutter_{slab.name}_{len(slab.modifiers)}"
     cutter.hide_render = True
@@ -519,7 +529,7 @@ def four_stroke():
     if STUDIO:
         steel = micro(material("Steel", "#d3d6dc", metallic=1.0, rough=0.24), 420, 0.03)
         dark = micro(material("DarkSteel", "#9aa0aa", metallic=0.7, rough=0.40), 300, 0.03)
-        cast = material("CastIron", "#b9bec6", metallic=0.45, rough=0.52)
+        cast = material("CastIron", "#7f848c", metallic=0.55, rough=0.5)
         alu = micro(material("Alu", "#d6d9de", metallic=1.0, rough=0.32), 500, 0.04)
         black = material("Black", "#17181b", metallic=0.2, rough=0.5)
         brass = material("Brass", "#b8935a", metallic=1.0, rough=0.3)
@@ -544,23 +554,30 @@ def four_stroke():
 
     box("Base", (2.5, 1.2, 0.18), (0, 0, -1.75), base_m, bevel=0.04)
 
-    # Block: barrel sectioned open at the front so the piston is visible; head as an open-fronted housing.
+    # Block: barrel sectioned open at the front so the piston is visible, with cooling fins.
     sleeve = tube_shell("Cylinder", 0.72, 0.9, 0.3, HEAD_BOT, 0.0, math.pi, cast)
     PARTS["cylinder"] = sleeve
-    slab_b = box("HeadBottom", (2.7, 1.5, 0.1), (0, 0, HEAD_BOT + 0.05), cast, bevel=0.015)
-    slab_t = box("HeadTop", (2.7, 1.5, 0.1), (0, 0, HEAD_TOP - 0.05), cast, bevel=0.015)
-    box("HeadBack", (2.7, 0.08, HEAD_TOP - HEAD_BOT - 0.2), (0, 0.71, (HEAD_BOT + HEAD_TOP) / 2), cast, bevel=0.01)
-    box("HeadSide_L", (0.1, 1.5, HEAD_TOP - HEAD_BOT - 0.2), (-1.3, 0, (HEAD_BOT + HEAD_TOP) / 2), cast, bevel=0.01)
-    box("HeadSide_R", (0.1, 1.5, HEAD_TOP - HEAD_BOT - 0.2), (1.3, 0, (HEAD_BOT + HEAD_TOP) / 2), cast, bevel=0.01)
-    box("HeadDivider", (0.06, 1.5, HEAD_TOP - HEAD_BOT - 0.2), (0, 0, (HEAD_BOT + HEAD_TOP) / 2), cast)
+    for k_ in range(6):
+        z_ = 0.52 + 0.34 * k_
+        tube_shell(f"CylFin{k_}", 0.9, 1.04, z_, z_ + 0.07, 0.0, math.pi, cast)
+    # Crankcase: a half block behind the crank (the connecting rod and crank web move in front of it).
+    box("Crankcase", (2.3, 0.6, 1.96), (0, 0.45, -0.68), cast, bevel=0.03)
+
+    # Cylinder head: one solid cast block, sectioned at the centre plane so the ports are real hollow
+    # passages (port -> valve seat), not objects floating in a box.
+    head = box("Head", (2.6, 0.75, HEAD_TOP - HEAD_BOT), (0, 0.375, (HEAD_BOT + HEAD_TOP) / 2), cast, bevel=0.02)
     for sx in (-VX, VX):
-        hole(slab_b, sx, 0, SEAT - 0.02, HEAD_BOT + 0.05)
-        hole(slab_t, sx, 0, 0.07, HEAD_TOP - 0.05)
-    hole(slab_b, 0, 0.4, 0.045, HEAD_BOT + 0.05)
-    hole(slab_t, 0, 0.4, 0.095, HEAD_TOP - 0.05)
-    PARTS["cylinder head"] = slab_t
-    pipe_in = cyl("IntakePipe", 0.17, 1.0, (-VX - 0.5 - 0.15, 0, 3.05), rot=(0, math.radians(90), 0), mat=steel)
-    pipe_ex = cyl("ExhaustPipe", 0.17, 1.0, (VX + 0.5 + 0.15, 0, 3.05), rot=(0, math.radians(90), 0), mat=dark)
+        wall_x = -1.3 if sx < 0 else 1.3
+        outer_x = -1.45 if sx < 0 else 1.45
+        hole(head, sx, 0, SEAT - 0.02, 2.95, depth=0.5)                                       # seat -> port
+        hole(head, (sx + outer_x) / 2, 0, 0.17, 3.05, depth=abs(sx - outer_x), rot=(0.0, math.radians(90), 0.0))  # side wall -> over the valve
+        hole(head, sx, 0, 0.065, 3.25, depth=0.3)                                             # valve guide
+    hole(head, 0, 0, 0.075, (HEAD_BOT + HEAD_TOP) / 2, depth=HEAD_TOP - HEAD_BOT + 0.2)       # spark plug bore
+    PARTS["cylinder head"] = head
+    pipe_in = tube_shell("IntakePipe", 0.17, 0.26, 0.0, 0.72, 0.0, math.pi, steel)
+    pipe_in.location, pipe_in.rotation_euler = (-2.0, 0, 3.05), (0, math.radians(90), 0)
+    pipe_ex = tube_shell("ExhaustPipe", 0.17, 0.26, 0.0, 0.72, 0.0, math.pi, dark)
+    pipe_ex.location, pipe_ex.rotation_euler = (1.28, 0, 3.05), (0, math.radians(90), 0)
     PARTS["intake port"], PARTS["exhaust port"] = pipe_in, pipe_ex
 
     # Crank assembly with a rear shaft carrying the timing pulley.
@@ -591,6 +608,9 @@ def four_stroke():
         cams[key] = {"cam": cam, "prof": prof, "pul": pul, "tick": tick, "x": sx, "peak": peak}
     PARTS["intake camshaft"], PARTS["exhaust camshaft"] = cams["in"]["cam"], cams["ex"]["cam"]
     PARTS["camshaft pulley"] = cams["in"]["pul"]
+    for key, info in cams.items():
+        box(f"CamPedestal_{key}", (0.34, 0.22, CAM_Z - HEAD_TOP), (info["x"], 0.40, (HEAD_TOP + CAM_Z) / 2), cast, bevel=0.02)
+        cyl(f"CamCap_{key}", 0.13, 0.22, (info["x"], 0.40, CAM_Z), rot=(math.radians(90), 0, 0), mat=cast, verts=32)
 
     # Timing belt: convex hull of the three pulleys, drawn as a thin tube.
     pts2 = []
@@ -631,10 +651,12 @@ def four_stroke():
         PARTS[f"{'intake' if key == 'in' else 'exhaust'} spring"] = spring
 
     # Spark plug (behind the cams so they never touch) and its flash.
-    plug = cyl("SparkPlug", 0.07, 0.9, (0, 0.4, HEAD_TOP + 0.25), mat=ceramic, verts=16)
-    cyl("PlugTip", 0.025, 0.2, (0, 0.4, HEAD_BOT - 0.03), mat=steel, verts=12)
+    plug_z0, plug_z1 = HEAD_BOT - 0.04, 3.4
+    cyl("PlugBody", 0.065, plug_z1 - plug_z0, (0, 0, (plug_z0 + plug_z1) / 2), mat=steel, verts=6)
+    plug = cyl("SparkPlug", 0.05, 0.2, (0, 0, plug_z1 + 0.09), mat=ceramic, verts=16)
+    cyl("PlugTip", 0.022, 0.16, (0, 0, HEAD_BOT - 0.09), mat=steel, verts=12)
     PARTS["spark plug"] = plug
-    bpy.ops.mesh.primitive_uv_sphere_add(radius=0.16, location=(0, 0.4, HEAD_BOT - 0.12))
+    bpy.ops.mesh.primitive_uv_sphere_add(radius=0.16, location=(0, 0.0, HEAD_BOT - 0.15))
     flash = bpy.context.active_object
     flash.name = "SparkFlash"
     flash.data.materials.append(material("Flash", "#fff3b0", emit=14.0 if STUDIO else 6.0))
@@ -658,8 +680,8 @@ def four_stroke():
 
     # Flow particles along fixed paths (intake in, exhaust out).
     paths = {
-        "in": [(-VX - 1.15, 0.0, 3.05), (-VX, 0.0, 3.05), (-VX, 0.0, HEAD_BOT - 0.3), (-VX + 0.15, 0.0, 2.3)],
-        "ex": [(VX + 0.15, 0.0, 2.3), (VX, 0.0, HEAD_BOT - 0.3), (VX, 0.0, 3.05), (VX + 1.15, 0.0, 3.05)],
+        "in": [(-1.9, 0.0, 3.05), (-VX, 0.0, 3.05), (-VX, 0.0, HEAD_BOT - 0.3), (-VX + 0.15, 0.0, 2.3)],
+        "ex": [(VX + 0.15, 0.0, 2.3), (VX, 0.0, HEAD_BOT - 0.3), (VX, 0.0, 3.05), (1.9, 0.0, 3.05)],
     }
     if STUDIO:
         parts_mat = {"in": material("PIn", "#58b4ff", emit=9.0), "ex": material("PEx", "#6f737b", rough=0.9, alpha=0.55, emit=0.15)}
@@ -773,7 +795,7 @@ KITS[kit]()
 
 # ---------------------------------------------------------------- labels: small dark pill + hairline + dot
 LABEL_FONT = bpy.data.fonts.load(SPEC["label_font"]) if SPEC.get("label_font") and os.path.exists(SPEC["label_font"]) else FONT
-LABEL_SIZE = 0.105
+LABEL_SIZE = 0.135
 LABELS = []
 
 
@@ -801,13 +823,13 @@ for i, lab in enumerate(SPEC.get("labels", [])):
     txt = bpy.data.objects.new(f"Lbl{i}", cu)
     txt.data.materials.append(material(f"LblM{i}", "#ffffff", emit=1.0))
     scene.collection.objects.link(txt)
-    w = LABEL_SIZE * 0.80 * len(lab["text"]) + 0.26
-    h = 0.20
+    w = LABEL_SIZE * 0.86 * len(lab["text"]) + 0.30
+    h = 0.26
     me = bpy.data.meshes.new(f"PadM{i}")
     poly = rounded_rect(w, h, 0.07)
     me.from_pydata(poly, [], [list(range(len(poly)))])
     pad = bpy.data.objects.new(f"Pad{i}", me)
-    pad.data.materials.append(material(f"PadMat{i}", "#0a0c0f", rough=1.0, alpha=0.78))
+    pad.data.materials.append(material(f"PadMat{i}", "#0b0d11", rough=1.0))
     scene.collection.objects.link(pad)
     line = bpy.data.objects.new(f"Line{i}", bpy.data.curves.new(f"LineC{i}", "CURVE"))
     line.data.dimensions = "3D"
@@ -853,7 +875,7 @@ def place_labels(f):
         L["pad"].scale = (k * s, k * s, k * s)
         L["pad"].location = base
         L["txt"].scale = (k * s, k * s, k * s)
-        L["txt"].location = base + right * (0.13 * s * k) - fwd * 0.01
+        L["txt"].location = base + right * (0.14 * s * k) - fwd * 0.06
         near = (px + (w / 2 if L["side"] < 0 else -w / 2))
         edge_world = cam.location + fwd * DZ + right * (near * s) + up * (py * s)
         pts = L["line"].data.splines[0].points
@@ -936,14 +958,15 @@ def check_collisions():
 KIT_CONTACTS = {
     "four_stroke": [
         ("Crank", "CrankPin"), ("Crank", "Bearing"), ("Crank", "CrankShaft"), ("Bearing", "CrankShaft"), ("CrankShaft", "PulleyCrank"),
+        ("CrankShaft", "Crankcase"), ("Crankcase", "Base"), ("Crankcase", "Cylinder"),
         ("Rod", "CrankPin"), ("Rod", "WristPin"), ("Rod", "Piston"), ("WristPin", "Piston"), ("Piston", "Ring"), ("WristPin", "Ring"), ("Rod", "Ring"),
         ("CamShaft_in", "Cam_in"), ("CamShaft_ex", "Cam_ex"), ("CamShaft_in", "PulleyCam_in"), ("CamShaft_ex", "PulleyCam_ex"),
+        ("CamShaft_in", "CamPedestal_in"), ("CamShaft_ex", "CamPedestal_ex"), ("CamShaft_in", "CamCap_in"), ("CamShaft_ex", "CamCap_ex"),
+        ("CamCap_in", "CamPedestal_in"), ("CamCap_ex", "CamPedestal_ex"), ("CamPedestal_in", "Head"), ("CamPedestal_ex", "Head"),
         ("ValveHead_in", "ValveStem_in"), ("ValveHead_ex", "ValveStem_ex"), ("ValveStem_in", "Retainer_in"), ("ValveStem_ex", "Retainer_ex"),
         ("ValveStem_in", "Tappet_in"), ("ValveStem_ex", "Tappet_ex"), ("Retainer_in", "Tappet_in"), ("Retainer_ex", "Tappet_ex"),
-        ("SparkPlug", "PlugTip"), ("SparkPlug", "HeadDivider"), ("PlugTip", "HeadDivider"),
-        ("HeadBottom", "HeadBack"), ("HeadBottom", "HeadSide"), ("HeadTop", "HeadBack"), ("HeadTop", "HeadSide"), ("HeadBack", "HeadSide"),
-        ("HeadBottom", "HeadDivider"), ("HeadTop", "HeadDivider"), ("HeadBack", "HeadDivider"), ("Cylinder", "HeadBottom"),
-        ("PlugTip", "HeadBottom"),
+        ("ValveStem_in", "Head"), ("ValveStem_ex", "Head"), ("Cylinder", "Head"), ("CylFin", "Cylinder"),
+        ("SparkPlug", "PlugBody"), ("PlugBody", "Head"), ("PlugTip", "Head"), ("PlugTip", "PlugBody"),
         ("TickCrank", "PulleyCrank"), ("TickCam_in", "PulleyCam_in"), ("TickCam_ex", "PulleyCam_ex"),
         ("CamShaft_in", "TickCam_in"), ("CamShaft_ex", "TickCam_ex"),
     ],

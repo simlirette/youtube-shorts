@@ -137,7 +137,7 @@ async function main(): Promise<void> {
       [
         '-y', '-i', 'video.mp4', '-i', 'narration' + path.extname(audioPath),
         '-filter_complex',
-        `[0:v]ass=hud.ass:fontsdir=fonts,ass=captions.ass:fontsdir=fonts,scale=out_range=tv:out_color_matrix=bt709,format=yuv420p[v];` +
+        `[0:v]vignette=PI/3,eq=contrast=1.04:saturation=1.05:brightness=0.035:gamma=1.08,noise=alls=3:allf=t,ass=hud.ass:fontsdir=fonts,ass=captions.ass:fontsdir=fonts,scale=out_range=tv:out_color_matrix=bt709,format=yuv420p[v];` +
           `[1:a]aresample=48000,${MOCK ? '' : 'loudnorm=I=-14:TP=-1.5:LRA=11,'}apad,atrim=0:${total},aformat=sample_fmts=fltp:channel_layouts=stereo[a]`,
         '-map', '[v]', '-map', '[a]', '-c:v', 'libx264', '-preset', 'medium', '-crf', '17', '-c:a', 'aac', '-b:a', '192k', '-movflags', '+faststart', '-t', total, 'out.mp4',
       ],
