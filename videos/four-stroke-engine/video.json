@@ -1,0 +1,265 @@
+{
+  "base": "v1",
+  "slug": "four-stroke-engine",
+  "title": "Why your car engine only pushes once every four strokes",
+  "subject": {
+    "name": "Four-stroke engine",
+    "kit": "four_stroke"
+  },
+  "hook": {
+    "formula": "stat",
+    "stat": "Your car engine only makes power 1 stroke out of 4!"
+  },
+  "steps": [
+    "Intake",
+    "Compression",
+    "Power",
+    "Exhaust"
+  ],
+  "scenes": [
+    {
+      "text": "Your car engine only makes power one stroke out of every four!",
+      "crank": [
+        0,
+        360
+      ],
+      "camera": {
+        "look": [
+          0,
+          0,
+          1.1
+        ],
+        "distance": 16.0
+      }
+    },
+    {
+      "text": "So what is it doing the rest of the time?",
+      "crank": [
+        360,
+        720
+      ],
+      "camera": {
+        "look": [
+          0,
+          0,
+          1.1
+        ],
+        "distance": 15.4
+      }
+    },
+    {
+      "text": "Stroke one: intake. The piston drops, and the open intake valve pulls in air and fuel.",
+      "crank": [
+        0,
+        180
+      ],
+      "camera": {
+        "look": [
+          0,
+          0,
+          1.9
+        ],
+        "distance": 12.5
+      },
+      "labels": [
+        {
+          "text": "INTAKE VALVE",
+          "part": "intake valve",
+          "from": 0.35,
+          "to": 1
+        },
+        {
+          "text": "PISTON",
+          "part": "piston",
+          "from": 0.55,
+          "to": 1
+        }
+      ],
+      "step": 0
+    },
+    {
+      "text": "Stroke two: compression. Both valves close, and the piston squeezes the mixture into a tiny space.",
+      "crank": [
+        180,
+        330
+      ],
+      "camera": {
+        "look": [
+          0,
+          0,
+          1.9
+        ],
+        "distance": 12.2
+      },
+      "labels": [
+        {
+          "text": "VALVES CLOSED",
+          "part": "intake valve",
+          "from": 0.3,
+          "to": 1
+        },
+        {
+          "text": "PISTON",
+          "part": "piston",
+          "from": 0.55,
+          "to": 1
+        }
+      ],
+      "step": 1
+    },
+    {
+      "text": "Stroke three: power! A spark ignites it, and the explosion shoves the piston down. This is the only stroke that pushes the car.",
+      "crankPath": [
+        {
+          "at": 0,
+          "deg": 330
+        },
+        {
+          "at": 0.27,
+          "deg": 360
+        },
+        {
+          "at": 1,
+          "deg": 540
+        }
+      ],
+      "camera": {
+        "look": [
+          0,
+          0,
+          1.9
+        ],
+        "distance": 12.0
+      },
+      "labels": [
+        {
+          "text": "SPARK PLUG",
+          "part": "spark plug",
+          "from": 0.2,
+          "to": 0.6
+        },
+        {
+          "text": "PISTON",
+          "part": "piston",
+          "from": 0.6,
+          "to": 1
+        }
+      ],
+      "step": 2
+    },
+    {
+      "text": "Stroke four: exhaust. The exhaust valve opens, and the piston pushes the burnt gas out.",
+      "crank": [
+        540,
+        720
+      ],
+      "camera": {
+        "look": [
+          0,
+          0,
+          1.9
+        ],
+        "distance": 12.5
+      },
+      "labels": [
+        {
+          "text": "EXHAUST VALVE",
+          "part": "exhaust valve",
+          "from": 0.35,
+          "to": 1
+        },
+        {
+          "text": "PISTON",
+          "part": "piston",
+          "from": 0.55,
+          "to": 1
+        }
+      ],
+      "step": 3
+    },
+    {
+      "text": "A camshaft, turning at half the crankshaft's speed, opens each valve at exactly the right moment.",
+      "hud": "Valve timing",
+      "crank": [
+        720,
+        1440
+      ],
+      "camera": {
+        "look": [
+          0,
+          0,
+          3.3
+        ],
+        "distance": 7.6
+      },
+      "labels": [
+        {
+          "text": "CAMSHAFT",
+          "part": "intake camshaft",
+          "from": 0.1,
+          "to": 1
+        },
+        {
+          "text": "VALVE SPRING",
+          "part": "exhaust spring",
+          "from": 0.5,
+          "to": 1
+        }
+      ]
+    },
+    {
+      "text": "Four strokes, two full turns of the crankshaft, and just one push!",
+      "crank": [
+        1440,
+        2160
+      ],
+      "camera": {
+        "look": [
+          0,
+          0,
+          1.1
+        ],
+        "distance": 16.0
+      }
+    }
+  ],
+  "callouts": [
+    {
+      "value": "1 in 4",
+      "label": "strokes make power",
+      "at": {
+        "scene": 0,
+        "fraction": 0.55
+      }
+    },
+    {
+      "value": "1/2 speed",
+      "label": "camshaft vs crankshaft",
+      "at": {
+        "phrase": "half the crankshaft's speed"
+      }
+    },
+    {
+      "value": "2 turns",
+      "label": "of the crankshaft per cycle",
+      "at": {
+        "phrase": "two full turns"
+      }
+    }
+  ],
+  "captionText": {},
+  "hashtags": [
+    "#engineering",
+    "#mechanics",
+    "#howitworks",
+    "#3danimation",
+    "#carengine",
+    "#learnontiktok"
+  ],
+  "description": "A four-stroke engine only makes power once every four strokes. Intake, compression, power, exhaust: here is what the other three strokes are for.",
+  "overrides": {
+    "outro": {
+      "enabled": false
+    }
+  }
+}

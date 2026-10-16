@@ -6,3 +6,5 @@ export * from './templates.js';
 export * from './music.js';
 export * from './blender-graphics.js';
 export * from './mechanism-video.js';
+export * from './overlays.js';
+export * from './video-config.js';

@@ -1,0 +1,61 @@
+{
+ "seconds": 39.01034,
+ "beats": [
+  {
+   "index": 0,
+   "start": 0,
+   "end": 3.86,
+   "firstWord": 0,
+   "lastWord": 11
+  },
+  {
+   "index": 1,
+   "start": 3.86,
+   "end": 5.497,
+   "firstWord": 12,
+   "lastWord": 21
+  },
+  {
+   "index": 2,
+   "start": 5.497,
+   "end": 10.965,
+   "firstWord": 22,
+   "lastWord": 37
+  },
+  {
+   "index": 3,
+   "start": 10.965,
+   "end": 16.59,
+   "firstWord": 38,
+   "lastWord": 53
+  },
+  {
+   "index": 4,
+   "start": 16.59,
+   "end": 23.306,
+   "firstWord": 54,
+   "lastWord": 76
+  },
+  {
+   "index": 5,
+   "start": 23.306,
+   "end": 28.676,
+   "firstWord": 77,
+   "lastWord": 91
+  },
+  {
+   "index": 6,
+   "start": 28.676,
+   "end": 33.958,
+   "firstWord": 92,
+   "lastWord": 107
+  },
+  {
+   "index": 7,
+   "start": 33.958,
+   "end": 39.01034,
+   "firstWord": 108,
+   "lastWord": 119
+  }
+ ]
+}

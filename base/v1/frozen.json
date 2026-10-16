@@ -1,0 +1,9 @@
+{
+  "frozenAt": "2026-10-16T15:39:10.384Z",
+  "files": {
+    "packages/rendering/blender/mechanism.py": "42ba48f5da85cc4cb0115b866b85c0ffaa21bead7e253f02e6deda26b2f71ed5",
+    "base/v1/blender_entry.py": "7015b5da6c174883acef5f348e2736e1c423f0000bf3f09a08e2cc3be32abfae",
+    "assets/fonts/Montserrat-Bold.ttf": "5a491022018fd3965df4c071a581b055971e5be605b6df79d7ab03437a10234e",
+    "assets/fonts/Montserrat-SemiBold.ttf": "96c43ee88af9d0379312ed086502f87f6bfebf675a6f473770d08c6dd27f2c1f"
+  }
+}

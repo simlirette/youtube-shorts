@@ -913,7 +913,8 @@ export type MechanismBeat = z.infer<typeof MechanismBeatSchema>;
 export const MechanismVideoSpecSchema = z.object({
   slug: z.string().regex(/^[a-z0-9-]+$/),
   title: z.string().min(3),
-  kit: z.enum(MECHANISM_KITS),
+  /** A built-in kit or the name a per-video kit registers under. */
+  kit: z.string().min(2),
   /** Names of a numbered sequence (e.g. the four strokes), drawn as a stepper at the top. */
   steps: z.array(z.string().min(1).max(20)).min(2).max(6).optional(),
   /** Voice speed override (ElevenLabs 0.7-1.2); defaults to the configured speed. */
@@ -925,3 +926,252 @@ export const MechanismVideoSpecSchema = z.object({
   beats: z.array(MechanismBeatSchema).min(1),
 });
 export type MechanismVideoSpec = z.infer<typeof MechanismVideoSpecSchema>;
+
+// =============================================================================
+// BASE + PER-VIDEO CONFIG
+// =============================================================================
+
+/**
+ * Configuration for the BASE + per-video layers.
+ *
+ * - `BaseConfigSchema` is read from `base/<version>/base.json`: everything that must look and sound the same
+ *   in every video (render settings, voice, caption engine, hook, progress tracker, callout style, outro).
+ * - `VideoConfigSchema` is read from `videos/<slug>/video.json`: what changes from video to video (subject,
+ *   script, hook text, callouts, hashtags). It can only override the overlay sections listed in
+ *   `VideoOverridesSchema`; render settings and the voice are not overridable by design.
+ */
+
+const Hex = z.string().regex(/^#[0-9a-fA-F]{6}$/, 'colour must be #RRGGBB');
+const Pct = z.number().min(0).max(100);
+
+export const FontConfigSchema = z.object({
+  family: z.string().min(1),
+  bold: z.boolean(),
+  /** Font size as a percentage of the frame height (1920 px): 8 means 153.6 px. */
+  sizePct: z.number().min(0.5).max(20),
+});
+
+export const StrokeConfigSchema = z.object({
+  /** Outline thickness, % of frame height. */
+  widthPct: z.number().min(0).max(2),
+  color: Hex,
+  /** Soft shadow offset, % of frame height. */
+  shadowPct: z.number().min(0).max(1),
+});
+
+export const PositionSchema = z.object({
+  /** Centre of the block, % of frame width / height. 50/50 is the middle of the frame. */
+  xPct: Pct,
+  yPct: Pct,
+});
+
+export const CaptionsConfigSchema = z.object({
+  enabled: z.boolean(),
+  /** phrase: a short phrase stays on screen; single: one word at a time. */
+  layout: z.enum(['phrase', 'single']),
+  /** word: the word being spoken changes colour as it is said (from the ElevenLabs timestamps); phrase: the whole phrase appears at once with one static keyword highlighted. */
+  timing: z.enum(['word', 'phrase']),
+  maxWordsPerCue: z.number().int().min(1).max(6),
+  maxLines: z.number().int().min(1).max(3),
+  font: FontConfigSchema,
+  stroke: StrokeConfigSchema,
+  colors: z.object({ spoken: Hex, current: Hex, upcoming: Hex }),
+  position: PositionSchema,
+  /** Share of the frame width the text may use (drives line breaking). */
+  safeWidthPct: Pct,
+  uppercase: z.boolean(),
+  /** Hide the captions while the hook line is on screen. */
+  hideDuringHook: z.boolean(),
+  fadeMs: z.object({ in: z.number().min(0), out: z.number().min(0) }),
+});
+
+export const HookFormulasSchema = z.object({
+  how_becomes: z.string(),
+  how_works: z.string(),
+  why: z.string(),
+  stat: z.string(),
+  custom: z.string(),
+});
+
+export const HookStyleSchema = z.object({
+  enabled: z.boolean(),
+  /** How long the hook line stays on screen, from the first frame. */
+  seconds: z.number().min(0.5).max(5),
+  formulas: HookFormulasSchema,
+  font: FontConfigSchema,
+  stroke: StrokeConfigSchema,
+  colors: z.object({ text: Hex, accent: Hex }),
+  position: PositionSchema,
+  safeWidthPct: Pct,
+  uppercase: z.boolean(),
+  /** Numbers in the hook are drawn in the accent colour. */
+  accentNumbers: z.boolean(),
+  fadeMs: z.object({ in: z.number().min(0), out: z.number().min(0) }),
+});
+
+export const ProgressConfigSchema = z.object({
+  enabled: z.boolean(),
+  /** Visible from the first frame (all steps dim until the first step starts). */
+  visibleFromStart: z.boolean(),
+  /** After the last step: complete = every step shown as done, hide = disappear, hold = keep the last step active. */
+  afterLast: z.enum(['complete', 'hide', 'hold']),
+  /** Vertical position of the line, % of frame height. */
+  yPct: Pct,
+  /** Total width of the tracker, % of frame width. */
+  spreadPct: Pct,
+  activeFont: FontConfigSchema,
+  inactiveFont: FontConfigSchema,
+  stroke: StrokeConfigSchema,
+  colors: z.object({ active: Hex, done: Hex, upcoming: Hex, line: Hex }),
+  dotRadiusPct: z.object({ active: z.number().min(0).max(2), inactive: z.number().min(0).max(2) }),
+});
+
+export const CalloutStyleSchema = z.object({
+  fill: Hex,
+  text: Hex,
+  outline: Hex,
+  outlineWidthPct: z.number().min(0).max(2),
+  valueFont: FontConfigSchema,
+  labelFont: FontConfigSchema,
+  position: PositionSchema,
+  paddingPct: z.number().min(0).max(10),
+  seconds: z.number().min(0.5).max(8),
+  fadeMs: z.object({ in: z.number().min(0), out: z.number().min(0) }),
+});
+
+export const OutroConfigSchema = z.object({
+  enabled: z.boolean(),
+  /** tail: the video is extended by `seconds` (the scene keeps running); overlay: drawn over the last seconds. */
+  mode: z.enum(['tail', 'overlay']),
+  seconds: z.number().min(0.5).max(6),
+  text: z.string(),
+  subtext: z.string(),
+  textFont: FontConfigSchema,
+  subtextFont: FontConfigSchema,
+  stroke: StrokeConfigSchema,
+  colors: z.object({ text: Hex, accent: Hex }),
+  position: PositionSchema,
+  fadeMs: z.object({ in: z.number().min(0), out: z.number().min(0) }),
+});
+
+export const RenderConfigSchema = z.object({
+  width: z.literal(1080),
+  height: z.literal(1920),
+  fps: z.literal(30),
+  video: z.object({ codec: z.literal('libx264'), crf: z.number().min(0).max(30), preset: z.string(), pixFmt: z.literal('yuv420p') }),
+  audio: z.object({ codec: z.literal('aac'), bitrate: z.string(), loudnessLufs: z.number(), truePeakDb: z.number() }),
+  grade: z.object({ contrast: z.number(), saturation: z.number(), grain: z.number().min(0) }),
+  /** Target length of a finished video (warning outside the range, not an error). */
+  lengthSeconds: z.object({ min: z.number(), max: z.number() }),
+});
+
+export const VoiceConfigSchema = z.object({
+  /** The one fixed voice. Not overridable per video. */
+  id: z.string().min(5),
+  model: z.string().min(3),
+  stability: z.number().min(0).max(1),
+  style: z.number().min(0).max(1),
+  speed: z.number().min(0.7).max(1.2),
+  /** Pauses between sentences are shortened to this. */
+  pauseTargetSeconds: z.number().min(0),
+  leadSeconds: z.number().min(0),
+  tailSeconds: z.number().min(0),
+});
+
+export const FrozenConfigSchema = z.object({
+  /** Files whose SHA-256 is recorded in frozen.json and verified by the tests: the visual layer. */
+  files: z.array(z.string()).min(1),
+  /** Python script run by Blender; per-video kits are injected into it in memory, never written to it. */
+  blenderScript: z.string(),
+  blenderEntry: z.string(),
+});
+
+export const BaseConfigSchema = z.object({
+  version: z.string().regex(/^v\d+$/),
+  render: RenderConfigSchema,
+  voice: VoiceConfigSchema,
+  fonts: z.object({ dir: z.string(), caption: z.string(), label: z.string() }),
+  captions: CaptionsConfigSchema,
+  hook: HookStyleSchema,
+  progress: ProgressConfigSchema,
+  callouts: CalloutStyleSchema,
+  outro: OutroConfigSchema,
+  frozen: FrozenConfigSchema,
+});
+export type BaseConfig = z.infer<typeof BaseConfigSchema>;
+export type CaptionsConfig = z.infer<typeof CaptionsConfigSchema>;
+export type HookStyle = z.infer<typeof HookStyleSchema>;
+export type ProgressConfig = z.infer<typeof ProgressConfigSchema>;
+export type CalloutStyle = z.infer<typeof CalloutStyleSchema>;
+export type OutroConfig = z.infer<typeof OutroConfigSchema>;
+
+// ---------------------------------------------------------------------------------------------------------
+// Per video
+// ---------------------------------------------------------------------------------------------------------
+
+export const VideoHookSchema = z.discriminatedUnion('formula', [
+  z.object({ formula: z.literal('how_becomes'), input: z.string().min(2), output: z.string().min(2) }),
+  z.object({ formula: z.literal('how_works'), subject: z.string().min(2) }),
+  z.object({ formula: z.literal('why'), question: z.string().min(4) }),
+  z.object({ formula: z.literal('stat'), stat: z.string().min(6) }),
+  z.object({ formula: z.literal('custom'), text: z.string().min(2) }),
+]);
+export type VideoHook = z.infer<typeof VideoHookSchema>;
+
+export const VideoCalloutSchema = z.object({
+  /** The big figure on the card, e.g. "1 in 4". */
+  value: z.string().min(1).max(14),
+  label: z.string().max(40).optional(),
+  /** When: a scene and the fraction of that scene (0-1), or the first time a phrase of the narration is spoken. */
+  at: z.union([z.object({ scene: z.number().int().min(0), fraction: z.number().min(0).max(1).default(0.3) }), z.object({ phrase: z.string().min(2) })]),
+  seconds: z.number().min(0.5).max(8).optional(),
+});
+export type VideoCallout = z.infer<typeof VideoCalloutSchema>;
+
+/** The only parts of the base a video may adjust. Render settings and the voice are deliberately absent. */
+export const VideoOverridesSchema = z
+  .object({
+    captions: CaptionsConfigSchema.deepPartial(),
+    hook: HookStyleSchema.deepPartial(),
+    progress: ProgressConfigSchema.deepPartial(),
+    callouts: CalloutStyleSchema.deepPartial(),
+    outro: OutroConfigSchema.deepPartial(),
+  })
+  .partial()
+  .strict();
+
+export const VideoConfigSchema = z
+  .object({
+    base: z.string().regex(/^v\d+$/).default('v1'),
+    slug: z.string().regex(/^[a-z0-9-]+$/),
+    /** Title for the platforms (not drawn on the video; the hook line is). */
+    title: z.string().min(3),
+    subject: z.object({
+      name: z.string().min(2),
+      /** A built-in kit (crank_piston, four_stroke, turbocharger) or the name this video's own kit registers. */
+      kit: z.string().min(2),
+      /** Path (relative to the video folder) of a Python file defining build_kit() for a new subject. */
+      kitFile: z.string().optional(),
+    }),
+    hook: VideoHookSchema,
+    /** Names of a numbered sequence, drawn as the progress tracker. */
+    steps: z.array(z.string().min(1).max(20)).min(2).max(6).optional(),
+    scenes: z.array(MechanismBeatSchema).min(1),
+    callouts: z.array(VideoCalloutSchema).default([]),
+    /** Display text for the captions: spoken word (case-insensitive) -> what is drawn (timing is unchanged). */
+    captionText: z.record(z.string()).default({}),
+    hashtags: z.array(z.string().regex(/^#[A-Za-z0-9_]+$/)).min(1).max(15),
+    description: z.string().optional(),
+    /** Per-video Blender settings for a new subject (floor height, timed events the kit reads). Never used for the built-in kits. */
+    blender: z
+      .object({
+        floorZ: z.number().optional(),
+        events: z.array(z.object({ name: z.string(), scene: z.number().int().min(0), from: z.number().min(0).max(1), to: z.number().min(0).max(1) })).optional(),
+        allowedContacts: z.array(z.tuple([z.string(), z.string()])).optional(),
+        maxSpeed: z.number().positive().optional(),
+      })
+      .optional(),
+    overrides: VideoOverridesSchema.default({}),
+  })
+  .strict();
+export type VideoConfig = z.infer<typeof VideoConfigSchema>;

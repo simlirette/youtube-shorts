@@ -93,6 +93,9 @@ export interface MechanismPlan {
     shift_y: number;
     samples: number;
     style: 'studio' | 'pastel';
+    /** Per-video kit extras (absent for the built-in kits). */
+    events?: Array<{ name: string; t0: number; t1: number }>;
+    max_speed?: number;
     /** Height of the studio floor (the turbocharger is taller than the engine). */
     floor_z: number;
   };
@@ -105,6 +108,12 @@ export interface PlanOptions {
   moveSeconds?: number;
   fps?: number;
   samples?: number;
+  /** Studio floor height for a new subject (built-in kits have their own). */
+  floorZ?: number;
+  /** Timed events a per-video kit reads (scene-relative; resolved to seconds here). */
+  events?: Array<{ name: string; scene: number; from: number; to: number }>;
+  /** Shaft speed (deg/s) that counts as full speed for a per-video kit. */
+  maxSpeed?: number;
 }
 
 const DEFAULT_DIR: [number, number, number] = [0.3, -1, 0.14];
@@ -189,12 +198,23 @@ export function planMechanism(spec: MechanismVideoSpec, words: NarrationWord[], 
     beats,
     hud,
     stepper,
-    blender: { kit: spec.kit, seconds, fps, width: 1080, height: 1920, drive, camera_keys, labels, shift_y: 0.09, samples: opts.samples ?? 20, style: 'studio', floor_z: spec.kit === 'turbocharger' ? -3.36 : -1.84 },
+    blender: { kit: spec.kit, seconds, fps, width: 1080, height: 1920, drive, camera_keys, labels, shift_y: 0.09, samples: opts.samples ?? 20, style: 'studio', floor_z: opts.floorZ ?? (spec.kit === 'turbocharger' ? -3.36 : -1.84), ...resolveEvents(opts, beats), ...(opts.maxSpeed !== undefined ? { max_speed: opts.maxSpeed } : {}) },
+  };
+}
+
+function resolveEvents(opts: PlanOptions, beats: PlannedBeat[]): { events?: Array<{ name: string; t0: number; t1: number }> } {
+  if (!opts.events || opts.events.length === 0) return {};
+  return {
+    events: opts.events.map((e) => {
+      const b = beats[e.scene];
+      if (!b) throw new InternalError(`event "${e.name}" refers to scene ${e.scene}, which does not exist`);
+      return { name: e.name, t0: b.start + e.from * (b.end - b.start), t1: b.start + e.to * (b.end - b.start) };
+    }),
   };
 }
 
 /** Short word-synced caption cues (up to `maxWords` words, split at sentence ends and pauses). */
-export function mechanismCaptionCues(words: NarrationWord[], layout: CaptionLayout = CAPTION_LAYOUT, maxWords = 4): CaptionCue[] {
+export function mechanismCaptionCues(words: NarrationWord[], layout: CaptionLayout = CAPTION_LAYOUT, maxWords = 4, maxLines = 2): CaptionCue[] {
   const cues: CaptionCue[] = [];
   let group: number[] = [];
   const flush = () => {
@@ -207,7 +227,7 @@ export function mechanismCaptionCues(words: NarrationWord[], layout: CaptionLayo
       sceneNumber: 1,
       start: first.start,
       end: Math.max(last.end, first.start + 0.2),
-      lines: lines.slice(0, 2),
+      lines: lines.slice(0, maxLines),
       firstWordIndex: group[0],
       lastWordIndex: group[group.length - 1],
     });
@@ -216,7 +236,7 @@ export function mechanismCaptionCues(words: NarrationWord[], layout: CaptionLayo
   const clean = (i: number) => words[i].word.replace(/[“”"]/g, '');
   words.forEach((w, i) => {
     // Start a new cue rather than overflow the two-line caption box.
-    if (group.length > 0 && layoutLines([...group, i].map(clean), layout).length > 2) flush();
+    if (group.length > 0 && layoutLines([...group, i].map(clean), layout).length > maxLines) flush();
     group.push(i);
     const next = words[i + 1];
     const endsSentence = /[.!?:]$/.test(w.word);
@@ -229,12 +249,12 @@ export function mechanismCaptionCues(words: NarrationWord[], layout: CaptionLayo
   return cues;
 }
 
-function assTime(t: number): string {
+export function assTime(t: number): string {
   const cs = Math.max(0, Math.round(t * 100));
   return `${Math.floor(cs / 360000)}:${String(Math.floor((cs % 360000) / 6000)).padStart(2, '0')}:${String(Math.floor((cs % 6000) / 100)).padStart(2, '0')}.${String(cs % 100).padStart(2, '0')}`;
 }
 
-const ASS_HEADER = (width: number, height: number, styles: string[]) => `[Script Info]
+export const ASS_HEADER = (width: number, height: number, styles: string[]) => `[Script Info]
 ScriptType: v4.00+
 PlayResX: ${width}
 PlayResY: ${height}
@@ -298,7 +318,7 @@ export interface StepperEvent {
   steps: string[];
 }
 
-function disc(cx: number, cy: number, r: number): string {
+export function disc(cx: number, cy: number, r: number): string {
   const pts = Array.from({ length: 14 }, (_, i) => {
     const a = (2 * Math.PI * i) / 14;
     return `${Math.round(cx + r * Math.cos(a))} ${Math.round(cy + r * Math.sin(a))}`;
@@ -352,6 +372,10 @@ export interface MechanismRendererOptions {
   fontFile: string;
   /** Font for the part labels (default: fontFile). */
   labelFontFile?: string;
+  /** A per-video kit.py (new subject). Runs through base/<version>/blender_entry.py; the frozen script is not edited. */
+  kitFile?: string;
+  /** Wrapper that registers the per-video kit with the frozen script (required with kitFile). */
+  entryScript?: string;
   cacheDir: string;
   timeoutMs?: number;
 }
@@ -366,7 +390,14 @@ export class MechanismRenderer {
   constructor(private readonly o: MechanismRendererOptions) {
     if (!fs.existsSync(o.blenderPath)) throw new ConfigurationError(`Blender not found at ${o.blenderPath} (set BLENDER_PATH or install Blender)`);
     if (!fs.existsSync(MECHANISM_SCRIPT)) throw new ConfigurationError(`mechanism kit script missing: ${MECHANISM_SCRIPT}`);
-    this.version = `blender-mechanism:${createHash('sha256').update(fs.readFileSync(MECHANISM_SCRIPT)).digest('hex').slice(0, 10)}`;
+    const parts = [fs.readFileSync(MECHANISM_SCRIPT)];
+    if (o.kitFile) {
+      if (!o.entryScript || !fs.existsSync(o.entryScript)) throw new ConfigurationError('a per-video kit needs the base blender_entry.py');
+      if (!fs.existsSync(o.kitFile)) throw new ConfigurationError(`per-video kit missing: ${o.kitFile}`);
+      parts.push(fs.readFileSync(o.entryScript), fs.readFileSync(o.kitFile));
+    }
+    // Built-in kits hash only the frozen script, exactly as before, so existing render caches stay valid.
+    this.version = `blender-mechanism:${createHash('sha256').update(Buffer.concat(parts)).digest('hex').slice(0, 10)}`;
   }
 
   cacheKey(plan: MechanismPlan): string {
@@ -382,9 +413,9 @@ export class MechanismRenderer {
       try {
         const frames = path.join(work, 'frames');
         const specFile = path.join(work, 'spec.json');
-        fs.writeFileSync(specFile, JSON.stringify({ ...plan.blender, font: this.o.fontFile, label_font: this.o.labelFontFile ?? this.o.fontFile, outDir: frames }));
+        fs.writeFileSync(specFile, JSON.stringify({ ...plan.blender, font: this.o.fontFile, label_font: this.o.labelFontFile ?? this.o.fontFile, outDir: frames, ...(this.o.kitFile ? { kit_file: this.o.kitFile } : {}) }));
         const started = Date.now();
-        const res = await runProcess(this.o.blenderPath, ['-b', '--factory-startup', '-P', MECHANISM_SCRIPT, '--', specFile], {
+        const res = await runProcess(this.o.blenderPath, ['-b', '--factory-startup', '-P', this.o.kitFile ? this.o.entryScript! : MECHANISM_SCRIPT, '--', specFile], {
           timeoutMs: this.o.timeoutMs ?? 4 * 60 * 60_000,
           description: `blender ${plan.blender.kit} mechanism`,
         });
@@ -409,12 +440,12 @@ export class MechanismRenderer {
 }
 
 /** Runs the kit's collision sweep (mechanism.py "check" mode). Returns the interpenetrating part pairs. */
-export async function checkMechanismKit(blenderPath: string, kit: string): Promise<string[]> {
+export async function checkMechanismKit(blenderPath: string, kit: string, extra: { kitFile?: string; entryScript?: string; allowedContacts?: Array<[string, string]>; floorZ?: number } = {}): Promise<string[]> {
   const work = fs.mkdtempSync(path.join(os.tmpdir(), 'shorts-mechanism-check-'));
   try {
     const specFile = path.join(work, 'spec.json');
-    fs.writeFileSync(specFile, JSON.stringify({ kit, style: 'studio', seconds: 1, fps: 30, width: 270, height: 480, outDir: path.join(work, 'frames'), check: true }));
-    const res = await runProcess(blenderPath, ['-b', '--factory-startup', '-P', MECHANISM_SCRIPT, '--', specFile], { timeoutMs: 10 * 60_000, description: `collision check ${kit}` });
+    fs.writeFileSync(specFile, JSON.stringify({ kit, style: 'studio', seconds: 1, fps: 30, width: 270, height: 480, outDir: path.join(work, 'frames'), check: true, ...(extra.kitFile ? { kit_file: extra.kitFile } : {}), ...(extra.allowedContacts ? { allowed_contacts: extra.allowedContacts } : {}), ...(extra.floorZ !== undefined ? { floor_z: extra.floorZ } : {}) }));
+    const res = await runProcess(blenderPath, ['-b', '--factory-startup', '-P', extra.kitFile ? extra.entryScript! : MECHANISM_SCRIPT, '--', specFile], { timeoutMs: 10 * 60_000, description: `collision check ${kit}` });
     if (!/COLLISIONS_(NONE|FOUND)/.test(res.stdout)) {
       throw new InternalError(`collision check for ${kit} did not complete (exit ${res.code}): ${(res.stderr || res.stdout).split(/\r?\n/).filter(Boolean).slice(-4).join(' | ')}`);
     }
