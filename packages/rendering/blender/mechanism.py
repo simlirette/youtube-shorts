@@ -211,7 +211,7 @@ def studio_setup():
     sep_ = wnt.nodes.new("ShaderNodeSeparateXYZ")
     ramp_ = wnt.nodes.new("ShaderNodeValToRGB")
     ramp_.color_ramp.elements[0].position, ramp_.color_ramp.elements[1].position = 0.40, 0.70
-    ramp_.color_ramp.elements[0].color, ramp_.color_ramp.elements[1].color = lin("#7a7b80"), lin("#3a3b3f")
+    ramp_.color_ramp.elements[0].color, ramp_.color_ramp.elements[1].color = lin("#9a9a9c"), lin("#5d5e62")
     bg_cam = wnt.nodes.new("ShaderNodeBackground")
     mix = wnt.nodes.new("ShaderNodeMixShader")
     out_ = wnt.nodes.new("ShaderNodeOutputWorld")
@@ -234,7 +234,7 @@ def studio_setup():
     bpy.ops.mesh.primitive_plane_add(size=120, location=(0, 0, -1.84))
     fl = bpy.context.active_object
     fl.name = "Floor"
-    fl.data.materials.append(material("FloorM", "#5a5b60", metallic=0.0, rough=0.3, emit=0.3))
+    fl.data.materials.append(material("FloorM", "#7a7a7d", metallic=0.0, rough=0.3, emit=0.35))
 
     pool = bpy.data.lights.new("Pool", "SPOT")
     pool.energy, pool.spot_size, pool.spot_blend, pool.color = float(SPEC.get("pool_energy", 9000)), math.radians(46), 0.9, (1.0, 0.92, 0.82)
@@ -250,7 +250,7 @@ def studio_setup():
             break
         except TypeError:
             continue
-    scene.view_settings.exposure = float(SPEC.get("exposure", -0.05))
+    scene.view_settings.exposure = float(SPEC.get("exposure", 0.3))
     try:
         scene.view_settings.look = "AgX - Medium High Contrast" if scene.view_settings.view_transform == "AgX" else "None"
     except TypeError:

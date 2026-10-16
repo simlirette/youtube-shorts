@@ -18,6 +18,7 @@ import {
   MechanismRenderer,
   buildCaptionAss,
   buildHudAss,
+  buildStepperAss,
   findBlender,
   mechanismCaptionCues,
   narrationText,
@@ -113,7 +114,7 @@ async function main(): Promise<void> {
     // word timestamps are realigned to the edited audio and everything downstream uses those.
     const wav = path.join(outDir, 'narration_tight.wav');
     await runFfmpeg(['-y', '-i', audioPath, '-ar', '44100', '-ac', '1', '-c:a', 'pcm_s16le', wav], { description: 'decode narration' });
-    const cut = tightenNarrationWav(wav, words, { leadSeconds: 0.05, gapTargetSeconds: 0.26, tailSeconds: 0.5 });
+    const cut = tightenNarrationWav(wav, words, { leadSeconds: 0.05, gapTargetSeconds: 0.18, tailSeconds: 0.5 });
     console.log(`narration: tightened ${cut.gapsTightened} pauses, removed ${cut.secondsRemoved.toFixed(1)} s, longest pause now ${cut.maxGapAfterSeconds.toFixed(2)} s`);
     words = retimeWords(words, cut.words);
     audioForVideo = wav;
@@ -141,7 +142,8 @@ async function main(): Promise<void> {
   const work = fs.mkdtempSync(path.join(os.tmpdir(), 'shorts-mech-mux-'));
   try {
     fs.cpSync(path.join(repoRoot(), 'assets', 'fonts'), path.join(work, 'fonts'), { recursive: true });
-    fs.writeFileSync(path.join(work, 'captions.ass'), buildCaptionAss(mechanismCaptionCues(words)));
+    fs.writeFileSync(path.join(work, 'captions.ass'), buildCaptionAss(mechanismCaptionCues(words), words));
+    fs.writeFileSync(path.join(work, 'stepper.ass'), buildStepperAss(plan.stepper));
     fs.writeFileSync(path.join(work, 'hud.ass'), buildHudAss(plan.hud));
     fs.copyFileSync(silentVideo, path.join(work, 'video.mp4'));
     fs.copyFileSync(audioForVideo, path.join(work, 'narration' + path.extname(audioForVideo)));
@@ -151,7 +153,7 @@ async function main(): Promise<void> {
       [
         '-y', '-i', 'video.mp4', '-i', 'narration' + path.extname(audioForVideo),
         '-filter_complex',
-        `[0:v]vignette=PI/3,eq=contrast=1.04:saturation=1.05:brightness=0.035:gamma=1.08,noise=alls=3:allf=t,ass=hud.ass:fontsdir=fonts,ass=captions.ass:fontsdir=fonts,scale=out_range=tv:out_color_matrix=bt709,format=yuv420p[v];` +
+        `[0:v]eq=contrast=1.04:saturation=1.06,noise=alls=2:allf=t,ass=stepper.ass:fontsdir=fonts,ass=hud.ass:fontsdir=fonts,ass=captions.ass:fontsdir=fonts,scale=out_range=tv:out_color_matrix=bt709,format=yuv420p[v];` +
           `[1:a]aresample=48000,${MOCK ? '' : 'loudnorm=I=-14:TP=-1.5:LRA=11,'}apad,atrim=0:${total},aformat=sample_fmts=fltp:channel_layouts=stereo[a]`,
         '-map', '[v]', '-map', '[a]', '-c:v', 'libx264', '-preset', 'medium', '-crf', '17', '-c:a', 'aac', '-b:a', '192k', '-movflags', '+faststart', '-t', total, 'out.mp4',
       ],

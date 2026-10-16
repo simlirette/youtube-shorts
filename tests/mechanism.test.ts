@@ -3,7 +3,7 @@ import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { planGapTightening, repoRoot } from '@shorts/core';
 import { MechanismVideoSpecSchema, type MechanismVideoSpec } from '@shorts/schemas';
-import { buildCaptionAss, buildHudAss, checkMechanismKit, findBlender, mechanismCaptionCues, narrationText, planMechanism, retimeWords, wordsFromAlignment } from '@shorts/rendering';
+import { buildCaptionAss, buildHudAss, buildStepperAss, checkMechanismKit, findBlender, mechanismCaptionCues, narrationText, planMechanism, retimeWords, wordsFromAlignment } from '@shorts/rendering';
 
 /** Alignment as ElevenLabs returns it: one entry per character of the submitted text. */
 function fakeAlignment(text: string, secondsPerChar = 0.06) {
@@ -160,7 +160,7 @@ describe('mechanism captions', () => {
   it('uses short, ordered, non-overlapping cues that cover every word', () => {
     const { words } = plan();
     const cues = mechanismCaptionCues(words);
-    expect(cues.every((c) => c.lastWordIndex - c.firstWordIndex < 3)).toBe(true);
+    expect(cues.every((c) => c.lastWordIndex - c.firstWordIndex < 4)).toBe(true);
     for (let i = 1; i < cues.length; i++) {
       expect(cues[i].start).toBeGreaterThanOrEqual(cues[i - 1].end - 1e-6);
       expect(cues[i].firstWordIndex).toBe(cues[i - 1].lastWordIndex + 1);
@@ -169,29 +169,94 @@ describe('mechanism captions', () => {
     expect(cues[cues.length - 1].lastWordIndex).toBe(words.length - 1);
   });
 
-  it('writes headings with fades, upper-cased, with ASS braces removed', () => {
-    const ass = buildHudAss([{ start: 1, end: 3.5, text: 'Stroke 2 · {Compression}' }]);
-    expect(ass).toContain('Dialogue: 0,0:00:01.00,0:00:03.50,Hud');
-    expect(ass).toContain('STROKE 2 · COMPRESSION');
-    expect(ass).not.toContain('{Compression}');
-    expect(ass).toContain('Montserrat SemiBold');
+  it('never overflows the two-line caption box: long words start a new phrase instead of losing a line', () => {
+    const text = 'Crankshaft\u2019s turbocharger compression synchronizer differential intake exhaust';
+    const a = fakeAlignment(text);
+    const words = wordsFromAlignment(a.characters, a.starts, a.ends);
+    const cues = mechanismCaptionCues(words);
+    expect(cues.every((c) => c.lines.length <= 2)).toBe(true);
+    // Every spoken word is shown exactly once, in order, across the cues.
+    const shown = cues.flatMap((c) => c.lines.flatMap((l) => l.split(' ')));
+    expect(shown).toEqual(words.map((w) => w.word));
+    expect(() => buildCaptionAss(cues, words)).not.toThrow();
   });
 
-  it('builds clean bold captions: Montserrat Bold, one gold keyword per cue, lines kept in order', () => {
+  it('highlights exactly the word being spoken: one event per word, starting when the voice says it', () => {
     const { words } = plan();
     const cues = mechanismCaptionCues(words);
-    const ass = buildCaptionAss(cues);
-    expect(ass).toContain('Style: Caption,Montserrat,');
-    const dialogues = ass.split('\n').filter((l) => l.startsWith('Dialogue:'));
-    expect(dialogues).toHaveLength(cues.length);
-    // Every spoken word survives, in order, once ASS colour overrides are stripped.
-    const text = dialogues.map((d) => d.split(',').slice(9).join(',').replace(/\{[^}]*\}/g, '').replace(/\\N/g, ' ')).join(' ');
-    expect(text.replace(/\s+/g, ' ').trim()).toBe(words.map((w) => w.word).join(' '));
-    expect(dialogues.some((d) => d.includes('&H0000C8FF&'))).toBe(true);
-    // ASS override tags need a literal backslash; in a JS string a bare \f is a form feed and \c is just "c".
-    expect(ass).toContain('{\\fad(60,40)}');
-    expect(ass).toContain('{\\c&H0000C8FF&}');
+    const ass = buildCaptionAss(cues, words);
+    const events = ass.split('\n').filter((l) => l.startsWith('Dialogue:') && l.includes(',Caption,'));
+    expect(events).toHaveLength(words.length);
+    const hms = (t: string) => {
+      const [h, m, s] = t.split(':');
+      return Number(h) * 3600 + Number(m) * 60 + Number(s);
+    };
+    events.forEach((e, i) => {
+      const fields = e.split(',');
+      expect(hms(fields[1])).toBeCloseTo(words[i].start, 1); // starts when this word starts
+      const body = fields.slice(9).join(',').replace(/\{\\fad\([^)]*\)\}/g, '');
+      const tokens = [...body.matchAll(/\{\\c(&H[0-9A-F]+&)\}([^{]+)/g)].map((m) => ({ colour: m[1], text: m[2].replace(/\\N/g, ' ').trim() }));
+      const gold = tokens.filter((t) => t.colour === '&H00D2FF&');
+      expect(gold).toHaveLength(1);
+      expect(gold[0].text).toBe(words[i].word); // the gold word is the spoken word
+      // Words already spoken in this phrase are white, the ones still to come are dimmed.
+      const k = tokens.findIndex((t) => t.colour === '&H00D2FF&');
+      tokens.slice(0, k).forEach((t) => expect(t.colour).toBe('&HFFFFFF&'));
+      tokens.slice(k + 1).forEach((t) => expect(t.colour).toBe('&HA8A8A8&'));
+    });
+  });
+
+  it('keeps every word of a phrase on screen in order, and never leaves a backslash out of an ASS tag', () => {
+    const { words } = plan();
+    const ass = buildCaptionAss(mechanismCaptionCues(words), words);
+    expect(ass).toContain('{\\c&H00D2FF&}');
+    expect(ass).toContain('{\\fad(70,0)}');
     expect(ass).not.toContain('\f');
+    const first = ass.split('\n').find((l) => l.includes(',Caption,'))!;
+    expect(first.replace(/\{[^}]*\}/g, '').split(',').slice(9).join(',').replace(/\\N/g, ' ').trim().startsWith(words[0].word)).toBe(true);
+  });
+
+  it('draws a centred stepper with the active step gold and fades only at the ends of a run', () => {
+    const steps = ['Intake', 'Compression', 'Power', 'Exhaust'];
+    const ass = buildStepperAss([
+      { start: 1, end: 3, index: 0, steps },
+      { start: 3, end: 5, index: 1, steps },
+      { start: 8, end: 9, index: 3, steps },
+    ]);
+    for (const s of steps) expect(ass).toContain(s.toUpperCase());
+    const dots = ass.split('\n').filter((l) => l.startsWith('Dialogue: 1,0:00:03.00') && l.includes('\\p1'));
+    expect(dots.filter((d) => d.includes('\\c&H00D2FF&'))).toHaveLength(1); // one gold dot for the active step
+    // Step 0 -> 1 are adjacent: the second event has no fade-in; step 3 is separate and fades in again.
+    const at = (t: string) => ass.split('\n').find((l) => l.startsWith(`Dialogue: 2,${t}`))!;
+    expect(at('0:00:01.00')).toContain('\\fad(250,0)');
+    expect(at('0:00:03.00')).toContain('\\fad(0,200)');
+    expect(at('0:00:08.00')).toContain('\\fad(250,200)');
+    // Labels are centred on the frame.
+    const xs = [...ass.matchAll(/\\an8\\pos\((\d+),/g)].map((m) => Number(m[1]));
+    expect((Math.min(...xs) + Math.max(...xs)) / 2).toBeCloseTo(540, -1);
+  });
+
+  it('plans a stepper from the beats and rejects a step outside the sequence', () => {
+    const withSteps = MechanismVideoSpecSchema.parse({
+      ...spec,
+      steps: ['One', 'Two'],
+      beats: spec.beats.map((b, i) => ({ ...b, hud: undefined, step: i === 1 ? 1 : i === 0 ? 0 : undefined })),
+    });
+    const text = narrationText(withSteps);
+    const a = fakeAlignment(text);
+    const p2 = planMechanism(withSteps, wordsFromAlignment(a.characters, a.starts, a.ends), a.ends[a.ends.length - 1]);
+    expect(p2.stepper.map((s) => s.index)).toEqual([0, 1]);
+    expect(p2.stepper[1].steps).toEqual(['One', 'Two']);
+    const bad = MechanismVideoSpecSchema.parse({ ...withSteps, steps: ['Only', 'Two'], beats: withSteps.beats.map((b, i) => (i === 1 ? { ...b, step: 5 } : b)) });
+    expect(() => planMechanism(bad, wordsFromAlignment(a.characters, a.starts, a.ends), 5)).toThrow(/step 5/);
+  });
+
+  it('writes large centred titles with fades, upper-cased, with ASS braces removed', () => {
+    const ass = buildHudAss([{ start: 1, end: 3.5, text: 'Valve {timing}' }]);
+    expect(ass).toContain('Dialogue: 0,0:00:01.00,0:00:03.50,Hud');
+    expect(ass).toContain('VALVE TIMING');
+    expect(ass).not.toContain('{timing}');
+    expect(ass).toContain('Style: Hud,Montserrat,64');
   });
 });
 

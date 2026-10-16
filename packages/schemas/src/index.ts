@@ -901,8 +901,10 @@ export const MechanismBeatSchema = z.object({
   crankPath: z.array(z.object({ at: z.number().min(0).max(1), deg: z.number() })).min(2).optional(),
   /** Camera: look-at point, distance from it, and the viewing direction (default: front, slightly right and above). */
   camera: z.object({ look: Vec3Schema, distance: z.number().positive(), dir: Vec3Schema.optional() }),
-  /** Short heading shown at the top while the beat plays (e.g. "1 · INTAKE"). */
+  /** Large centred title for beats outside a numbered sequence (e.g. "Valve timing"). */
   hud: z.string().max(40).optional(),
+  /** Index into the video's `steps` when this beat belongs to a numbered sequence (shown in the top stepper). */
+  step: z.number().int().min(0).optional(),
   /** Callouts that point at named kit parts; from/to are fractions (0-1) of the beat. */
   labels: z.array(z.object({ text: z.string().min(1).max(24), part: z.string().min(1), from: z.number().min(0).max(1).default(0), to: z.number().min(0).max(1).default(1) })).default([]),
 });
@@ -912,6 +914,8 @@ export const MechanismVideoSpecSchema = z.object({
   slug: z.string().regex(/^[a-z0-9-]+$/),
   title: z.string().min(3),
   kit: z.enum(MECHANISM_KITS),
+  /** Names of a numbered sequence (e.g. the four strokes), drawn as a stepper at the top. */
+  steps: z.array(z.string().min(1).max(20)).min(2).max(6).optional(),
   /** Voice speed override (ElevenLabs 0.7-1.2); defaults to the configured speed. */
   speed: z.number().min(0.7).max(1.2).optional(),
   /** Voice for this video: ElevenLabs voice id and expressiveness (lower stability and higher style = more energy). */

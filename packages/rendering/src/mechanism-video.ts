@@ -78,6 +78,8 @@ export interface MechanismPlan {
   seconds: number;
   beats: PlannedBeat[];
   hud: HudEvent[];
+  /** Section stepper (numbered sequences such as the four strokes). */
+  stepper: StepperEvent[];
   /** Everything mechanism.py needs except paths (font, outDir). */
   blender: {
     kit: string;
@@ -153,6 +155,7 @@ export function planMechanism(spec: MechanismVideoSpec, words: NarrationWord[], 
   const camera_keys: MechanismPlan['blender']['camera_keys'] = [];
   const labels: MechanismPlan['blender']['labels'] = [];
   const hud: HudEvent[] = [];
+  const stepper: StepperEvent[] = [];
   let lastAngle = spec.beats[0].crank?.[0] ?? 0;
   spec.beats.forEach((b, i) => {
     const pb = beats[i];
@@ -173,19 +176,23 @@ export function planMechanism(spec: MechanismVideoSpec, words: NarrationWord[], 
     for (const l of b.labels) {
       labels.push({ text: l.text, part: l.part, t0: pb.start + l.from * dur, t1: pb.start + Math.max(l.to, l.from + 0.1) * dur });
     }
-    if (b.hud) hud.push({ start: pb.start, end: pb.end, text: b.hud });
+    if (b.step !== undefined) {
+      if (!spec.steps || b.step >= spec.steps.length) throw new InternalError(`beat ${i}: step ${b.step} is not in the spec's steps`);
+      stepper.push({ start: pb.start, end: pb.end, index: b.step, steps: spec.steps });
+    } else if (b.hud) hud.push({ start: pb.start, end: pb.end, text: b.hud });
   });
 
   return {
     seconds,
     beats,
     hud,
-    blender: { kit: spec.kit, seconds, fps, width: 1080, height: 1920, drive, camera_keys, labels, shift_y: 0.05, samples: opts.samples ?? 20, style: 'studio' },
+    stepper,
+    blender: { kit: spec.kit, seconds, fps, width: 1080, height: 1920, drive, camera_keys, labels, shift_y: 0.09, samples: opts.samples ?? 20, style: 'studio' },
   };
 }
 
 /** Short word-synced caption cues (up to `maxWords` words, split at sentence ends and pauses). */
-export function mechanismCaptionCues(words: NarrationWord[], layout: CaptionLayout = CAPTION_LAYOUT, maxWords = 3): CaptionCue[] {
+export function mechanismCaptionCues(words: NarrationWord[], layout: CaptionLayout = CAPTION_LAYOUT, maxWords = 4): CaptionCue[] {
   const cues: CaptionCue[] = [];
   let group: number[] = [];
   const flush = () => {
@@ -204,7 +211,10 @@ export function mechanismCaptionCues(words: NarrationWord[], layout: CaptionLayo
     });
     group = [];
   };
+  const clean = (i: number) => words[i].word.replace(/[“”"]/g, '');
   words.forEach((w, i) => {
+    // Start a new cue rather than overflow the two-line caption box.
+    if (group.length > 0 && layoutLines([...group, i].map(clean), layout).length > 2) flush();
     group.push(i);
     const next = words[i + 1];
     const endsSentence = /[.!?:]$/.test(w.word);
@@ -238,31 +248,101 @@ ${styles.join('\n')}
 Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
 `;
 
-/** Gold highlight (ASS colours are &HBBGGRR&). */
-const HIGHLIGHT = '&H0000C8FF&';
+/** Caption colours (ASS is &HBBGGRR&): spoken words white, the current word gold, upcoming words dimmed. */
+const CAP_SPOKEN = '&HFFFFFF&';
+const CAP_NOW = '&H00D2FF&';
+const CAP_NEXT = '&HA8A8A8&';
 
 /**
- * Word-synced captions in a clean bold sans (Montserrat Bold): white, soft outline and shadow, one
- * keyword per cue in gold, centred in the lower third.
+ * Karaoke captions in a clean bold sans (Montserrat Bold), like the reference reels: a short phrase stays
+ * on screen while the word being spoken is gold, words already spoken are white and words still to come
+ * are dimmed. One event per word, timed from the narration word timestamps, so the highlight is the word
+ * the voice is saying. A thin bracket line sits above the phrase.
  */
-export function buildCaptionAss(cues: CaptionCue[], layout: CaptionLayout = CAPTION_LAYOUT): string {
-  const style = ['Caption', 'Montserrat', 66, '&H00FFFFFF', '&H000000FF', '&H00101010', '&H78000000', -1, 0, 0, 0, 100, 100, 0.5, 0, 1, 3.4, 2.2, 2, 90, 90, 520, 1].join(',');
-  const events = cues.map((c) => {
+export function buildCaptionAss(cues: CaptionCue[], words: NarrationWord[], layout: CaptionLayout = CAPTION_LAYOUT): string {
+  const style = ['Caption', 'Montserrat', 62, '&H00FFFFFF', '&H000000FF', '&H00101010', '&H78000000', -1, 0, 0, 0, 100, 100, 0.5, 0, 1, 3.2, 2.0, 2, 90, 90, 430, 1].join(',');
+  const bracket = ['Bracket', 'Montserrat', 20, '&H00FFFFFF', '&H000000FF', '&H00000000', '&H00000000', 0, 0, 0, 0, 100, 100, 0, 0, 1, 0, 0, 7, 0, 0, 0, 1].join(',');
+  const events: string[] = [];
+  for (const c of cues) {
     const flat = c.lines.flatMap((l, li) => l.split(' ').map((w) => ({ w, li })));
-    const k = emphasisIndex(flat.map((x) => x.w.toUpperCase())); // emphasisIndex expects capitals
-    if (k >= 0) flat[k] = { ...flat[k], w: `{\\c${HIGHLIGHT}}${flat[k].w}{\\c&HFFFFFF&}` };
-    const text = c.lines.map((_, li) => flat.filter((x) => x.li === li).map((x) => x.w).join(' ')).join('\\N');
-    return `Dialogue: 0,${assTime(c.start)},${assTime(c.end)},Caption,,0,0,0,,{\\fad(60,40)}${text}`;
+    const first = c.firstWordIndex;
+    const last = c.lastWordIndex;
+    if (flat.length !== last - first + 1) throw new InternalError(`caption cue ${c.index}: ${flat.length} displayed words for ${last - first + 1} spoken words`);
+    for (let k = 0; k < flat.length; k++) {
+      const start = words[first + k].start;
+      const end = k < flat.length - 1 ? words[first + k + 1].start : c.end;
+      if (end <= start) continue;
+      const text = c.lines
+        .map((_, li) =>
+          flat
+            .map((x, j) => ({ ...x, j }))
+            .filter((x) => x.li === li)
+            .map((x) => `{\\c${x.j < k ? CAP_SPOKEN : x.j === k ? CAP_NOW : CAP_NEXT}}${x.w}`)
+            .join(' ')
+        )
+        .join('\\N');
+      const fade = k === 0 ? '{\\fad(70,0)}' : k === flat.length - 1 ? '{\\fad(0,60)}' : '';
+      events.push(`Dialogue: 1,${assTime(start)},${assTime(end)},Caption,,0,0,0,,${fade}${text}`);
+    }
+    // Thin bracket above the phrase for the whole cue.
+    const y = layout.height - 430 - 170;
+    const x0 = 270;
+    const x1 = layout.width - 270;
+    events.push(`Dialogue: 0,${assTime(c.start)},${assTime(c.end)},Bracket,,0,0,0,,{\\an7\\pos(0,0)\\p1\\c&HC8C8C8&\\1a&H50&}m ${x0} ${y} l ${x1} ${y} l ${x1} ${y + 2} l ${x0 + 0} ${y + 2} m ${x0} ${y} l ${x0 + 2} ${y} l ${x0 + 2} ${y + 14} l ${x0} ${y + 14} m ${x1 - 2} ${y} l ${x1} ${y} l ${x1} ${y + 14} l ${x1 - 2} ${y + 14}{\\p0}`);
+  }
+  return ASS_HEADER(layout.width, layout.height, [`Style: ${style}`, `Style: ${bracket}`]) + events.join('\n') + '\n';
+}
+
+export interface StepperEvent {
+  start: number;
+  end: number;
+  /** Index of the active step. */
+  index: number;
+  steps: string[];
+}
+
+function disc(cx: number, cy: number, r: number): string {
+  const pts = Array.from({ length: 14 }, (_, i) => {
+    const a = (2 * Math.PI * i) / 14;
+    return `${Math.round(cx + r * Math.cos(a))} ${Math.round(cy + r * Math.sin(a))}`;
   });
-  return ASS_HEADER(layout.width, layout.height, [`Style: ${style}`]) + events.join('\n') + '\n';
+  return `m ${pts[0]} l ${pts.slice(1).join(' ')}`;
 }
 
 /**
- * Heading in the top-left safe area: small, letter-spaced capitals with no box, so it labels the
- * stroke without competing with the subject.
+ * Section stepper, centred at the top (as in the reference reels): a line with one dot per step, the
+ * current step in bold white with a large gold dot, finished steps in white, upcoming ones dimmed.
  */
+export function buildStepperAss(events: StepperEvent[], layout: CaptionLayout = CAPTION_LAYOUT): string {
+  const label = ['Step', 'Montserrat SemiBold', 34, '&H00FFFFFF', '&H000000FF', '&H00101010', '&H64000000', 0, 0, 0, 0, 100, 100, 3, 0, 1, 2.2, 1.2, 8, 0, 0, 0, 1].join(',');
+  const labelOn = ['StepOn', 'Montserrat', 54, '&H00FFFFFF', '&H000000FF', '&H00101010', '&H64000000', -1, 0, 0, 0, 100, 100, 3, 0, 1, 2.6, 1.4, 8, 0, 0, 0, 1].join(',');
+  const draw = ['Draw', 'Montserrat', 20, '&H00FFFFFF', '&H000000FF', '&H00000000', '&H00000000', 0, 0, 0, 0, 100, 100, 0, 0, 1, 0, 0, 7, 0, 0, 0, 1].join(',');
+  const out: string[] = [];
+  const cy = 200;
+  events.forEach((e, ei) => {
+    const n = e.steps.length;
+    const gap = Math.min(250, 760 / Math.max(1, n - 1));
+    const xs = e.steps.map((_, i) => Math.round(layout.width / 2 + (i - (n - 1) / 2) * gap));
+    const t = `${assTime(e.start)},${assTime(e.end)}`;
+    const fadeIn = ei === 0 || events[ei - 1].end < e.start - 0.01 ? 250 : 0;
+    const fadeOut = ei === events.length - 1 || events[ei + 1].start > e.end + 0.01 ? 200 : 0;
+    const fade = `\\fad(${fadeIn},${fadeOut})`;
+    const base = `{\\an7\\pos(0,0)\\p1${fade}`;
+    out.push(`Dialogue: 0,${t},Draw,,0,0,0,,${base}\\c&H9A9A9A&\\1a&H50&}m ${xs[0]} ${cy - 2} l ${xs[n - 1]} ${cy - 2} l ${xs[n - 1]} ${cy + 2} l ${xs[0]} ${cy + 2}{\\p0}`);
+    out.push(`Dialogue: 0,${t},Draw,,0,0,0,,${base}\\c&HFFFFFF&}m ${xs[0]} ${cy - 2} l ${xs[e.index]} ${cy - 2} l ${xs[e.index]} ${cy + 2} l ${xs[0]} ${cy + 2}{\\p0}`);
+    e.steps.forEach((s, i) => {
+      const on = i === e.index;
+      const colour = on ? '&H00D2FF&' : i < e.index ? '&HFFFFFF&' : '&HA0A0A0&';
+      out.push(`Dialogue: 1,${t},Draw,,0,0,0,,${base}\\c${colour}}${disc(xs[i], cy, on ? 19 : 10)}{\\p0}`);
+      out.push(`Dialogue: 2,${t},${on ? 'StepOn' : 'Step'},,0,0,0,,{\\an8\\pos(${xs[i]},${cy + 38})${fade}${on ? '' : '\\1a&H70&'}}${s.toUpperCase()}`);
+    });
+  });
+  return ASS_HEADER(layout.width, layout.height, [`Style: ${label}`, `Style: ${labelOn}`, `Style: ${draw}`]) + out.join('\n') + '\n';
+}
+
+/** Large centred title for beats that are not part of a numbered sequence. */
 export function buildHudAss(events: HudEvent[], layout: CaptionLayout = CAPTION_LAYOUT): string {
-  const style = ['Hud', 'Montserrat SemiBold', 38, '&H00FFFFFF', '&H000000FF', '&H00101010', '&H64000000', 0, 0, 0, 0, 100, 100, 5, 0, 1, 2, 1.5, 7, 96, 96, 150, 1].join(',');
+  const style = ['Hud', 'Montserrat', 64, '&H00FFFFFF', '&H000000FF', '&H00101010', '&H64000000', -1, 0, 0, 0, 100, 100, 6, 0, 1, 3, 1.6, 8, 60, 60, 160, 1].join(',');
   return (
     ASS_HEADER(layout.width, layout.height, [`Style: ${style}`]) +
     events.map((e) => `Dialogue: 0,${assTime(e.start)},${assTime(e.end)},Hud,,0,0,0,,{\\fad(250,200)}${e.text.toUpperCase().replace(/[{}]/g, '')}`).join('\n') +
