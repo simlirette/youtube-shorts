@@ -67,7 +67,7 @@ export function overlayLayers(i: OverlayLayerInputs): Array<{ name: string; ass:
   if (cfg.outro.enabled) suppress.push([outroStart, plan.seconds]);
   const ptr = overlayPointers(cfg);
   const layers: Array<{ name: string; ass: string }> = [];
-  if (cfg.progress.enabled && video.steps) layers.push({ name: 'progress', ass: buildProgressOverlay(video.steps, i.segments, cfg.progress, undefined, undefined, fx) });
+  if (cfg.progress.enabled && video.steps) layers.push({ name: 'progress', ass: buildProgressOverlay(video.steps, i.segments, cfg.progress, undefined, undefined, cfg.progress.useTextEffects === false ? null : fx) });
   if (ptr && i.pointerLabels.length) layers.push({ name: 'pointers', ass: buildPointerOverlay(i.pointerLabels, i.tracks, ptr, i.fps) });
   if (i.callouts.length) layers.push({ name: 'callouts', ass: buildCalloutOverlay(i.callouts, cfg.callouts, undefined, undefined, { style: cfg.callout?.style, fx, highlight: cfg.highlight }) });
   if (cfg.hook.enabled) layers.push({ name: 'hook', ass: buildHookOverlay(i.hook, cfg.hook, undefined, undefined, fx) });

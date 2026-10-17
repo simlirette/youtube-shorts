@@ -142,7 +142,8 @@ One command renders a video in both: `pnpm video videos/<slug>/video.json --text
 | `text.scrim_opacity` | 0 | 0 | fallback to the shadow: soft dark patch behind each caption phrase |
 | `highlight.policy` | `legacy` | `legacy` (premium v2) | legacy: the word being spoken takes the highlight colour, in sync with the voice; single: only one word per scene (or a fact card figure) is highlighted |
 | `highlight.color` | classic gold `#FFD200` | `#FFD43B` | the highlight colour (spoken word, hook numbers, fact card figure) |
-| `progress.doneStyle` | `dot` | `check` | a finished step is a filled circle with a check mark (`doneColor` green `#2ECC71`, `checkColor` white) |
+| `progress.doneStyle` | `dot` | `dot` | `check` draws a finished step as a green circle with a check mark (`doneColor`, `checkColor`); available, not used by the final premium |
+| `progress.useTextEffects` | true | false | false: the steps tracker ignores the text effects and keeps its own stroke, so premium shows the classic tracker byte for byte |
 | `hook.position.yPct` | 40 | 50 | premium centres the title in the frame |
 | `callout.style` | `legacy` | `badge` | badge: dark translucent card, thin border, big figure over a small label |
 | `callouts.badge.*` | see base.json | fill #0B0D11 at 0.58, border 1.5 px at 0.32, radius 22, padding 26 | badge look |
@@ -154,3 +155,5 @@ Premium v2: the word being spoken is yellow, synchronised with the ElevenLabs wo
 Under `single`, a scene's yellow word is the video's own pick (`highlights: [{ "scene": 3, "word": "explosion" }]` in video.json) or, by default, the longest meaningful word of the scene. A scene with a fact card has no yellow caption word. The hook still colours numbers, the tracker and the outro use white and gray.
 
 Fonts: `assets/fonts/Inter-Bold.otf`, `Inter-SemiBold.otf` (Inter 3.19, SIL OFL, licence in `OFL-Inter.txt`). They are copied into every render with the rest of the folder and are not in the frozen list.
+
+Final premium (2026-10-17): premium text everywhere except the steps tracker at the top, which is the classic one (`presets.premium.progress.useTextEffects: false`, no other tracker override). A test pins premium and classic tracker layers as identical.

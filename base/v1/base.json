@@ -294,27 +294,7 @@
         }
       },
       "progress": {
-        "activeFont": {
-          "family": "Inter",
-          "bold": true
-        },
-        "inactiveFont": {
-          "family": "Inter SemiBold",
-          "bold": false
-        },
-        "stroke": {
-          "widthPct": 0,
-          "shadowPct": 0
-        },
-        "colors": {
-          "active": "#FFFFFF",
-          "done": "#D2D2D2",
-          "upcoming": "#A0A0A0",
-          "line": "#9A9A9A"
-        },
-        "doneStyle": "check",
-        "doneColor": "#2ECC71",
-        "checkColor": "#FFFFFF"
+        "useTextEffects": false
       },
       "callouts": {
         "valueFont": {
@@ -370,9 +350,6 @@
       "highlight": {
         "policy": "legacy",
         "color": "#FFD43B"
-      },
-      "tracker": {
-        "dim_opacity": 0.75
       }
     }
   }

@@ -1037,6 +1037,8 @@ export const ProgressConfigSchema = z.object({
   doneColor: Hex.optional(),
   /** Colour of the check mark (default white). */
   checkColor: Hex.optional(),
+  /** false: the tracker ignores the text effects (soft shadow, tracking) and keeps its own stroke, whatever the text style. Absent = true. */
+  useTextEffects: z.boolean().optional(),
 });
 
 /** The "badge" fact card: a dark translucent backdrop with a thin border, a big figure and a small label beneath it. */

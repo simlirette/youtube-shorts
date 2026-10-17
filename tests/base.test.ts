@@ -626,7 +626,7 @@ describe('text style: premium', () => {
     expect(Number(cap[17])).toBe(0); // Shadow (the soft shadow is its own blurred layer)
     expect(Number(cap[13])).toBeLessThan(0); // tighter tracking
     expect(Number(styleLine(classic.layers.captions, 'Caption')[16])).toBeGreaterThan(5); // classic keeps its thick outline
-    for (const layer of ['hook', 'progress', 'callouts', 'pointers']) expect(premium.layers[layer]).toMatch(/Inter/);
+    for (const layer of ['hook', 'callouts', 'pointers']) expect(premium.layers[layer]).toMatch(/Inter/);
   });
 
   it('replaces the stroke by a soft blurred shadow layer under every text event', () => {
@@ -636,7 +636,7 @@ describe('text style: premium', () => {
     expect(shadows[0]).toMatch(/\\1c&H000000&/);
     expect(events(classic.layers.captions, 'CaptionShadow')).toHaveLength(0);
     expect(events(premium.layers.hook, 'HookShadow').length).toBe(1);
-    expect(events(premium.layers.progress, 'StepOnShadow').length).toBeGreaterThan(0);
+    expect(events(premium.layers.progress, 'StepOnShadow')).toHaveLength(0); // the tracker keeps the classic look
   });
 
   it('the word being spoken is yellow, in sync with the voice (one yellow word per caption event, from the ElevenLabs timestamps)', () => {
@@ -667,21 +667,10 @@ describe('text style: premium', () => {
     expect(new Set(yellow).size).toBeLessThanOrEqual(premium.plan.beats.length);
   });
 
-  it('finished steps are a green circle with a check mark; the tracker has no yellow', () => {
-    const GREEN = '&H71CC2E&'; // #2ECC71
-    const p = premium.layers.progress;
-    expect(p).toContain(GREEN);
-    const checks = p.split(/\r?\n/).filter((l) => l.includes(`\\c${GREEN}`) && l.includes('\\p1'));
-    expect(checks.length).toBeGreaterThan(0);
-    // every check circle has its white check mark drawn on top (same time window, next event)
-    const lines = p.split(/\r?\n/);
-    lines.forEach((l, i) => {
-      if (l.includes(`\\c${GREEN}`) && l.includes('\\p1')) expect(lines[i + 1]).toContain('\\c&HFFFFFF&');
-    });
-    expect(p).not.toContain(YELLOW_OLD);
-    expect(p).not.toContain(YELLOW_NEW);
-    expect(classic.layers.progress).not.toContain(GREEN); // classic still draws plain dots
-    expect(classic.layers.progress).toContain(YELLOW_OLD);
+  it('the steps tracker at the top is the classic one, byte for byte', () => {
+    expect(premium.layers.progress).toBe(classic.layers.progress);
+    expect(layersFor('dam', 'premium').layers.progress).toBe(layersFor('dam', 'classic').layers.progress);
+    expect(premium.layers.progress).toContain(YELLOW_OLD); // the classic yellow active dot
   });
 
   it('the first text (the title / hook) is centred in the frame', () => {
