@@ -140,12 +140,16 @@ One command renders a video in both: `pnpm video videos/<slug>/video.json --text
 | `text.shadow_offset_px` | 2 | 3 | shadow distance below the text |
 | `text.tracking_px` | 0 | -0.8 | letter spacing added to every style |
 | `text.scrim_opacity` | 0 | 0 | fallback to the shadow: soft dark patch behind each caption phrase |
-| `highlight.policy` | `legacy` | `single` | single: yellow only on one word per scene (or the fact card figure of a scene that has one) |
-| `highlight.color` | classic gold `#FFD200` | `#FFD43B` | the one highlight colour |
+| `highlight.policy` | `legacy` | `legacy` (premium v2) | legacy: the word being spoken takes the highlight colour, in sync with the voice; single: only one word per scene (or a fact card figure) is highlighted |
+| `highlight.color` | classic gold `#FFD200` | `#FFD43B` | the highlight colour (spoken word, hook numbers, fact card figure) |
+| `progress.doneStyle` | `dot` | `check` | a finished step is a filled circle with a check mark (`doneColor` green `#2ECC71`, `checkColor` white) |
+| `hook.position.yPct` | 40 | 50 | premium centres the title in the frame |
 | `callout.style` | `legacy` | `badge` | badge: dark translucent card, thin border, big figure over a small label |
 | `callouts.badge.*` | see base.json | fill #0B0D11 at 0.58, border 1.5 px at 0.32, radius 22, padding 26 | badge look |
 | `pointer.font` | Montserrat SemiBold | Inter SemiBold | pill text |
 | font families, stroke widths, colours | Montserrat, thick outline | Inter / Inter SemiBold, no stroke, white and gray | any section can be overridden in the preset |
+
+Premium v2: the word being spoken is yellow, synchronised with the ElevenLabs word timestamps, finished tracker steps are green check circles, and the title is centred. The older one-yellow-word-per-scene rule remains available with `overrides.highlight.policy: "single"`.
 
 Under `single`, a scene's yellow word is the video's own pick (`highlights: [{ "scene": 3, "word": "explosion" }]` in video.json) or, by default, the longest meaningful word of the scene. A scene with a fact card has no yellow caption word. The hook still colours numbers, the tracker and the outro use white and gray.
 

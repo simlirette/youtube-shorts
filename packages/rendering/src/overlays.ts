@@ -323,7 +323,15 @@ export function buildProgressOverlay(steps: string[], segments: ProgressSegment[
       const on = i === e.index;
       const colour = on ? cfg.colors.active : i < e.index ? cfg.colors.done : cfg.colors.upcoming;
       const upcoming = !on && i > e.index;
-      out.push(`Dialogue: 1,${t},Draw,,0,0,0,,${base}\\c${assColour(colour)}${upcoming && dimA ? `\\1a${dimA}` : ''}}${disc(xs[i], cy, on ? rActive : rInactive)}{\\p0}`);
+      if (cfg.doneStyle === 'check' && i < e.index) {
+        // A finished step: a filled circle with a check mark.
+        const rd = rActive + 1;
+        const cxp = xs[i];
+        const pts: Array<[number, number]> = [[cxp - 0.46 * rd, cy + 0.04 * rd], [cxp - 0.12 * rd, cy + 0.4 * rd], [cxp + 0.5 * rd, cy - 0.34 * rd]];
+        const tk = Math.max(2, 0.2 * rd);
+        out.push(`Dialogue: 1,${t},Draw,,0,0,0,,${base}\\c${assColour(cfg.doneColor ?? '#2ECC71')}}${disc(cxp, cy, rd)}{\\p0}`);
+        out.push(`Dialogue: 1,${t},Draw,,0,0,0,,${base}\\c${assColour(cfg.checkColor ?? '#FFFFFF')}}${lineShape(pts[0], pts[1], tk)} ${lineShape(pts[1], pts[2], tk)} ${circle(pts[1][0], pts[1][1], tk / 2, 12)}{\\p0}`);
+      } else out.push(`Dialogue: 1,${t},Draw,,0,0,0,,${base}\\c${assColour(colour)}${upcoming && dimA ? `\\1a${dimA}` : ''}}${disc(xs[i], cy, on ? rActive : rInactive)}{\\p0}`);
       const dim = upcoming ? `\\1a${dimA ?? '&H40&'}` : '';
       // An edge label slides inward so it stays inside the safe margin; its dot stays where it is.
       const lx = r(labelCentre(xs[i], labelWidth(s.length, on ? cfg.activeFont.sizePct : cfg.inactiveFont.sizePct, fit, H), W));

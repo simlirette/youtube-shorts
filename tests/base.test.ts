@@ -547,9 +547,17 @@ describe('overlay checklist on the real engine and dam narration', () => {
 // ---------------------------------------------------------------------------------------------------------
 
 function layersFor(slug: 'four-stroke-engine' | 'dam', style: 'classic' | 'premium') {
+  return buildLayers(slug, (video, base) => effectiveConfig(base, video, style));
+}
+
+function layersForConfig(slug: 'four-stroke-engine' | 'dam', cfg: ReturnType<typeof effectiveConfig>): Record<string, string> {
+  return buildLayers(slug, () => cfg).layers;
+}
+
+function buildLayers(slug: 'four-stroke-engine' | 'dam', cfgOf: (video: any, base: ReturnType<typeof loadBase>) => ReturnType<typeof effectiveConfig>) {
   const loaded = loadVideo(path.join(root, 'videos', slug, 'video.json'));
   const base = loadBase(loaded.video.base);
-  const cfg = effectiveConfig(base, loaded.video, style);
+  const cfg = cfgOf(loaded.video, base);
   const spec = toMechanismSpec(loaded.video, base);
   const saved = fixture(`${slug}.narration.json`);
   const raw = wordsFromAlignment(saved.characters, saved.startTimes, saved.endTimes);
@@ -601,7 +609,6 @@ describe('text style: premium', () => {
     expect(premium.cfg.captions.font.sizePct).toBe(classic.cfg.captions.font.sizePct);
     expect(premium.cfg.captions.position).toEqual(classic.cfg.captions.position);
     expect(premium.cfg.hook.font.sizePct).toBe(classic.cfg.hook.font.sizePct);
-    expect(premium.cfg.hook.position).toEqual(classic.cfg.hook.position);
     expect(premium.cfg.captions.maxWordsPerCue).toBe(classic.cfg.captions.maxWordsPerCue);
     expect(premium.plan.seconds).toBe(classic.plan.seconds);
     const times = (ass: string) => events(ass, 'Caption').map((e) => e.split(',').slice(1, 3).join(','));
@@ -632,21 +639,55 @@ describe('text style: premium', () => {
     expect(events(premium.layers.progress, 'StepOnShadow').length).toBeGreaterThan(0);
   });
 
-  it('yellow marks at most one word or stat per scene, and the filled yellow card is gone', () => {
-    const caps = premium.layers.captions;
-    const yellow = events(caps, 'Caption').flatMap((e) => [...e.matchAll(/\{\\c&H3BD4FF&\}([^{]+)/g)].map((m) => m[1].trim()));
-    expect(yellow.length).toBeGreaterThan(0);
-    expect(caps).not.toContain(YELLOW_OLD);
-    expect(new Set(yellow).size).toBeLessThanOrEqual(premium.plan.beats.length); // one distinct word per scene at most
-    for (const c of premium.callouts) {
-      const beat = premium.plan.beats.find((b) => c.start >= b.start && c.start < b.end)!;
-      const inBeat = events(caps, 'Caption').filter((e) => hmsToS(e.split(',')[1]) >= beat.start && hmsToS(e.split(',')[1]) < beat.end);
-      expect(inBeat.some((e) => e.includes(YELLOW_NEW))).toBe(false); // the card's figure is that scene's yellow item
-    }
-    expect(premium.layers.progress).not.toContain(YELLOW_OLD);
-    expect(premium.layers.progress).not.toContain(YELLOW_NEW);
+  it('the word being spoken is yellow, in sync with the voice (one yellow word per caption event, from the ElevenLabs timestamps)', () => {
+    const caps = events(premium.layers.captions, 'Caption');
+    expect(premium.layers.captions).not.toContain(YELLOW_OLD); // classic gold is gone; premium has its own yellow
+    expect(caps.length).toBeGreaterThan(100); // every word outside the hook and outro windows
+    caps.forEach((e) => {
+      const start = hmsToS(e.split(',')[1]);
+      const spoken = [...premium.words].reverse().find((w) => w.start <= start + 0.02)!; // the word being said at that moment (an event clipped by the hook window starts later)
+      expect(spoken).toBeDefined();
+      const tokens = [...e.matchAll(/\{\\c(&H[0-9A-F]+&)\}([^{]+)/g)].map((m) => ({ c: m[1], t: m[2].replace(/\\N/g, ' ').trim() }));
+      const yellow = tokens.filter((t) => t.c === YELLOW_NEW);
+      expect(yellow).toHaveLength(1);
+      expect(yellow[0].t).toBe(spoken.word);
+    });
     expect(classic.layers.captions).toContain(YELLOW_OLD);
+  });
+
+  it('the single-highlight policy is still available: one yellow word per scene, none where a fact card is', () => {
+    const v = loadVideo(path.join(root, 'videos', 'four-stroke-engine', 'video.json'));
+    const base = loadBase('v1');
+    const cfg = effectiveConfig(base, { ...v.video, overrides: { highlight: { policy: 'single' }, captions: { colors: { current: '#FFFFFF' } } } }, 'premium');
+    expect(cfg.highlight?.policy).toBe('single');
+    expect(cfg.captions.colors.current).toBe('#FFFFFF');
+    const layers = layersForConfig('four-stroke-engine', cfg);
+    const yellow = events(layers.captions, 'Caption').flatMap((e) => [...e.matchAll(/\{\\c&H3BD4FF&\}([^{]+)/g)].map((m) => m[1].trim()));
+    expect(yellow.length).toBeGreaterThan(0);
+    expect(new Set(yellow).size).toBeLessThanOrEqual(premium.plan.beats.length);
+  });
+
+  it('finished steps are a green circle with a check mark; the tracker has no yellow', () => {
+    const GREEN = '&H71CC2E&'; // #2ECC71
+    const p = premium.layers.progress;
+    expect(p).toContain(GREEN);
+    const checks = p.split(/\r?\n/).filter((l) => l.includes(`\\c${GREEN}`) && l.includes('\\p1'));
+    expect(checks.length).toBeGreaterThan(0);
+    // every check circle has its white check mark drawn on top (same time window, next event)
+    const lines = p.split(/\r?\n/);
+    lines.forEach((l, i) => {
+      if (l.includes(`\\c${GREEN}`) && l.includes('\\p1')) expect(lines[i + 1]).toContain('\\c&HFFFFFF&');
+    });
+    expect(p).not.toContain(YELLOW_OLD);
+    expect(p).not.toContain(YELLOW_NEW);
+    expect(classic.layers.progress).not.toContain(GREEN); // classic still draws plain dots
     expect(classic.layers.progress).toContain(YELLOW_OLD);
+  });
+
+  it('the first text (the title / hook) is centred in the frame', () => {
+    expect(premium.cfg.hook.position).toEqual({ xPct: 50, yPct: 50 });
+    expect(events(premium.layers.hook, 'Hook')[0]).toContain('\\an5\\pos(540,960)');
+    expect(classic.cfg.hook.position.yPct).toBe(40); // classic is unchanged
   });
 
   it('fact cards become a minimal badge: dark translucent backdrop, thin border, figure over label', () => {

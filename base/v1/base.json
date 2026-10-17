@@ -273,7 +273,7 @@
         },
         "colors": {
           "spoken": "#FFFFFF",
-          "current": "#FFFFFF",
+          "current": "#FFD43B",
           "upcoming": "#C8C8C8"
         }
       },
@@ -285,6 +285,12 @@
         "stroke": {
           "widthPct": 0,
           "shadowPct": 0
+        },
+        "colors": {
+          "accent": "#FFD43B"
+        },
+        "position": {
+          "yPct": 50
         }
       },
       "progress": {
@@ -305,7 +311,10 @@
           "done": "#D2D2D2",
           "upcoming": "#A0A0A0",
           "line": "#9A9A9A"
-        }
+        },
+        "doneStyle": "check",
+        "doneColor": "#2ECC71",
+        "checkColor": "#FFFFFF"
       },
       "callouts": {
         "valueFont": {
@@ -324,7 +333,7 @@
           "borderOpacity": 0.32,
           "radiusPx": 22,
           "paddingPx": 26,
-          "valueColor": "#FFFFFF",
+          "valueColor": "#FFD43B",
           "labelColor": "#E4E4E4"
         }
       },
@@ -359,7 +368,7 @@
         "tracking_px": -0.8
       },
       "highlight": {
-        "policy": "single",
+        "policy": "legacy",
         "color": "#FFD43B"
       },
       "tracker": {

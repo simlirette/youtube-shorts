@@ -1031,6 +1031,12 @@ export const ProgressConfigSchema = z.object({
   lineHeightPx: z.number().min(1).max(12).optional(),
   /** Opacity (0-1) of steps not reached yet; absent = the original look. */
   dimOpacity: z.number().min(0.1).max(1).optional(),
+  /** How a finished step is drawn: dot (the step colour) or check (a filled circle with a check mark). Absent = dot. */
+  doneStyle: z.enum(['dot', 'check']).optional(),
+  /** Fill of the check circle (default green). */
+  doneColor: Hex.optional(),
+  /** Colour of the check mark (default white). */
+  checkColor: Hex.optional(),
 });
 
 /** The "badge" fact card: a dark translucent backdrop with a thin border, a big figure and a small label beneath it. */
