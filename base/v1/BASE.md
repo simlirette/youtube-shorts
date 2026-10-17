@@ -122,3 +122,31 @@ How pointers work without touching frozen files: the frozen `mechanism.py` draws
 ### Kit authoring guideline (not enforced)
 
 Frame the subject in the upper two thirds of the frame. Keep the lower third free of key parts: it is the caption zone.
+
+## Text styles: classic and premium (2026-10-17)
+
+`text_style` in `base.json` (or `overrides.text_style` in a video) picks the look of every overlay. Only the text layer changes: sizes, positions, word timing, the timeline and the 3D render are the same in both.
+
+- **classic** (default) is the sections of `base.json` untouched. A test (`classic-overlays.sha256.json`) pins every overlay layer byte for byte, and a classic render is pixel-identical to the render made before presets existed.
+- **premium** is `presets.premium` merged over those sections.
+
+One command renders a video in both: `pnpm video videos/<slug>/video.json --text-style=both` gives `<slug>.classic.mp4` and `<slug>.premium.mp4` (one Blender render, `--remux` reuses it). `--text-style=premium` or `=classic` renders one; without the flag the base's `text_style` is used and the file is `<slug>.mp4`.
+
+| Option | Default (classic) | Premium preset | Effect |
+|---|---|---|---|
+| `text_style` | `classic` | | which look |
+| `text.shadow_blur` | absent (none) | 10 | soft drop shadow behind all text, blur px; replaces the stroke |
+| `text.shadow_opacity` | 0.55 | 1.0 | shadow opacity |
+| `text.shadow_offset_px` | 2 | 3 | shadow distance below the text |
+| `text.tracking_px` | 0 | -0.8 | letter spacing added to every style |
+| `text.scrim_opacity` | 0 | 0 | fallback to the shadow: soft dark patch behind each caption phrase |
+| `highlight.policy` | `legacy` | `single` | single: yellow only on one word per scene (or the fact card figure of a scene that has one) |
+| `highlight.color` | classic gold `#FFD200` | `#FFD43B` | the one highlight colour |
+| `callout.style` | `legacy` | `badge` | badge: dark translucent card, thin border, big figure over a small label |
+| `callouts.badge.*` | see base.json | fill #0B0D11 at 0.58, border 1.5 px at 0.32, radius 22, padding 26 | badge look |
+| `pointer.font` | Montserrat SemiBold | Inter SemiBold | pill text |
+| font families, stroke widths, colours | Montserrat, thick outline | Inter / Inter SemiBold, no stroke, white and gray | any section can be overridden in the preset |
+
+Under `single`, a scene's yellow word is the video's own pick (`highlights: [{ "scene": 3, "word": "explosion" }]` in video.json) or, by default, the longest meaningful word of the scene. A scene with a fact card has no yellow caption word. The hook still colours numbers, the tracker and the outro use white and gray.
+
+Fonts: `assets/fonts/Inter-Bold.otf`, `Inter-SemiBold.otf` (Inter 3.19, SIL OFL, licence in `OFL-Inter.txt`). They are copied into every render with the rest of the folder and are not in the frozen list.

@@ -7,5 +7,6 @@ export * from './music.js';
 export * from './blender-graphics.js';
 export * from './mechanism-video.js';
 export * from './overlays.js';
+export * from './overlay-layers.js';
 export * from './anchors.js';
 export * from './video-config.js';

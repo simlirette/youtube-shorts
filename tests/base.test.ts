@@ -2,6 +2,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
+import { createHash } from 'node:crypto';
 import { describe, expect, it } from 'vitest';
 import { planGapTightening, repoRoot } from '@shorts/core';
 import { BaseConfigSchema, VideoConfigSchema } from '@shorts/schemas';
@@ -10,6 +11,7 @@ import {
   buildCaptionOverlay,
   buildHookOverlay,
   buildOutroOverlay,
+  textFx,
   buildPointerOverlay,
   buildProgressOverlay,
   calloutEvents,
@@ -24,6 +26,7 @@ import {
   loadBase,
   loadVideo,
   narrationText,
+  overlayLayers,
   overlayPointers,
   placePills,
   planMechanism,
@@ -538,3 +541,154 @@ describe('overlay checklist on the real engine and dam narration', () => {
     }
   });
 });
+
+// ---------------------------------------------------------------------------------------------------------
+// Text styles: classic (control) and premium
+// ---------------------------------------------------------------------------------------------------------
+
+function layersFor(slug: 'four-stroke-engine' | 'dam', style: 'classic' | 'premium') {
+  const loaded = loadVideo(path.join(root, 'videos', slug, 'video.json'));
+  const base = loadBase(loaded.video.base);
+  const cfg = effectiveConfig(base, loaded.video, style);
+  const spec = toMechanismSpec(loaded.video, base);
+  const saved = fixture(`${slug}.narration.json`);
+  const raw = wordsFromAlignment(saved.characters, saved.startTimes, saved.endTimes);
+  const cut = planGapTightening(raw.map((w) => ({ word: w.word, start: w.start, end: w.end })), saved.audioDurationSeconds, { leadSeconds: base.voice.leadSeconds, gapTargetSeconds: base.voice.pauseTargetSeconds, tailSeconds: base.voice.tailSeconds });
+  const words = retimeWords(raw, cut.words);
+  const split = splitPointerLabels(planMechanism(spec, words, cut.durationAfter, planOptionsFor(loaded.video, cfg)), loaded.video);
+  const plan = split.plan;
+  const callouts = calloutEvents(loaded.video, cfg, words, plan, narrationText(spec));
+  const tracks = slug === 'four-stroke-engine' ? fixture('engine.anchors.json') : {};
+  const layers = overlayLayers({
+    cfg,
+    video: loaded.video,
+    words,
+    plan,
+    hook: hookTextFor(cfg, loaded.video),
+    callouts,
+    segments: progressSegments(plan, loaded.video.steps ?? [], cfg.progress),
+    pointerLabels: slug === 'four-stroke-engine' ? split.labels : [],
+    tracks,
+    fps: base.render.fps,
+  });
+  const byName = Object.fromEntries(layers.map((l) => [l.name, l.ass])) as Record<string, string>;
+  // The outro layer is only part of the build when the video enables it; the control records it either way.
+  byName.outro ??= buildOutroOverlay(Math.max(0, plan.seconds - cfg.outro.seconds), plan.seconds, cfg.outro, undefined, undefined, textFx(cfg.text));
+  return { cfg, words, plan, callouts, layers: byName };
+}
+
+describe('text style: classic is the original look, exactly', () => {
+  const golden = fixture('classic-overlays.sha256.json');
+  it.each(['four-stroke-engine', 'dam'] as const)('%s: every overlay layer of "classic" is byte-identical to the layers recorded before the presets existed', (slug) => {
+    const { layers } = layersFor(slug, 'classic');
+    const hashes = Object.fromEntries(Object.entries(layers).map(([k, v]) => [k, createHash('sha256').update(v).digest('hex')]));
+    expect(hashes).toEqual(golden[slug]);
+  });
+  it('the default style of the base is classic', () => {
+    expect(loadBase('v1').text_style ?? 'classic').toBe('classic');
+  });
+});
+
+describe('text style: premium', () => {
+  const classic = layersFor('four-stroke-engine', 'classic');
+  const premium = layersFor('four-stroke-engine', 'premium');
+  const events = (ass: string, style: string) => ass.split(/\r?\n/).filter((l) => l.startsWith('Dialogue:') && l.split(',')[3] === style);
+  const styleLine = (ass: string, name: string) => ass.split(/\r?\n/).find((l) => l.startsWith(`Style: ${name},`))!.split(',');
+  const YELLOW_OLD = '&H00D2FF&'; // the classic #FFD200
+  const YELLOW_NEW = '&H3BD4FF&'; // the premium highlight #FFD43B
+
+  it('keeps sizes, positions, word timing and the timeline; only the letterforms and effects change', () => {
+    expect(premium.cfg.captions.font.sizePct).toBe(classic.cfg.captions.font.sizePct);
+    expect(premium.cfg.captions.position).toEqual(classic.cfg.captions.position);
+    expect(premium.cfg.hook.font.sizePct).toBe(classic.cfg.hook.font.sizePct);
+    expect(premium.cfg.hook.position).toEqual(classic.cfg.hook.position);
+    expect(premium.cfg.captions.maxWordsPerCue).toBe(classic.cfg.captions.maxWordsPerCue);
+    expect(premium.plan.seconds).toBe(classic.plan.seconds);
+    const times = (ass: string) => events(ass, 'Caption').map((e) => e.split(',').slice(1, 3).join(','));
+    expect(times(premium.layers.captions)).toEqual(times(classic.layers.captions));
+    const words = (ass: string) => events(ass, 'Caption').map((e) => e.replace(/\{[^}]*\}/g, '').split(',').slice(9).join(','));
+    expect(words(premium.layers.captions)).toEqual(words(classic.layers.captions));
+  });
+
+  it('uses the bundled Inter (not a system font) and has no outline', () => {
+    for (const f of ['Inter-Bold.otf', 'Inter-SemiBold.otf', 'OFL-Inter.txt']) expect(fs.existsSync(path.join(root, 'assets', 'fonts', f))).toBe(true);
+    expect(loadBase('v1').frozen.files.join(' ')).not.toContain('Inter'); // additive: the frozen list is unchanged
+    const cap = styleLine(premium.layers.captions, 'Caption');
+    expect(cap[1]).toBe('Inter');
+    expect(Number(cap[16])).toBe(0); // Outline
+    expect(Number(cap[17])).toBe(0); // Shadow (the soft shadow is its own blurred layer)
+    expect(Number(cap[13])).toBeLessThan(0); // tighter tracking
+    expect(Number(styleLine(classic.layers.captions, 'Caption')[16])).toBeGreaterThan(5); // classic keeps its thick outline
+    for (const layer of ['hook', 'progress', 'callouts', 'pointers']) expect(premium.layers[layer]).toMatch(/Inter/);
+  });
+
+  it('replaces the stroke by a soft blurred shadow layer under every text event', () => {
+    const shadows = events(premium.layers.captions, 'CaptionShadow');
+    expect(shadows).toHaveLength(events(premium.layers.captions, 'Caption').length);
+    expect(shadows[0]).toMatch(/\\blur10/);
+    expect(shadows[0]).toMatch(/\\1c&H000000&/);
+    expect(events(classic.layers.captions, 'CaptionShadow')).toHaveLength(0);
+    expect(events(premium.layers.hook, 'HookShadow').length).toBe(1);
+    expect(events(premium.layers.progress, 'StepOnShadow').length).toBeGreaterThan(0);
+  });
+
+  it('yellow marks at most one word or stat per scene, and the filled yellow card is gone', () => {
+    const caps = premium.layers.captions;
+    const yellow = events(caps, 'Caption').flatMap((e) => [...e.matchAll(/\{\\c&H3BD4FF&\}([^{]+)/g)].map((m) => m[1].trim()));
+    expect(yellow.length).toBeGreaterThan(0);
+    expect(caps).not.toContain(YELLOW_OLD);
+    expect(new Set(yellow).size).toBeLessThanOrEqual(premium.plan.beats.length); // one distinct word per scene at most
+    for (const c of premium.callouts) {
+      const beat = premium.plan.beats.find((b) => c.start >= b.start && c.start < b.end)!;
+      const inBeat = events(caps, 'Caption').filter((e) => hmsToS(e.split(',')[1]) >= beat.start && hmsToS(e.split(',')[1]) < beat.end);
+      expect(inBeat.some((e) => e.includes(YELLOW_NEW))).toBe(false); // the card's figure is that scene's yellow item
+    }
+    expect(premium.layers.progress).not.toContain(YELLOW_OLD);
+    expect(premium.layers.progress).not.toContain(YELLOW_NEW);
+    expect(classic.layers.captions).toContain(YELLOW_OLD);
+    expect(classic.layers.progress).toContain(YELLOW_OLD);
+  });
+
+  it('fact cards become a minimal badge: dark translucent backdrop, thin border, figure over label', () => {
+    const ass = premium.layers.callouts;
+    const lines = ass.split(/\r?\n/);
+    const backdrop = lines.find((l) => l.includes(',CalloutDraw,') && l.startsWith('Dialogue: 3'))!;
+    expect(backdrop).toContain('\\c&H110D0B&'); // #0B0D11, not the yellow fill
+    expect(backdrop).toMatch(/\\bord1\.5/);
+    expect(backdrop).not.toMatch(/\\1a&H00&/); // translucent
+    const value = lines.find((l) => l.includes(',CalloutValue,'))!;
+    const label = lines.find((l) => l.includes(',CalloutLabel,'))!;
+    const y = (l: string) => Number(/\\pos\(\d+,(\d+)\)/.exec(l)![1]);
+    expect(y(label)).toBeGreaterThan(y(value)); // label beneath the figure
+    expect(Number(styleLine(ass, 'CalloutValue')[2])).toBeGreaterThan(Number(styleLine(ass, 'CalloutLabel')[2]) * 2);
+    expect(classic.layers.callouts).not.toContain('CalloutValueShadow');
+  });
+
+  it('keeps the size hierarchy hook > caption > fact label > tracker label', () => {
+    const sz = (ass: string, name: string) => Number(styleLine(ass, name)[2]);
+    expect(sz(premium.layers.hook, 'Hook')).toBeGreaterThan(sz(premium.layers.captions, 'Caption'));
+    expect(sz(premium.layers.captions, 'Caption')).toBeGreaterThan(sz(premium.layers.callouts, 'CalloutLabel'));
+    expect(sz(premium.layers.callouts, 'CalloutLabel')).toBeGreaterThan(sz(premium.layers.progress, 'Step'));
+    expect(sz(premium.layers.hook, 'Hook')).toBe(sz(classic.layers.hook, 'Hook'));
+  });
+
+  it('is selectable per video, and an unknown preset is an error', () => {
+    const loaded = loadVideo(path.join(root, 'videos', 'dam', 'video.json'));
+    const base = loadBase('v1');
+    expect(effectiveConfig(base, { ...loaded.video, overrides: { text_style: 'premium' } }).text_style).toBe('premium');
+    expect(effectiveConfig(base, loaded.video).text_style).toBe('classic');
+    expect(() => effectiveConfig({ ...base, presets: {} }, loaded.video, 'premium')).toThrow(/presets\.premium/);
+  });
+
+  it('renders the dam too (text layers differ from classic, same layers present)', () => {
+    const c = layersFor('dam', 'classic');
+    const p = layersFor('dam', 'premium');
+    expect(Object.keys(p.layers).sort()).toEqual(Object.keys(c.layers).sort());
+    expect(p.layers.captions).not.toBe(c.layers.captions);
+  });
+});
+
+function hmsToS(t: string): number {
+  const [h, m, s] = t.split(':');
+  return Number(h) * 3600 + Number(m) * 60 + Number(s);
+}

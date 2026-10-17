@@ -2,7 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { createHash } from 'node:crypto';
 import { InternalError, repoRoot } from '@shorts/core';
-import { BaseConfigSchema, PointerConfigSchema, VideoConfigSchema, type BaseConfig, type MechanismVideoSpec, type PointerConfig, type VideoConfig } from '@shorts/schemas';
+import { BaseConfigSchema, PointerConfigSchema, VideoConfigSchema, type BaseConfig, type MechanismVideoSpec, type PointerConfig, type TextStyleName, type VideoConfig } from '@shorts/schemas';
 import { hookLine, type CalloutEvent, type PointerLabel, type ProgressSegment } from './overlays.js';
 import type { MechanismPlan, NarrationWord, PlanOptions } from './mechanism-video.js';
 
@@ -97,10 +97,37 @@ export function overlayPointers(cfg: BaseConfig): PointerConfig | null {
   return cfg.pointer && cfg.pointer.mode === 'overlay' ? cfg.pointer : null;
 }
 
-/** The base with this video's allowed overrides applied (captions, hook, progress, callouts, outro, and the refinement keys). */
-export function effectiveConfig(base: BaseConfig, video: VideoConfig): BaseConfig {
-  const merged = { ...base };
+/**
+ * Applies a named text style on top of the base. "classic" returns the base untouched (the original look, exactly);
+ * any other name merges `presets.<name>` over the overlay sections, the text effects and the highlight policy.
+ */
+export function applyTextStyle(base: BaseConfig, style: TextStyleName): BaseConfig {
+  if (style === 'classic') return { ...base, text_style: 'classic' };
+  const p = base.presets?.[style];
+  if (!p) throw new InternalError(`text style "${style}" is not defined: the base has no presets.${style}`);
+  const m: BaseConfig = { ...base, text_style: style };
+  if (p.captions) m.captions = BaseConfigSchema.shape.captions.parse(mergeDeep(base.captions, p.captions));
+  if (p.hook) m.hook = BaseConfigSchema.shape.hook.parse(mergeDeep(base.hook, p.hook));
+  if (p.progress) m.progress = BaseConfigSchema.shape.progress.parse(mergeDeep(base.progress, p.progress));
+  if (p.callouts) m.callouts = BaseConfigSchema.shape.callouts.parse(mergeDeep(base.callouts, p.callouts));
+  if (p.outro) m.outro = BaseConfigSchema.shape.outro.parse(mergeDeep(base.outro, p.outro));
+  if (p.pointer && base.pointer) m.pointer = PointerConfigSchema.parse(mergeDeep(base.pointer, p.pointer));
+  if (p.callout) m.callout = { ...base.callout, ...p.callout };
+  if (p.tracker) m.tracker = { ...base.tracker, ...p.tracker };
+  if (p.text) m.text = { ...base.text, ...p.text };
+  if (p.highlight) m.highlight = { ...base.highlight, ...p.highlight };
+  return m;
+}
+
+/**
+ * The base with this video's allowed overrides applied (captions, hook, progress, callouts, outro, and the refinement keys).
+ * `textStyle` picks the text style (classic | premium); default: the video's override, else the base's, else classic.
+ */
+export function effectiveConfig(base0: BaseConfig, video: VideoConfig, textStyle?: TextStyleName): BaseConfig {
   const o = video.overrides;
+  const style = textStyle ?? o.text_style ?? base0.text_style ?? 'classic';
+  const base = applyTextStyle(base0, style);
+  const merged = { ...base };
   if (o.captions) merged.captions = BaseConfigSchema.shape.captions.parse(mergeDeep(base.captions, o.captions));
   if (o.hook) merged.hook = BaseConfigSchema.shape.hook.parse(mergeDeep(base.hook, o.hook));
   if (o.progress) merged.progress = BaseConfigSchema.shape.progress.parse(mergeDeep(base.progress, o.progress));
@@ -112,7 +139,10 @@ export function effectiveConfig(base: BaseConfig, video: VideoConfig): BaseConfi
     callout: base.callout || o.callout ? { ...base.callout, ...o.callout } : undefined,
   };
   const result = applyRefinementKeys(merged, keys);
+  if (keys.callout) result.callout = keys.callout;
   if (base.pointer) result.pointer = PointerConfigSchema.parse(mergeDeep(base.pointer, o.pointer));
+  if (base.text || o.text) result.text = { ...base.text, ...o.text };
+  if (base.highlight || o.highlight) result.highlight = { ...base.highlight, ...o.highlight };
   return result;
 }
 

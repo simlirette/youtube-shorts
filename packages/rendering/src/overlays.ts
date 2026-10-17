@@ -1,5 +1,5 @@
 import { InternalError } from '@shorts/core';
-import type { CalloutStyle, CaptionCue, CaptionsConfig, HookStyle, OutroConfig, PointerConfig, ProgressConfig, VideoHook } from '@shorts/schemas';
+import type { CalloutStyle, CaptionCue, CaptionsConfig, HighlightConfig, HookStyle, OutroConfig, PointerConfig, ProgressConfig, TextEffects, VideoHook } from '@shorts/schemas';
 import { CAPTION_LAYOUT, emphasisIndex } from './captions.js';
 import { ASS_HEADER, assTime, disc, mechanismCaptionCues, type NarrationWord } from './mechanism-video.js';
 
@@ -41,7 +41,8 @@ function styleColour(hex: string, alpha = '00'): string {
 }
 
 /** ASS style line. Alignment 5 = centred on \pos. Sizes come in as % of the frame height. */
-function assStyle(name: string, font: Font, stroke: Stroke, primary: string, H = FRAME_H, alignment = 5, spacing = 0): string {
+function assStyle(name: string, font: Font, stroke: Stroke, primary: string, H = FRAME_H, alignment = 5, spacing = 0, fx: TextFx | null = null): string {
+  spacing += fx ? fx.tracking : 0;
   return [
     name, font.family, r(px(font.sizePct, H)), styleColour(primary), '&H000000FF', styleColour(stroke.color), '&HB4000000',
     font.bold ? -1 : 0, 0, 0, 0, 100, 100, spacing, 0, 1, +px(stroke.widthPct, H).toFixed(1), +px(stroke.shadowPct, H).toFixed(1), alignment, 0, 0, 0, 1,
@@ -105,11 +106,50 @@ export function alphaTag(opacity: number): string {
 
 const wordKey = (w: string): string => w.toLowerCase().replace(/[^a-z0-9']/g, '');
 
+// ---------------------------------------------------------------------------------------------------------
+// Text effects (the "premium" look): a soft drop shadow in place of the outline, tighter tracking, an optional scrim.
+// With no effects configured every builder returns exactly what it always did ("classic").
+// ---------------------------------------------------------------------------------------------------------
+
+export interface TextFx {
+  /** Soft shadow: blur radius in px, opacity 0-1, distance below the text in px. */
+  shadow: boolean;
+  blur: number;
+  opacity: number;
+  offset: number;
+  tracking: number;
+  /** Opacity of the dark scrim behind each caption phrase (0 = none). */
+  scrim: number;
+}
+
+export function textFx(t?: TextEffects): TextFx | null {
+  if (!t) return null;
+  const blur = t.shadow_blur ?? 0;
+  const tracking = t.tracking_px ?? 0;
+  const scrim = t.scrim_opacity ?? 0;
+  if (blur <= 0 && tracking === 0 && scrim <= 0) return null;
+  return { shadow: blur > 0, blur, opacity: t.shadow_opacity ?? 0.55, offset: t.shadow_offset_px ?? 2, tracking, scrim };
+}
+
+/** Override tags that turn a copy of a text event into its shadow: dark, blurred, nothing of the original colour. */
+function shadowTags(fx: TextFx, mult = 1): string {
+  const a = alphaTag(fx.opacity * mult);
+  return `\\1c&H000000&\\3c&H000000&\\1a${a}\\3a${a}\\bord${+(fx.blur / 2).toFixed(1)}\\shad0\\blur${fx.blur}`;
+}
+
+/** The same style with another name (for the shadow copies). */
+const renamed = (style: string, to: string): string => style.replace(/^[^,]+/, to);
+
 export interface CaptionOptions {
   /** Spoken word (lower case, no punctuation) -> text drawn instead; the timing is unchanged. */
   display?: Record<string, string>;
   /** Time windows in which no caption is drawn (the hook line, the outro). */
   suppress?: Array<[number, number]>;
+  /** Text effects (soft shadow, tracking, scrim); absent = the classic look. */
+  fx?: TextFx | null;
+  /** With policy "single" only the words in `keywords` (indices into the narration words) take the highlight colour; the word being spoken is otherwise the `current` colour. */
+  highlight?: HighlightConfig;
+  keywords?: ReadonlySet<number>;
 }
 
 /**
@@ -118,8 +158,15 @@ export interface CaptionOptions {
  * timing "phrase": the phrase appears whole, with one keyword in the `current` colour.
  */
 export function buildCaptionOverlay(cues: CaptionCue[], words: NarrationWord[], cfg: CaptionsConfig, opts: CaptionOptions = {}, W = FRAME_W, H = FRAME_H): string {
-  const style = assStyle('Caption', cfg.font, cfg.stroke, cfg.colors.spoken, H);
-  const pos = `\\an5\\pos(${r(px(cfg.position.xPct, W))},${r(px(cfg.position.yPct, H))})`;
+  const fx = opts.fx ?? null;
+  const style = assStyle('Caption', cfg.font, cfg.stroke, cfg.colors.spoken, H, 5, 0, fx);
+  const posX = r(px(cfg.position.xPct, W));
+  const posY = r(px(cfg.position.yPct, H));
+  const pos = `\\an5\\pos(${posX},${posY})`;
+  const single = opts.highlight?.policy === 'single';
+  const keywords = opts.keywords ?? new Set<number>();
+  const hl = opts.highlight?.color ?? cfg.colors.current;
+  const tone = (idx: number, state: 'spoken' | 'current' | 'upcoming'): string => (single && keywords.has(idx) && state !== 'upcoming' ? hl : cfg.colors[state]);
   const display = Object.fromEntries(Object.entries(opts.display ?? {}).map(([k, v]) => [wordKey(k), v]));
   const suppress = opts.suppress ?? [];
   const events: string[] = [];
@@ -135,9 +182,21 @@ export function buildCaptionOverlay(cues: CaptionCue[], words: NarrationWord[], 
     if (tokens.length !== last - first + 1) throw new InternalError(`caption cue ${c.index}: ${tokens.length} displayed words for ${last - first + 1} spoken words`);
     const render = (stateOf: (j: number) => string): string =>
       c.lines.map((_, li) => tokens.map((t, j) => ({ t, j })).filter((x) => x.t.line === li).map((x) => `{\\c${assColour(stateOf(x.j))}}${shown(x.t.w)}`).join(' ')).join('\\N');
+    const plain = c.lines.map((_, li) => tokens.filter((t) => t.line === li).map((t) => shown(t.w)).join(' ')).join('\\N');
+    if (fx && fx.scrim > 0) {
+      // A soft dark patch behind the phrase, sized from its longest line.
+      const size = px(cfg.font.sizePct, H);
+      const pad = size * 0.55;
+      const sw = Math.max(...c.lines.map((l) => l.length)) * (size / 1.22) * 0.58 + pad * 2;
+      const sh = c.lines.length * size * 1.15 + pad;
+      for (const [s, e] of outside(c.start, c.end, suppress)) {
+        events.push(`Dialogue: 0,${assTime(s)},${assTime(e)},CaptionShadow,,0,0,0,,{\\an7\\pos(0,0)\\p1\\fad(${cfg.fadeMs.in},${cfg.fadeMs.out})\\1c&H000000&\\1a${alphaTag(fx.scrim)}\\bord0\\shad0\\blur${r(H * 0.012)}}${roundedRect(r(posX - sw / 2), r(posY - sh / 2), r(sw), r(sh), r(sh / 2.5))}{\\p0}`);
+      }
+    }
     const push = (start: number, end: number, body: string, fadeIn: boolean, fadeOut: boolean): void => {
       for (const [s, e] of outside(start, end, suppress)) {
         const fade = fadeIn || fadeOut ? `\\fad(${fadeIn ? cfg.fadeMs.in : 0},${fadeOut ? cfg.fadeMs.out : 0})` : '';
+        if (fx?.shadow) events.push(`Dialogue: 0,${assTime(s)},${assTime(e)},CaptionShadow,,0,0,0,,{\\an5\\pos(${posX},${posY + fx.offset})${fade}${shadowTags(fx)}}${plain}`);
         events.push(`Dialogue: 1,${assTime(s)},${assTime(e)},Caption,,0,0,0,,{${pos}${fade}}${body}`);
       }
     };
@@ -146,14 +205,14 @@ export function buildCaptionOverlay(cues: CaptionCue[], words: NarrationWord[], 
         const start = words[first + k].start;
         const end = k < tokens.length - 1 ? words[first + k + 1].start : c.end;
         if (end <= start) continue;
-        push(start, end, render((j) => (j < k ? cfg.colors.spoken : j === k ? cfg.colors.current : cfg.colors.upcoming)), k === 0, k === tokens.length - 1);
+        push(start, end, render((j) => tone(first + j, j < k ? 'spoken' : j === k ? 'current' : 'upcoming')), k === 0, k === tokens.length - 1);
       }
     } else {
       const key = emphasisIndex(tokens.map((t) => t.w.toUpperCase()));
-      push(c.start, c.end, render((j) => (j === key ? cfg.colors.current : cfg.colors.spoken)), true, true);
+      push(c.start, c.end, render((j) => (single ? (keywords.has(first + j) ? hl : cfg.colors.spoken) : j === key ? cfg.colors.current : cfg.colors.spoken)), true, true);
     }
   }
-  return ASS_HEADER(W, H, [`Style: ${style}`]) + events.join('\n') + '\n';
+  return ASS_HEADER(W, H, [`Style: ${style}`, ...(fx ? [`Style: ${renamed(style, 'CaptionShadow')}`] : [])]) + events.join('\n') + '\n';
 }
 
 // ---------------------------------------------------------------------------------------------------------
@@ -173,16 +232,18 @@ export function hookLine(formulas: HookStyle['formulas'], hook: VideoHook): stri
 }
 
 /** Large centred hook line, on screen from the first frame. Numbers use the accent colour. */
-export function buildHookOverlay(text: string, cfg: HookStyle, W = FRAME_W, H = FRAME_H): string {
-  const style = assStyle('Hook', cfg.font, cfg.stroke, cfg.colors.text, H);
+export function buildHookOverlay(text: string, cfg: HookStyle, W = FRAME_W, H = FRAME_H, fx: TextFx | null = null): string {
+  const style = assStyle('Hook', cfg.font, cfg.stroke, cfg.colors.text, H, 5, 0, fx);
   const shown = cfg.uppercase ? text.toUpperCase() : text;
   const lines = wrap(shown, lineBudget(cfg.font, cfg.safeWidthPct, W, H));
   const body = lines
     .map((l) => (cfg.accentNumbers ? l.replace(/(\d[\d,.]*%?)/g, `{\\c${assColour(cfg.colors.accent)}}$1{\\c${assColour(cfg.colors.text)}}`) : l))
     .join('\\N');
   const pos = `\\an5\\pos(${r(px(cfg.position.xPct, W))},${r(px(cfg.position.yPct, H))})`;
-  const ev = `Dialogue: 2,${assTime(0)},${assTime(cfg.seconds)},Hook,,0,0,0,,{${pos}\\fad(${cfg.fadeMs.in},${cfg.fadeMs.out})}${body}`;
-  return ASS_HEADER(W, H, [`Style: ${style}`]) + ev + '\n';
+  const fade = `\\fad(${cfg.fadeMs.in},${cfg.fadeMs.out})`;
+  const shadow = fx?.shadow ? `Dialogue: 1,${assTime(0)},${assTime(cfg.seconds)},HookShadow,,0,0,0,,{\\an5\\pos(${r(px(cfg.position.xPct, W))},${r(px(cfg.position.yPct, H)) + fx.offset})${fade}${shadowTags(fx)}}${lines.join('\\N')}\n` : '';
+  const ev = `Dialogue: 2,${assTime(0)},${assTime(cfg.seconds)},Hook,,0,0,0,,{${pos}${fade}}${body}`;
+  return ASS_HEADER(W, H, [`Style: ${style}`, ...(fx ? [`Style: ${renamed(style, 'HookShadow')}`] : [])]) + shadow + ev + '\n';
 }
 
 // ---------------------------------------------------------------------------------------------------------
@@ -230,11 +291,11 @@ export function progressFit(steps: string[], cfg: ProgressConfig, W = FRAME_W, H
 }
 
 /** The step tracker (INTAKE > COMPRESSION > POWER > EXHAUST style), visible from frame 1 when configured. */
-export function buildProgressOverlay(steps: string[], segments: ProgressSegment[], cfg: ProgressConfig, W = FRAME_W, H = FRAME_H): string {
+export function buildProgressOverlay(steps: string[], segments: ProgressSegment[], cfg: ProgressConfig, W = FRAME_W, H = FRAME_H, fx: TextFx | null = null): string {
   const n = steps.length;
   const fit = progressFit(steps, cfg, W, H);
-  const label = assStyle('Step', { ...cfg.inactiveFont, sizePct: cfg.inactiveFont.sizePct * fit }, cfg.stroke, '#FFFFFF', H, 8, 3);
-  const labelOn = assStyle('StepOn', { ...cfg.activeFont, sizePct: cfg.activeFont.sizePct * fit }, cfg.stroke, '#FFFFFF', H, 8, 3);
+  const label = assStyle('Step', { ...cfg.inactiveFont, sizePct: cfg.inactiveFont.sizePct * fit }, cfg.stroke, '#FFFFFF', H, 8, 3, fx);
+  const labelOn = assStyle('StepOn', { ...cfg.activeFont, sizePct: cfg.activeFont.sizePct * fit }, cfg.stroke, '#FFFFFF', H, 8, 3, fx);
   const draw = ['Draw', 'Montserrat', 20, '&H00FFFFFF', '&H000000FF', '&H00000000', '&H00000000', 0, 0, 0, 0, 100, 100, 0, 0, 1, 0, 0, 7, 0, 0, 0, 1].join(',');
   const cy = r(px(cfg.yPct, H));
   const spread = px(cfg.spreadPct, W);
@@ -266,10 +327,12 @@ export function buildProgressOverlay(steps: string[], segments: ProgressSegment[
       const dim = upcoming ? `\\1a${dimA ?? '&H40&'}` : '';
       // An edge label slides inward so it stays inside the safe margin; its dot stays where it is.
       const lx = r(labelCentre(xs[i], labelWidth(s.length, on ? cfg.activeFont.sizePct : cfg.inactiveFont.sizePct, fit, H), W));
+      if (fx?.shadow) out.push(`Dialogue: 1,${t},${on ? 'StepOn' : 'Step'}Shadow,,0,0,0,,{\\an8\\pos(${lx},${cy + labelDy + fx.offset})${fade}${shadowTags(fx, upcoming ? cfg.dimOpacity ?? 0.75 : 1)}}${s.toUpperCase()}`);
       out.push(`Dialogue: 2,${t},${on ? 'StepOn' : 'Step'},,0,0,0,,{\\an8\\pos(${lx},${cy + labelDy})${fade}${dim}}${s.toUpperCase()}`);
     });
   });
-  return ASS_HEADER(W, H, [`Style: ${label}`, `Style: ${labelOn}`, `Style: ${draw}`]) + out.join('\n') + '\n';
+  const shadowStyles = fx ? [`Style: ${renamed(label, 'StepShadow')}`, `Style: ${renamed(labelOn, 'StepOnShadow')}`] : [];
+  return ASS_HEADER(W, H, [`Style: ${label}`, `Style: ${labelOn}`, `Style: ${draw}`, ...shadowStyles]) + out.join('\n') + '\n';
 }
 
 // ---------------------------------------------------------------------------------------------------------
@@ -300,8 +363,63 @@ function roundedRect(x: number, y: number, w: number, h: number, rad: number): s
   return `m ${pts[0][0]} ${pts[0][1]} l ${pts.slice(1).map((p) => `${p[0]} ${p[1]}`).join(' ')}`;
 }
 
+export interface CalloutOptions {
+  /** badge: big figure, small label, dark translucent backdrop with a thin border; legacy/absent: the filled highlighter card. */
+  style?: 'badge' | 'legacy';
+  fx?: TextFx | null;
+  highlight?: HighlightConfig;
+}
+
+/** Default look of the badge when base.json gives none. */
+const BADGE_DEFAULT = { fill: '#0B0D11', opacity: 0.58, borderPx: 1.5, borderColor: '#FFFFFF', borderOpacity: 0.32, radiusPx: 22, paddingPx: 26, valueColor: '#FFFFFF', labelColor: '#E4E4E4' };
+
+/**
+ * The minimal stat badge: the figure big, a small label beneath it, on a dark translucent rounded backdrop with a
+ * thin border. No filled yellow box; the figure is the one yellow item of its scene when the highlight policy is "single".
+ */
+function buildBadgeOverlay(items: CalloutEvent[], cfg: CalloutStyle, W: number, H: number, opts: CalloutOptions): string {
+  const fx = opts.fx ?? null;
+  const b = { ...BADGE_DEFAULT, ...(cfg.badge ?? {}) };
+  const valueColour = opts.highlight?.policy === 'single' ? opts.highlight.color ?? '#FFD200' : b.valueColor;
+  const valueStyle = assStyle('CalloutValue', cfg.valueFont, { widthPct: 0, color: '#000000', shadowPct: 0 }, valueColour, H, 5, 0, fx);
+  const labelStyle = assStyle('CalloutLabel', cfg.labelFont, { widthPct: 0, color: '#000000', shadowPct: 0 }, b.labelColor, H, 5, 0, fx);
+  const draw = ['CalloutDraw', 'Montserrat', 20, '&H00FFFFFF', '&H000000FF', '&H00000000', '&H00000000', 0, 0, 0, 0, 100, 100, 0, 0, 1, 0, 0, 7, 0, 0, 0, 1].join(',');
+  const vH = px(cfg.valueFont.sizePct, H);
+  const lH = px(cfg.labelFont.sizePct, H);
+  const cx = px(cfg.position.xPct, W);
+  const cy = px(cfg.position.yPct, H);
+  const out: string[] = [];
+  for (const it of items) {
+    const vW = it.value.length * (vH / 1.22) * 0.64;
+    const lW = it.label ? it.label.length * (lH / 1.22) * 0.6 : 0;
+    const w = Math.min(W * 0.92, Math.max(vW, lW) + b.paddingPx * 2.4);
+    const h = vH * 0.92 + (it.label ? lH * 1.45 : 0) + b.paddingPx * 1.5;
+    const x0 = cx - w / 2;
+    const y0 = cy - h / 2;
+    const t = `${assTime(it.start)},${assTime(it.end)}`;
+    const fade = `\\fad(${cfg.fadeMs.in},${cfg.fadeMs.out})`;
+    const rect = roundedRect(r(x0), r(y0), r(w), r(h), r(b.radiusPx));
+    if (fx?.shadow) out.push(`Dialogue: 2,${t},CalloutDraw,,0,0,0,,{\\an7\\pos(0,${fx.offset * 2})\\p1${fade}\\1c&H000000&\\1a${alphaTag(fx.opacity * 0.8)}\\bord0\\shad0\\blur${r(fx.blur * 1.4)}}${rect}{\\p0}`);
+    out.push(`Dialogue: 3,${t},CalloutDraw,,0,0,0,,{\\an7\\pos(0,0)\\p1${fade}\\c${assColour(b.fill)}\\1a${alphaTag(b.opacity)}\\3c${assColour(b.borderColor)}\\3a${alphaTag(b.borderOpacity)}\\bord${b.borderPx}\\shad0}${rect}{\\p0}`);
+    const vy = y0 + b.paddingPx * 0.75 + (vH * 0.92) / 2;
+    const ly = y0 + h - b.paddingPx * 0.75 - lH * 0.7;
+    const sh = (kind: 'Value' | 'Label', y: number, text: string): void => {
+      if (fx?.shadow) out.push(`Dialogue: 3,${t},Callout${kind}Shadow,,0,0,0,,{\\an5\\pos(${r(cx)},${r(y + fx.offset)})${fade}${shadowTags(fx)}}${text}`);
+    };
+    sh('Value', vy, it.value);
+    out.push(`Dialogue: 4,${t},CalloutValue,,0,0,0,,{\\an5\\pos(${r(cx)},${r(vy)})${fade}}${it.value}`);
+    if (it.label) {
+      sh('Label', ly, it.label);
+      out.push(`Dialogue: 4,${t},CalloutLabel,,0,0,0,,{\\an5\\pos(${r(cx)},${r(ly)})${fade}}${it.label}`);
+    }
+  }
+  const shadowStyles = fx ? [`Style: ${renamed(valueStyle, 'CalloutValueShadow')}`, `Style: ${renamed(labelStyle, 'CalloutLabelShadow')}`] : [];
+  return ASS_HEADER(W, H, [`Style: ${valueStyle}`, `Style: ${labelStyle}`, `Style: ${draw}`, ...shadowStyles]) + out.join('\n') + '\n';
+}
+
 /** Yellow stat cards with a black outline, for surprising numbers. */
-export function buildCalloutOverlay(items: CalloutEvent[], cfg: CalloutStyle, W = FRAME_W, H = FRAME_H): string {
+export function buildCalloutOverlay(items: CalloutEvent[], cfg: CalloutStyle, W = FRAME_W, H = FRAME_H, opts: CalloutOptions = {}): string {
+  if (opts.style === 'badge') return buildBadgeOverlay(items, cfg, W, H, opts);
   const valueStyle = assStyle('CalloutValue', cfg.valueFont, { widthPct: 0, color: '#000000', shadowPct: 0 }, cfg.text, H);
   const labelStyle = assStyle('CalloutLabel', cfg.labelFont, { widthPct: 0, color: '#000000', shadowPct: 0 }, cfg.text, H);
   const draw = ['CalloutDraw', 'Montserrat', 20, '&H00FFFFFF', '&H000000FF', '&H00000000', '&H00000000', 0, 0, 0, 0, 100, 100, 0, 0, 1, 0, 0, 7, 0, 0, 0, 1].join(',');
@@ -334,9 +452,9 @@ export function buildCalloutOverlay(items: CalloutEvent[], cfg: CalloutStyle, W 
 // ---------------------------------------------------------------------------------------------------------
 
 /** End card: a line of text and a tagline with a short accent bar, over the last seconds. */
-export function buildOutroOverlay(start: number, end: number, cfg: OutroConfig, W = FRAME_W, H = FRAME_H): string {
-  const text = assStyle('OutroText', cfg.textFont, cfg.stroke, cfg.colors.text, H);
-  const sub = assStyle('OutroSub', cfg.subtextFont, cfg.stroke, cfg.colors.accent, H, 5, 2);
+export function buildOutroOverlay(start: number, end: number, cfg: OutroConfig, W = FRAME_W, H = FRAME_H, fx: TextFx | null = null): string {
+  const text = assStyle('OutroText', cfg.textFont, cfg.stroke, cfg.colors.text, H, 5, 0, fx);
+  const sub = assStyle('OutroSub', cfg.subtextFont, cfg.stroke, cfg.colors.accent, H, 5, 2, fx);
   const draw = ['OutroDraw', 'Montserrat', 20, '&H00FFFFFF', '&H000000FF', '&H00000000', '&H00000000', 0, 0, 0, 0, 100, 100, 0, 0, 1, 0, 0, 7, 0, 0, 0, 1].join(',');
   const t = `${assTime(start)},${assTime(end)}`;
   const fade = `\\fad(${cfg.fadeMs.in},${cfg.fadeMs.out})`;
@@ -349,7 +467,14 @@ export function buildOutroOverlay(start: number, end: number, cfg: OutroConfig, 
     `Dialogue: 2,${t},OutroDraw,,0,0,0,,{\\an7\\pos(0,0)\\p1${fade}\\c${assColour(cfg.colors.accent)}}m ${cx - barW / 2} ${r(cy + gap * 0.62)} l ${cx + barW / 2} ${r(cy + gap * 0.62)} l ${cx + barW / 2} ${r(cy + gap * 0.62) + 6} l ${cx - barW / 2} ${r(cy + gap * 0.62) + 6}{\\p0}`,
     `Dialogue: 2,${t},OutroSub,,0,0,0,,{\\an5\\pos(${cx},${r(cy + gap * 1.25)})${fade}}${cfg.subtext}`,
   ];
-  return ASS_HEADER(W, H, [`Style: ${text}`, `Style: ${sub}`, `Style: ${draw}`]) + out.join('\n') + '\n';
+  if (fx?.shadow) {
+    out.unshift(
+      `Dialogue: 1,${t},OutroTextShadow,,0,0,0,,{\\an5\\pos(${cx},${cy + fx.offset})${fade}${shadowTags(fx)}}${cfg.text}`,
+      `Dialogue: 1,${t},OutroSubShadow,,0,0,0,,{\\an5\\pos(${cx},${r(cy + gap * 1.25) + fx.offset})${fade}${shadowTags(fx)}}${cfg.subtext}`
+    );
+  }
+  const shadowStyles = fx ? [`Style: ${renamed(text, 'OutroTextShadow')}`, `Style: ${renamed(sub, 'OutroSubShadow')}`] : [];
+  return ASS_HEADER(W, H, [`Style: ${text}`, `Style: ${sub}`, `Style: ${draw}`, ...shadowStyles]) + out.join('\n') + '\n';
 }
 
 // ---------------------------------------------------------------------------------------------------------
@@ -453,7 +578,7 @@ function circle(cx: number, cy: number, rad: number, n = 20): string {
 export function buildPointerOverlay(labels: PointerLabel[], tracks: AnchorTracks, cfg: PointerConfig, fps = 30, W = FRAME_W, H = FRAME_H): string {
   const pills = placePills(labels, tracks, cfg, W, H);
   const fontPx = r(px(cfg.label_size_pct, H));
-  const text = ['PtrText', 'Montserrat SemiBold', fontPx, styleColour(cfg.pill.text), '&H000000FF', '&H00000000', '&H00000000', 0, 0, 0, 0, 100, 100, 1, 0, 1, 0, 0, 5, 0, 0, 0, 1].join(',');
+  const text = ['PtrText', cfg.font ?? 'Montserrat SemiBold', fontPx, styleColour(cfg.pill.text), '&H000000FF', '&H00000000', '&H00000000', 0, 0, 0, 0, 100, 100, 1, 0, 1, 0, 0, 5, 0, 0, 0, 1].join(',');
   const draw = ['PtrDraw', 'Montserrat', 20, '&H00FFFFFF', '&H000000FF', '&H00000000', '&H00000000', 0, 0, 0, 0, 100, 100, 0, 0, 1, 0, 0, 7, 0, 0, 0, 1].join(',');
   const out: string[] = [];
   const col = assColour(cfg.color);

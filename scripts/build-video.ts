@@ -7,6 +7,7 @@
  *   pnpm video videos/dam/video.json --mock-voice         silent placeholder narration (look and timing only)
  *   pnpm video videos/dam/video.json --remux              reuse the last Blender render; redo overlays/audio only
  *   pnpm video videos/dam/video.json --suggest-callouts   list numbers in the script that could get a fact card
+ *   pnpm video videos/dam/video.json --text-style=both    the same video in both text styles (<slug>.classic.mp4 and <slug>.premium.mp4), one Blender render
  *
  * Per video: narration (ElevenLabs, the base's fixed voice) -> timeline from the word timestamps -> Blender render
  * of the frozen scene (+ the video's own kit.py if it brings a new subject) -> overlays (progress tracker, hook,
@@ -19,17 +20,10 @@ import path from 'node:path';
 import { cacheDir, detectSilence, ensureDir, loadConfig, measureLoudness, repoRoot, runFfmpeg, summarizeMedia, tightenNarrationWav, writeContactSheet } from '@shorts/core';
 import {
   MechanismRenderer,
-  buildCalloutOverlay,
-  buildPointerOverlay,
   overlayPointers,
   placePills,
   probeAnchors,
-  buildCaptionOverlay,
-  buildHookOverlay,
-  buildOutroOverlay,
-  buildProgressOverlay,
   calloutEvents,
-  captionCues,
   effectiveConfig,
   findBlender,
   hookTextFor,
@@ -47,7 +41,9 @@ import {
   wordsFromAlignment,
   type AnchorTracks,
   type PointerLabel,
+  overlayLayers,
 } from '@shorts/rendering';
+import type { TextStyleName } from '@shorts/schemas';
 import { ensureNarration } from './lib/narration.js';
 
 const args = process.argv.slice(2);
@@ -57,6 +53,13 @@ const PLAN_ONLY = flags.has('--plan-only');
 const REMUX = flags.has('--remux');
 const SUGGEST = flags.has('--suggest-callouts');
 const patterns = args.filter((a) => !a.startsWith('--'));
+// --text-style=classic|premium|both: render with that text style (both = one file per style, sharing one Blender render).
+const styleFlag = args.find((a) => a.startsWith('--text-style='))?.split('=')[1];
+if (styleFlag && !['classic', 'premium', 'both'].includes(styleFlag)) {
+  console.error('--text-style must be classic, premium or both');
+  process.exit(2);
+}
+const STYLES: TextStyleName[] | null = styleFlag ? (styleFlag === 'both' ? ['classic', 'premium'] : [styleFlag as TextStyleName]) : null;
 
 function expand(pattern: string): string[] {
   if (!/[*?]/.test(pattern)) return [pattern];
@@ -64,7 +67,7 @@ function expand(pattern: string): string[] {
 }
 const files = patterns.flatMap(expand);
 if (files.length === 0) {
-  console.error('usage: pnpm video <videos/slug/video.json | "videos/*/video.json"> [--plan-only] [--mock-voice] [--remux] [--suggest-callouts]');
+  console.error('usage: pnpm video <videos/slug/video.json | "videos/*/video.json"> [--plan-only] [--mock-voice] [--remux] [--suggest-callouts] [--text-style=classic|premium|both]');
   process.exit(2);
 }
 
@@ -166,59 +169,59 @@ async function buildOne(file: string): Promise<Summary> {
     console.log(r.cached ? 'render: cache hit' : `render: ${(r.renderSeconds / 60).toFixed(1)} min`);
   }
 
-  // Overlays, all from the config.
-  const suppress: Array<[number, number]> = [];
-  if (cfg.captions.hideDuringHook && cfg.hook.enabled) suppress.push([0, cfg.hook.seconds]);
-  const outroOn = cfg.outro.enabled;
-  const outroStart = Math.max(0, plan.seconds - cfg.outro.seconds);
-  if (outroOn) suppress.push([outroStart, plan.seconds]);
-  const layers: Array<{ name: string; ass: string }> = [];
-  if (cfg.progress.enabled && video.steps) layers.push({ name: 'progress', ass: buildProgressOverlay(video.steps, segments, cfg.progress) });
-  if (ptr && pointerLabels.length) layers.push({ name: 'pointers', ass: buildPointerOverlay(pointerLabels, tracks, ptr, base.render.fps) });
-  if (callouts.length) layers.push({ name: 'callouts', ass: buildCalloutOverlay(callouts, cfg.callouts) });
-  if (cfg.hook.enabled) layers.push({ name: 'hook', ass: buildHookOverlay(hook, cfg.hook) });
-  if (outroOn) layers.push({ name: 'outro', ass: buildOutroOverlay(outroStart, plan.seconds, cfg.outro) });
-  if (cfg.captions.enabled) layers.push({ name: 'captions', ass: buildCaptionOverlay(captionCues(words, cfg.captions), words, cfg.captions, { display: video.captionText, suppress }) });
+  // Overlays, all from the config. One pass per text style: the Blender render, the narration and every timing are
+  // shared, so the styles differ only in the overlay layers.
+  const styles: TextStyleName[] = STYLES ?? [cfg.text_style ?? 'classic'];
+  const planKey = (c: typeof cfg): string => JSON.stringify(planOptionsFor(video, c));
+  const outputs: Array<{ style: TextStyleName; file: string }> = [];
+  for (const style of styles) {
+    const styled = effectiveConfig(base, video, style);
+    if (planKey(styled) !== planKey(cfg)) throw new Error(`text style "${style}" would change the timeline (outro length); styles may only change how text looks`);
+    const layers = overlayLayers({ cfg: styled, video, words, plan, hook, callouts, segments, pointerLabels, tracks, fps: base.render.fps });
+    const work = fs.mkdtempSync(path.join(os.tmpdir(), 'shorts-video-mux-'));
+    try {
+      fs.cpSync(fontsDir, path.join(work, 'fonts'), { recursive: true });
+      for (const l of layers) fs.writeFileSync(path.join(work, `${l.name}.ass`), l.ass);
+      fs.copyFileSync(silentVideo, path.join(work, 'video.mp4'));
+      fs.copyFileSync(audioForVideo, path.join(work, 'narration' + path.extname(audioForVideo)));
+      const total = plan.seconds.toFixed(3);
+      const g = base.render.grade;
+      const chain = [`eq=contrast=${g.contrast}:saturation=${g.saturation}`, ...(g.grain > 0 ? [`noise=alls=${g.grain}:allf=t`] : []), ...layers.map((l) => `ass=${l.name}.ass:fontsdir=fonts`), 'scale=out_range=tv:out_color_matrix=bt709', `format=${base.render.video.pixFmt}`].join(',');
+      const a = base.render.audio;
+      const finalPath = path.join(outDir, STYLES ? `${video.slug}.${style}.mp4` : `${video.slug}.mp4`);
+      await runFfmpeg(
+        [
+          '-y', '-i', 'video.mp4', '-i', 'narration' + path.extname(audioForVideo),
+          '-filter_complex', `[0:v]${chain}[v];[1:a]aresample=48000,${MOCK ? '' : `loudnorm=I=${a.loudnessLufs}:TP=${a.truePeakDb}:LRA=11,`}apad,atrim=0:${total},aformat=sample_fmts=fltp:channel_layouts=stereo[a]`,
+          '-map', '[v]', '-map', '[a]', '-c:v', base.render.video.codec, '-preset', base.render.video.preset, '-crf', String(base.render.video.crf), '-c:a', a.codec, '-b:a', a.bitrate, '-movflags', '+faststart', '-t', total, 'out.mp4',
+        ],
+        { cwd: work, description: `mux overlays + narration (${style})` }
+      );
+      fs.copyFileSync(path.join(work, 'out.mp4'), finalPath);
+      if (STYLES) fs.writeFileSync(path.join(outDir, `${video.slug}.${style}.ass.txt`), layers.map((l) => `# ${l.name}\n${l.ass}`).join('\n'));
 
-  const work = fs.mkdtempSync(path.join(os.tmpdir(), 'shorts-video-mux-'));
-  try {
-    fs.cpSync(fontsDir, path.join(work, 'fonts'), { recursive: true });
-    for (const l of layers) fs.writeFileSync(path.join(work, `${l.name}.ass`), l.ass);
-    fs.copyFileSync(silentVideo, path.join(work, 'video.mp4'));
-    fs.copyFileSync(audioForVideo, path.join(work, 'narration' + path.extname(audioForVideo)));
-    const total = plan.seconds.toFixed(3);
-    const g = base.render.grade;
-    const chain = [`eq=contrast=${g.contrast}:saturation=${g.saturation}`, ...(g.grain > 0 ? [`noise=alls=${g.grain}:allf=t`] : []), ...layers.map((l) => `ass=${l.name}.ass:fontsdir=fonts`), 'scale=out_range=tv:out_color_matrix=bt709', `format=${base.render.video.pixFmt}`].join(',');
-    const a = base.render.audio;
-    const finalPath = path.join(outDir, `${video.slug}.mp4`);
-    await runFfmpeg(
-      [
-        '-y', '-i', 'video.mp4', '-i', 'narration' + path.extname(audioForVideo),
-        '-filter_complex', `[0:v]${chain}[v];[1:a]aresample=48000,${MOCK ? '' : `loudnorm=I=${a.loudnessLufs}:TP=${a.truePeakDb}:LRA=11,`}apad,atrim=0:${total},aformat=sample_fmts=fltp:channel_layouts=stereo[a]`,
-        '-map', '[v]', '-map', '[a]', '-c:v', base.render.video.codec, '-preset', base.render.video.preset, '-crf', String(base.render.video.crf), '-c:a', a.codec, '-b:a', a.bitrate, '-movflags', '+faststart', '-t', total, 'out.mp4',
-      ],
-      { cwd: work, description: 'mux overlays + narration' }
-    );
-    fs.copyFileSync(path.join(work, 'out.mp4'), finalPath);
+      const probe = await summarizeMedia(finalPath);
+      const w = probe.video?.width;
+      const h = probe.video?.height;
+      if (w !== base.render.width || h !== base.render.height) throw new Error(`output is ${w}x${h}, expected ${base.render.width}x${base.render.height}`);
+      const loud = MOCK ? null : await measureLoudness(finalPath);
+      const silences = MOCK ? [] : await detectSilence(finalPath, -45, 0.5);
+      const times = Array.from({ length: 7 }, (_, i) => 0.5 + ((plan.seconds - 1.5) * i) / 6);
+      await writeContactSheet(finalPath, times, 640, path.join(outDir, STYLES ? `contact-sheet.${style}.jpg` : 'contact-sheet.jpg'));
 
-    const probe = await summarizeMedia(finalPath);
-    const w = probe.video?.width;
-    const h = probe.video?.height;
-    if (w !== base.render.width || h !== base.render.height) throw new Error(`output is ${w}x${h}, expected ${base.render.width}x${base.render.height}`);
-    const loud = MOCK ? null : await measureLoudness(finalPath);
-    const silences = MOCK ? [] : await detectSilence(finalPath, -45, 0.5);
-    const times = Array.from({ length: 7 }, (_, i) => 0.5 + ((plan.seconds - 1.5) * i) / 6);
-    await writeContactSheet(finalPath, times, 640, path.join(outDir, 'contact-sheet.jpg'));
-
-    const meta = { slug: video.slug, title: video.title, hook, hashtags: video.hashtags, description: video.description ?? '', seconds: +plan.seconds.toFixed(2), scenes: video.scenes.length, steps: video.steps ?? [], callouts: callouts.map((c) => ({ ...c, start: +c.start.toFixed(2), end: +c.end.toFixed(2) })), base: base.version, subject: video.subject, resolution: `${w}x${h}`, loudness: loud, narrationCredits: saved.credits, warnings };
-    fs.writeFileSync(path.join(outDir, `${video.slug}.meta.json`), JSON.stringify(meta, null, 2));
-    fs.writeFileSync(path.join(outDir, `${video.slug}.post.txt`), `${video.title}\n\n${video.description ?? ''}\n\n${video.hashtags.join(' ')}\n`);
-    console.log(`\nDONE: ${finalPath}`);
-    console.log(`  ${w}x${h}, ${plan.seconds.toFixed(1)} s${loud ? `, ${JSON.stringify(loud)}` : ''}, silences >0.5 s: ${silences.length}, narration credits ${saved.credits}${MOCK ? ' (mock)' : ''}`);
-    return { slug: video.slug, ok: true, seconds: plan.seconds, file: finalPath, warnings };
-  } finally {
-    fs.rmSync(work, { recursive: true, force: true });
+      if (style === styles[0]) {
+        const meta = { slug: video.slug, title: video.title, hook, hashtags: video.hashtags, description: video.description ?? '', seconds: +plan.seconds.toFixed(2), scenes: video.scenes.length, steps: video.steps ?? [], callouts: callouts.map((c) => ({ ...c, start: +c.start.toFixed(2), end: +c.end.toFixed(2) })), base: base.version, textStyles: styles, subject: video.subject, resolution: `${w}x${h}`, loudness: loud, narrationCredits: saved.credits, warnings };
+        fs.writeFileSync(path.join(outDir, `${video.slug}.meta.json`), JSON.stringify(meta, null, 2));
+        fs.writeFileSync(path.join(outDir, `${video.slug}.post.txt`), `${video.title}\n\n${video.description ?? ''}\n\n${video.hashtags.join(' ')}\n`);
+      }
+      console.log(`\nDONE (${style}): ${finalPath}`);
+      console.log(`  ${w}x${h}, ${plan.seconds.toFixed(1)} s${loud ? `, ${JSON.stringify(loud)}` : ''}, silences >0.5 s: ${silences.length}, narration credits ${saved.credits}${MOCK ? ' (mock)' : ''}`);
+      outputs.push({ style, file: finalPath });
+    } finally {
+      fs.rmSync(work, { recursive: true, force: true });
+    }
   }
+  return { slug: video.slug, ok: true, seconds: plan.seconds, file: outputs[0].file, warnings };
 }
 
 const results: Summary[] = [];

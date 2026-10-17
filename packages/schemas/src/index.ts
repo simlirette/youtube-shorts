@@ -1033,6 +1033,20 @@ export const ProgressConfigSchema = z.object({
   dimOpacity: z.number().min(0.1).max(1).optional(),
 });
 
+/** The "badge" fact card: a dark translucent backdrop with a thin border, a big figure and a small label beneath it. */
+export const BadgeStyleSchema = z.object({
+  fill: Hex,
+  opacity: z.number().min(0).max(1),
+  borderPx: z.number().min(0).max(6),
+  borderColor: Hex,
+  borderOpacity: z.number().min(0).max(1),
+  radiusPx: z.number().min(0).max(80),
+  paddingPx: z.number().min(6).max(80),
+  /** Figure colour when the highlight policy is "legacy"; with "single" the figure takes highlight.color. */
+  valueColor: Hex,
+  labelColor: Hex,
+});
+
 export const CalloutStyleSchema = z.object({
   fill: Hex,
   text: Hex,
@@ -1044,6 +1058,8 @@ export const CalloutStyleSchema = z.object({
   paddingPct: z.number().min(0).max(10),
   seconds: z.number().min(0.5).max(8),
   fadeMs: z.object({ in: z.number().min(0), out: z.number().min(0) }),
+  /** Look of the badge style (used when callout.style is "badge"). */
+  badge: BadgeStyleSchema.optional(),
 });
 
 export const OutroConfigSchema = z.object({
@@ -1094,10 +1110,34 @@ export const CalloutAliasSchema = z.object({
   size_pct: z.number().min(1).max(15).optional(),
   /** Height of the card's centre, % of the frame height (clear of the lower-third captions). */
   y_pct: z.number().min(5).max(95).optional(),
+  /** badge: big figure with a small label on a dark translucent backdrop; legacy: the filled highlighter card. Absent = legacy. */
+  style: z.enum(['badge', 'legacy']).optional(),
+});
+
+/** Text effects shared by every overlay. Absent (or all zero) = the classic look: no extra shadow layer, no tracking change. */
+export const TextEffectsSchema = z.object({
+  /** Soft drop shadow behind all text, blur radius in px (0 = none). */
+  shadow_blur: z.number().min(0).max(30).optional(),
+  /** Opacity of that shadow, 0-1. */
+  shadow_opacity: z.number().min(0).max(1).optional(),
+  /** How far the shadow sits below the text, px. */
+  shadow_offset_px: z.number().min(0).max(20).optional(),
+  /** Letter spacing added to every style, px (negative = tighter). */
+  tracking_px: z.number().min(-4).max(6).optional(),
+  /** Fallback to the shadow: a soft dark scrim behind each caption phrase, opacity 0-1 (0 = none). */
+  scrim_opacity: z.number().min(0).max(0.9).optional(),
+});
+
+/** Where yellow is used. single: only the one most important word or stat per scene; legacy: every spoken word, card, dot and label as before. */
+export const HighlightSchema = z.object({
+  policy: z.enum(['single', 'legacy']).optional(),
+  color: Hex.optional(),
 });
 
 /** Part pointers: pills at the frame edge, a leader line (or pulse ring) to the part. Drawn in the overlay layer. */
 export const PointerConfigSchema = z.object({
+  /** Font of the pill text (a family name in the fonts folder). Absent = Montserrat SemiBold. */
+  font: z.string().min(1).optional(),
   /** overlay: pills and pointers are drawn here and Blender gets no labels; blender: the original pills baked into the render. */
   mode: z.enum(['overlay', 'blender']),
   /** Default pointer for every label; a label can choose its own. */
@@ -1116,6 +1156,25 @@ export const PointerConfigSchema = z.object({
   pulse: z.object({ radiusPct: z.object({ min: z.number().min(0.2).max(4), max: z.number().min(0.2).max(6) }), periodS: z.number().min(0.4).max(4) }),
   fadeMs: z.object({ in: z.number().min(0), out: z.number().min(0) }),
 });
+
+/** What a text style changes: the same sections a video may override, plus the text effects and the highlight policy. */
+export const TextStylePresetSchema = z
+  .object({
+    captions: CaptionsConfigSchema.deepPartial(),
+    hook: HookStyleSchema.deepPartial(),
+    progress: ProgressConfigSchema.deepPartial(),
+    callouts: CalloutStyleSchema.deepPartial(),
+    outro: OutroConfigSchema.deepPartial(),
+    callout: CalloutAliasSchema,
+    tracker: TrackerAliasSchema,
+    pointer: PointerConfigSchema.deepPartial(),
+    text: TextEffectsSchema,
+    highlight: HighlightSchema,
+  })
+  .partial()
+  .strict();
+export const TEXT_STYLES = ['classic', 'premium'] as const;
+export type TextStyleName = (typeof TEXT_STYLES)[number];
 
 export const VoiceConfigSchema = z.object({
   /** The one fixed voice. Not overridable per video. */
@@ -1154,6 +1213,12 @@ export const BaseConfigSchema = z.object({
   tracker: TrackerAliasSchema.optional(),
   callout: CalloutAliasSchema.optional(),
   pointer: PointerConfigSchema.optional(),
+  /** classic = the original look, exactly; premium = the preset below. Absent = classic. */
+  text_style: z.enum(TEXT_STYLES).optional(),
+  text: TextEffectsSchema.optional(),
+  highlight: HighlightSchema.optional(),
+  /** Named text styles other than classic (classic is the sections above, untouched). */
+  presets: z.object({ premium: TextStylePresetSchema }).partial().optional(),
 });
 export type BaseConfig = z.infer<typeof BaseConfigSchema>;
 export type CaptionsConfig = z.infer<typeof CaptionsConfigSchema>;
@@ -1162,6 +1227,9 @@ export type ProgressConfig = z.infer<typeof ProgressConfigSchema>;
 export type CalloutStyle = z.infer<typeof CalloutStyleSchema>;
 export type OutroConfig = z.infer<typeof OutroConfigSchema>;
 export type PointerConfig = z.infer<typeof PointerConfigSchema>;
+export type TextEffects = z.infer<typeof TextEffectsSchema>;
+export type HighlightConfig = z.infer<typeof HighlightSchema>;
+export type BadgeStyle = z.infer<typeof BadgeStyleSchema>;
 export type CaptionAlias = z.infer<typeof CaptionAliasSchema>;
 export type TrackerAlias = z.infer<typeof TrackerAliasSchema>;
 export type CalloutAlias = z.infer<typeof CalloutAliasSchema>;
@@ -1201,6 +1269,9 @@ export const VideoOverridesSchema = z
     tracker: TrackerAliasSchema,
     callout: CalloutAliasSchema,
     pointer: PointerConfigSchema.deepPartial(),
+    text_style: z.enum(TEXT_STYLES),
+    text: TextEffectsSchema,
+    highlight: HighlightSchema,
   })
   .partial()
   .strict();
@@ -1236,6 +1307,8 @@ export const VideoConfigSchema = z
         maxSpeed: z.number().positive().optional(),
       })
       .optional(),
+    /** The one important word of a scene (caption highlight under highlight.policy "single"). Default: the longest meaningful word of the scene. */
+    highlights: z.array(z.object({ scene: z.number().int().min(0), word: z.string().min(1) })).default([]),
     overrides: VideoOverridesSchema.default({}),
   })
   .strict();
